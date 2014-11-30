@@ -1,0 +1,8 @@
+- Initialize a local git R project "Learn-PenSim".
+
+- Establish a repo called "Learn-PenSim.git" on github.
+
+- git remote add origin git@github.com:marshallpku/Learn-PenSim.git
+
+- git push -u origin master
+
