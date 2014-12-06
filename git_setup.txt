@@ -14,3 +14,5 @@
 - Go back to the R project folder and add another remote repo "dropbox"
   git remote add dropbox e:/Dropbox (Personal)/Proj-PenSim/git/Learn-PenSim.git
   (Problem with "(", use git GUI to walk around the problem)
+
+- git push -u dropbox master
