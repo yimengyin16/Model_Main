@@ -22,3 +22,10 @@
 - ssh Test result 12/6/2014
  - test ssh passphrase, again, 6(ssh key)
  - Problem: commits cannot be pushed to github when passphrase is added to the ssh keys. Problem exists in both Rstudio and source tree.
+ - Generate ssh key
+   ssh-keygen -t rsa -C "your_email@example.com" 
+   ssh -T git@github.com # check if the key works
+ - From https to ssh
+   git config remote.origin.url 
+   git@github.com:your_username/your_project.git
+   
