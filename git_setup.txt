@@ -16,4 +16,9 @@
   (Problem with "(", use git GUI to walk around the problem)
 
 - git push -u dropbox master
-- test ssh passphrase, again, 6(ssh key)
+
+
+
+- ssh Test result 12/6/2014
+ - test ssh passphrase, again, 6(ssh key)
+ - Problem: commits cannot be pushed to github when passphrase is added to the ssh keys. Problem exists in both Rstudio and source tree.
