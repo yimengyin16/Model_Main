@@ -40,5 +40,3 @@ load(paste0(path_Data, "/winklevossdata.Rdata"))
 
 
 
-
-
