@@ -18,7 +18,7 @@ k <- az - a0 + 1 # number of rows and columns in the wf matrix (number of years)
 k
 
 
-wf0 <- matrix(nrow=k, ncol=k, dimnames=list(a0:az, a0:az)) # initial workforce
+wf0 <- matrix(0, nrow=k, ncol=k, dimnames=list(a0:az, a0:az)) # initial workforce
 # make up some data for number of employees - each cell gives number of workers by age at entry (rows) and age current (columns)
 # a worker's current age can't be less than age at entry so the lower left triangle is empty
 # start by creating the workers upper triangle (represented as a vector)
@@ -28,8 +28,12 @@ workersut <- c(100, 90, 80, 70, 60, 50,
                             30, 28, 26,
                                 25, 24,
                                     12)
-wf0[upper.tri(wf0, diag=TRUE)] <- workersut # fill in matrix
-wf0[lower.tri(wf0)] <- 0
+wf0[lower.tri(wf0, diag=TRUE)] <- workersut # fill in matrix.
+wf0 <- t(wf0)
+# the trick here: we want to fill the upper triangle of the  matrix by row, while matrix is filled 
+  # by colomn by defaut. So we first fill the lower triangle by column and transpose it to get the 
+  # the upper triangle matrix filled by row. 
+wf0
 
 
 
@@ -128,6 +132,7 @@ update_wf(wf0, s, delta, e)
 
 # The workforce data in each period are stored in the 1st and 2nd dimension (k x k) of the array.
 # 3rd dimension represents the time period
+# Simulate the evolusion of 30 years.
 wf_sim <- array(dim = c(k, k, 30))
 wf_sim[, , 1] <- wf0
 
@@ -135,7 +140,7 @@ wf_sim[, , 1] <- wf0
 for(i in 2:30)wf_sim[, , i] <- update_wf(wf_sim[, , i-1], s, delta, e)
 
 
-apply(wf_sim, c(1,3), sum)
+apply(wf_sim, c(2,3), sum)
 
 
 # 
