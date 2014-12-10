@@ -56,8 +56,3 @@ Syncing Local and Github repository
    - reference: http://stackoverflow.com/questions/6012073/how-do-i-code-against-one-github-repo-on-2-computers
 
 
-add some contents to be checked out.
-
-
-
-
