@@ -12,16 +12,23 @@
 # (b) my calculations when I was trying to figure out how he got a particular result.
 # It is in the dropbox.
 
-wvd <- "E:\\Dropbox (Personal)\\Pensions\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+wvd <- "C:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
 wvxl <- "Winklevoss(6).xlsx"
 
+library(zoo) # rollapply
 library(knitr)
+library(gdata)
+library(dplyr)
+library(ggplot2)
+library(tidyr) # gather, spread
+
+
 # also needs gdata, dplyr, ggplot2, and possibly a few other packages I load automatically
 # if a function I use doesn't work, a quick google search should identify the package it's in, and you'll have to load that
 # in addition, it uses two functions in my "btools" package - you can install btools from github
 # and load, or else just use the functions below:
-# cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric
-# ht <- function (df, nrecs=6) {print(head(df, nrecs)); print(tail(df, nrecs))} # head tail
+ cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric
+ ht <- function (df, nrecs=6) {print(head(df, nrecs)); print(tail(df, nrecs))} # head tail
 
 
 #****************************************************************************************************
@@ -96,9 +103,16 @@ load(paste0(wvd, "winklevossdata.rdata"))
 gam1971 %>% arrange(age) %>%
   mutate(pxm=1-qxm, 
          pxm.65mx=order_by(desc(age), cumprod(ifelse(age<65, pxm, 1))), 
-         pxm.xm65=order_by(age, cumprod(ifelse(age>65, lag(pxm), 1)))) %>%  # note use of lag
+         pxm.xm65=order_by(age, cumprod(ifelse(age>65, lag(pxm), 1)))) %>%  # note use of lag(in dplyr not in stats)
   filter(age %in% seq(20, 110, 5)) %>%
   kable(digits=4)
+
+# Notes:
+  # 1. order_by(): define the path through which the function cumprod is applied
+  # 2. The survival at age x is evaluated at the end of the year(or equivalently, the beginning of age x + 1)
+  # 3. Note that when x = 66, we have n = 1, hence we are actually calculating the prob of living through
+       # the age 65. 
+  # 4. So when we say the participant is at age x, we are actually saying she is at the begining of age x.
 
 # table 2-4 - retention from ay until +5 or 65 ####
 term %>% gather(entry, qxt, -age) %>%
@@ -199,7 +213,7 @@ dtab <- select(gam1971, age, qxm) %>%
 dtab %>% filter(age %in% 20:65) %>%
   select(age, lxb, dxm, dxt, dxd, dxtot) %>% 
   kable(digits=0) # Table 3-2
-
+dtab
 
 # an alternative approach that does not require a loop - calc lxb all at once from cumlative probs
 gam1971 %>% left_join(select(term, age, qxt=ea20)) %>% # entry age 20 termination probs
@@ -243,13 +257,15 @@ merit %>% arrange(age) %>%
   select(age, m20:m60) %>%
   kable(digits=3)
 
+  # Note: the none-interaction way is not consistent with eq.3.8
+
 # table 3-5 benefit accrual for age-30 entrant ####
 benfactor <- .015
 fasyears <- 5
 
 # use ma function instead of difference in cumulative salaries
 ma <- function(x, years) rollapply(x, years, function(x) mean(x, na.rm=TRUE), partial=TRUE, align="right") # use partial to compute average of short series
-# cbind(1:10, ma(1:10, 5)) # check to make sure ma works properly
+ cbind(1:10, ma(1:10, 5)) # check to make sure ma works properly
 merit %>% rbind_list(data.frame(age=65, scale=NA)) %>% # need to add a 65th year so we can calc Bx for it
   filter(age %in% 30:65) %>%
   arrange(age) %>%
@@ -261,7 +277,7 @@ merit %>% rbind_list(data.frame(age=65, scale=NA)) %>% # need to add a 65th year
          bxpct=bx / Bx[age==65] * 100,
          Bxpct=Bx / Bx[age==65] * 100) %>%
   # now do constant collar and constant percent calculations
-  mutate(bx.CD=Bx[age==65]/(age-30), 
+  mutate(bx.CD=Bx[age==65]/(65-30),   # corrected an error
          Bx.CD=Bx[age==65] * (age-30) / (65-30),
          bxpct.CD=bx.CD / Bx.CD[age==65] * 100,
          Bxpct.CD=Bx.CD / Bx.CD[age==65] * 100,
@@ -272,7 +288,7 @@ merit %>% rbind_list(data.frame(age=65, scale=NA)) %>% # need to add a 65th year
   select(age, bxpct, Bxpct, bxpct.CP, Bxpct.CP, bxpct.CD, Bxpct.CD) %>%
   kable(digits=2)
 
-# this also can be done using cumulative salaries Sx instead of ma
+# this also can be done using cumulative salaries Sx instead of ma (cum salary - 5 year lag of cum salary)
 # construct the unmodified part of table 3-5
 # need to fix this up - I did this earlier and think the cumulative salary should be zero in first year
 merit %>% rbind_list(data.frame(age=65, scale=NA)) %>% # need to add a 65th year so we can calc Bx for it
