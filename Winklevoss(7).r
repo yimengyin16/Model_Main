@@ -12,7 +12,7 @@
 # (b) my calculations when I was trying to figure out how he got a particular result.
 # It is in the dropbox.
 
-wvd <- "C:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
+wvd <- "E:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
 wvxl <- "Winklevoss(6).xlsx"
 
 library(zoo) # rollapply
@@ -336,7 +336,7 @@ gam1971 %>% left_join(select(term, age, qxt=ea30)) %>% # entry age 30 terminatio
   select(age, pxtot) %>%
   do(f(., i=.08)) %>% 
   kable(digits=2)
-# This is close but is not quite identical to the book. Maybe it is just rounding differences?
+# This is close but is not quite identical to the book. Maybe it is just rounding differences? Does not seem like rounding diff.
 # Come back to it. We need to get it right for some of the cost methods.
 
 
@@ -365,7 +365,7 @@ decs <- select(gam1971, age, qxm) %>%
 salben <- merit %>% rbind_list(data.frame(age=65, scale=NA)) %>% # need to add a 65th year so we can calc Bx for it
   filter(age %in% 30:65) %>%
   arrange(age) %>%
-  mutate(ssea30=scale / scale[age==30] * {(1+infl+prod) ^ (age-30)},
+  mutate(ssea30 = scale / scale[age == 30] * {(1+infl+prod) ^ (age-30)},
          Sx=cumsum(ssea30), # cumulative salary
          yos.eoy=age - 30 + 1, # years of service at end of year
          n=pmin(fasyears, yos.eoy),
@@ -401,7 +401,7 @@ pvla.r <- df %>% filter(age>=65) %>%
 # now we can calculate ptl plan termination liability, for age-30 entrants. For that we need
 # pxm65 - the prob of surviving to 65 from any earlier age,
 # v^(r-x) where r=65 and x is any age from 30 to 65
-# also do pcl - plan continuation liability
+# also do pcl - plan continuation liability(ptl uses mortality rate, pcl uses composite decrement rate)
 df %>% filter(age<=65) %>%
   arrange(desc(age)) %>% 
   mutate(pxm65=cumprod(ifelse(age<65, pxm, 1)),
@@ -417,7 +417,6 @@ df %>% filter(age<=65) %>%
 # note that these are close to the values in the book, but not identical
 # I don't see anything I am doing wrong, though
 
-
 # compute ptl, pcl [i.e., Br * a..x for x>=r] for years 65+ - the last column of table 5-1
 pvla <- function(dfz, i) {  # present value of life annuity of $1 paid annually for rest of life, beginning of year
   # computed separately for EACH new year, looking only at the (expected) remaining years of life
@@ -429,7 +428,7 @@ pvla <- function(dfz, i) {  # present value of life annuity of $1 paid annually 
   }
   # I haven't figured out anything more efficient than looping through the data and getting a new (shorter) vector
   # of survival probabilities for each successive age
-  for(row in 1:nrow(dfz)) dfz$pvla[row] <- getayear(c(1, dfz$pxm[row:nrow(dfz)]), i)
+  for(row in 1:nrow(dfz)) dfz$pvla[row] <- getayear(c(1, dfz$pxm[row:nrow(dfz)]), i)  # length of pxm is max age - age + 1, since 0px is 1. 
   return(dfz)
 }
 
@@ -492,7 +491,7 @@ df2 <- df %>% arrange(desc(age)) %>% # just to be safe
          vrx=(1/(1+i)) ^ (65-age))
   
 # get pvla.r (a..r) - pv at age r of life annuity, paid at boy
-pvla.r <- df2 %>% filter(age>=65) %>%
+pvla.r <- df2 %>% filter(age>=65) %>% 
   summarise(pvla=sum(pxm65p * (1/(1+i)) ^ (age-65))) %>%
   as.numeric
 
@@ -529,7 +528,7 @@ df2 %>% filter(age %in% 30:65) %>%
          # we need to shift the accumulated salary, which makes sense (I think); results, with shift, match the book
          Sxshift=ifelse(age==30, 0, lag(Sx)),
          BP=Sxshift / Sxshift[age==65] * PVFB,
-         BPpct=BP / BP[age==65] * 100, # looks identical to the book
+         BPpct=BP / BP[age==65] * 100, # looks identical  to the book
          # now the cost prorate methods - requires temporary life annuity
          
          # calculate yos share and salary share, for comparison
