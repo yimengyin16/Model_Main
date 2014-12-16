@@ -10,7 +10,7 @@
 ## Preamble ####
 
 # Defining data directory and data file
-wvd <- "C:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
+wvd <- "E:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
 wvxl <- "Winklevoss(6).xlsx"
 
 
@@ -521,7 +521,7 @@ tab5_1 <- desc %>%
   select(age, Bx, pxm, pxT, px65m, px65T, PTLx, PTLx.pct, PCLx, PCLx.pct)
 kable(tab5_1, digits = 2)
 
-# Got the same results as Don, but different from the book. 
+# Got the same results as Don, but slightly different from the book. 
 
 
 # table 5-2 actuarial liability and PVFB ####
@@ -547,11 +547,88 @@ tab5_2 <- desc %>% filter(age %in% 30:65) %>%
          CDALx = ayx/ayx[age == 65] * PVFBx,
          CDALx.pct = 100 * CDALx/CDALx[age == 65]
          ) %>%
-  select(age, ABALx.pct, BPALx.pct, BDALx.pct, CPALx.pct, CDALx.pct, PVFBx.pct)
+  select(age, ABALx.pct, BPALx.pct, BDALx.pct, CPALx.pct, CDALx.pct, PVFBx.pct, PVFBx)
 kable(tab5_2, digits = 2)
 
 
+# Table 6-1 Normal cost as a percent of attained age salary ####
 
+# Keep using assumptions and data("desc") for chapter 5 tables.
+
+tab6_1 <- desc %>% filter(age %in% 30:65) %>%
+  mutate(PVFBx = Bx[age == 65] * ax[age == 65] * vrx * px65T,
+         bx    = lead(Bx) - Bx) %>%
+  # Calculating normal costs under various actuarial methods
+  mutate(NCx.AB = bx * ax[age == 65] * px65T * vrx,
+         NCx.BD = Bx[age == 65]/(65-30) * px65T * vrx * ax[age == 65],
+         NCx.BP = Bx[age == 65]/Sx[age == 65] * sx * px65T * vrx * ax[age == 65],
+         NCx.CD = PVFBx[age == 30] / ayx[age == 65],
+         NCx.CP = PVFBx[age == 30] / (sx[age == 30] * ayx[age == 65]) * sx) %>%
+#   # alternative way of calcuating NCs: all NCs as a fraction of the PVFBx
+#   mutate(NCx.AB = bx/Bx[age == 65] * PVFBx,
+#          NCx.BD = 1/(65 - 30) * PVFBx,
+#          NCx.BP = sx/Sx[age == 65] * PVFBx,
+#          NCx.CD = 1/ayx[age == 65] * v^(age - 30) * c(1, cumprod(pxT[age %in% 30:64])) * PVFBx,
+#          NCx.CP = sx / sx[age == 30] * NCx.CD) %>%
+  # Calculate normal cost as a percent of attained age salary 
+  mutate(NCx.AB.pctSal = NCx.AB / sx * 100,
+         NCx.BP.pctSal = NCx.BP / sx * 100,
+         NCx.BD.pctSal = NCx.BD / sx * 100,
+         NCx.CP.pctSal = NCx.CP / sx * 100,
+         NCx.CD.pctSal = NCx.CD / sx * 100) %>%
+  filter(age %in% seq(30, 64, 2)) %>%
+  select(age, 
+         # NCx.AB, NCxBP, NCx.BD, NCx.CP, NCx.CD, 
+         NCx.AB.pctSal, NCx.BP.pctSal, NCx.BD.pctSal, NCx.CP.pctSal, NCx.CD.pctSal)
+kable(tab6_1, digits = 3)
+   
+# Current results differ from the book a lot. Need to find the cause. 
+  # Since table 6-3 is succesfully reproduced, our normal cost calculation should be correct. 
+  # The calculation of PVFB should be correct, b/c it can be verified in table 5-2
+  # Need to double check the formula and the use of sx. 
+
+
+# table 6-3 and table 6-4, percentage and cumulative percentage projected retirment benefit allocated to each age.
+
+# Formulas for calculating the percentage projected retirment benefit allocated to each age is not explictly 
+  # given in the book. But it is easy to infer that the allocated benefit under a certain method is just the 
+  # increment of the liablity calculated by that method with discounting and survival adjustment. 
+
+# formula not given in the book. increment of cost prorate liability without discount and survival adjustment
+
+tab6_2 <- desc %>% filter(age %in% 30:65) %>%
+  mutate(PVFBx = Bx[age == 65] * ax[age == 65] * vrx * px65T,
+         bx    = lead(Bx) - Bx) %>%
+  # Calculating normal costs under various actuarial methods
+  mutate(allct.AB = bx * ax[age == 65],
+         allct.BD = Bx[age == 65]/(65-30) * ax[age == 65],
+         allct.BP = Bx[age == 65]/Sx[age == 65] * sx * ax[age == 65],
+         allct.CD = c(diff(ayx), 0)/ayx[age == 65] * Bx[age == 65] * ax[age == 65], 
+         allct.CP = c(diff(ayxs),0 )/ayxs[age == 65] * Bx[age == 65] * ax[age == 65]
+         ) %>%
+  mutate(allct.AB.pct = allct.AB / (Bx[age == 65] * ax[age == 65]) * 100, 
+         allct.BP.pct = allct.BP / (Bx[age == 65] * ax[age == 65]) * 100,
+         allct.BD.pct = allct.BD / (Bx[age == 65] * ax[age == 65]) * 100,
+         allct.CP.pct = allct.CP / (Bx[age == 65] * ax[age == 65]) * 100,
+         allct.CD.pct = allct.CD / (Bx[age == 65] * ax[age == 65]) * 100
+         ) %>%
+  select(age, ends_with(".pct"))
+
+
+tab6_3 <- tab6_2 %>%
+  mutate(allct.AB.cum = cumsum(ifelse(age == 30, 0, lag(allct.AB.pct))),
+         allct.BP.cum = cumsum(ifelse(age == 30, 0, lag(allct.BP.pct))),
+         allct.BD.cum = cumsum(ifelse(age == 30, 0, lag(allct.BD.pct))),
+         allct.CP.cum = cumsum(ifelse(age == 30, 0, lag(allct.CP.pct))),
+         allct.CD.cum = cumsum(ifelse(age == 30, 0, lag(allct.CD.pct)))
+         ) %>%
+  select(age, ends_with(".cum"))
+
+kable(filter(tab6_2, age %in% seq(30, 64, 2)), digit = 2) # table 6.2
+kable(filter(tab6_3,!age %in% seq(31, 63, 2)), digit = 2) # table 6.3
+
+# Results for benefit prorate and cost prorate methods are identical to the book.
+# Restuls for accrued benefit method is slightly different from the book. 
 
 
   
