@@ -448,14 +448,20 @@ v <- 1/(1 + i)      # discount factor
  # benefit accrual, accrued benefit
  # Various annuity values. 
 
-# function calculating temporary annuity values from age x to retirment age 65
+# We also need functions to compute two types of annuity values
+# 1. function calculating temporary annuity values from age x to retirment age 65
 get_tla <- function(px, i, sx = rep(1, length(px))){
+  # suppose the age corresponding to px runs from a1 to aN, and f = aN + 1 (eg. age 30:64, f = 65)
+  # The function computes a..{x, f - x} and s_a..{y, x - y}, x ruuning from a1 to aN. 
+  # The length of px is f - a1 
+  # Note that the last element is redundant, just used as a place holder. 
+  
   # inputs:
-  # px: an vector of composite survivial probs from age x to x + n - 1. Length = n
-  # i:  discount rate
-  # sx: salary scale. default is a n vector of 1, meaning no salary scale. 
+   # px: an vector of composite survivial probs from age x to x + n - 1. Length = n
+   # i:  discount rate, scalar
+   # sx: salary scale. default is a n vector of 1, meaning no salary scale. 
   # output:
-  # tla: an n vector storing the value of temporary life annuities from age x to age x + n - 1.
+   # tla: an n vector storing the value of temporary life annuities from age x to age x + n - 1.
   tla <- numeric(length(px))
   n <- length(tla)
   
@@ -463,30 +469,49 @@ get_tla <- function(px, i, sx = rep(1, length(px))){
     v   <- 1/(1 + i)^(0:(n - j)) # dicount vector
     if(j < n) pxr <- cumprod(c(1, px[j:(n - 1)])) else pxr = 1      # survival probability to retirment at age x. Note that participant always survives at the beginning of age x
     # pxr <- cumprod(c(1, px[j:(n - 1)]))
-    SS  <- sx[j:n]/sx[j] 
+    SS  <- sx[j:n]/sx[j]                # salary scale
     tla[j] = sum(SS * v * pxr)          # computing annuity value at j
   } 
   return(tla)
 }
-get_tla(rep(0.98, 65), 0.08)
+ get_tla(rep(0.98, 65), 0.08) # test the function
 
-# function calculating temporary annuity values from a fixed age y to x 
+# 2. function calculating temporary annuity values from a fixed entry age y to x 
 get_tla2 = function(px, i, sx = rep(1, length(px))){
+  # Suppose the age corresponding to px runs from a1 to aN, y = a1 (eg. age 30:65, y = 30)
+  # This function conputes a..{y, x - y} and s_a..{y, x - y}, x ruuning from a1 to aN. 
+  
+  # Note that when x = a1 = y, we define a..{y, 0} = 0. so the first element is always 0. 
+  # For age x > y, the number of years receiviing annuity is x - y, the resulting annuity value will be placed at age x. 
+    # eg1: x = 31, y = 30,  annuity ($1) received only once at age 30, but the resulting annuity value will be placed at age 31.
+    # eg2: x = 65, y = 30, annuity received from age 30 to 64(total 65 years), the resulting annuity value will be placed at age 65
+  # Note that the last 2 elements are redundant in the calculation, they are just used as place holders. 
+    #(calculating the value of annuity running from 30 to 64 only involves survival rate from 30 to 63, 
+    # because the last annuity payment is paid at the begining of 64. )
+ 
+  # inputs:
+   # px: an vector of composite survivial probs from age x to x + n - 1. Length = n
+   # i:  discount rate, scalar
+   # sx: salary scale. default is a n vector of 1, meaning no salary scale. 
+  # output:
+   # tla: an n vector storing the value of temporary life annuities from age x to age x + n - 1.
   tla = numeric(length(px))
   n = length(tla)
   
-  for(j in 1:n){
-    v   <- 1/(1 + i)^(0:(j - 1)) # dicount vector
-    if(j == 1) pxr <- 1 else pxr <- cumprod(c(1, px[1:(j - 1)]))      # survival probability to retirment at age x. Note that participant always survives at the beginning of age x
-    SS  <- sx[1:j]/sx[1] 
-    tla[j] = sum(SS * v * pxr)          # computing annuity value at j
+  # tla[1] will be kept as 0, next calculate tla[2:n]:
+  for(j in 1:(n - 1)){
+    v   <- 1/(1 + i)^(0:(j - 1))                                  # dicount vector
+    if(j == 1) pxr <- 1 else pxr <- cumprod(c(1, px[1:(j - 1)]))  # survival probability to retirment at age x. Note that participant always survives at the beginning of age x
+    SS  <- sx[1:j]/sx[1]                                          # salary scale
+    tla[j + 1] = sum(SS * v * pxr)                                # computing annuity value at j;
   } 
   return(tla) 
 }
-get_tla2(rep(0.98, 65), 0.08) # test the function
+ get_tla2(rep(0.98, 65), 0.08) # test the function
 
 desc <- gam1971 %>% left_join(select(term, age, qxt = ea30)) %>% left_join(disb) %>% # survival rates
         left_join(merit) %>% # merit salary scale
+        mutate(scale = scale/scale[age == 30]) %>%
         filter(age >= 30) %>%
         # Calculate survival rates
         mutate( pxm = 1 - qxm,
@@ -503,19 +528,19 @@ desc <- gam1971 %>% left_join(select(term, age, qxt = ea30)) %>% left_join(disb)
                fas= ifelse(yos < fasyears, Sx/n, (Sx - lag(Sx, 5))/n), # final average salary
                fas= ifelse(age == min(age), 0, fas),
                Bx = benfactor * yos * fas,                        # accrued benefits
-               ax = ifelse(age < 65, NA, get_tla(pxm, i)), 
-               ayx = c(0, get_tla2(pxT[age<65], i), rep(0, 45)), # need to make up the length of the vector
-               ayxs= c(0, get_tla2(pxT[age<65], i, sx[age<65]), rep(0, 45))  # need to make up the length of the vector
+               ax = ifelse(age < 65, NA, get_tla(pxm, i)), # Since retiree die at 110 for sure, the life annuity is equivalent to temporary annuity up to age 110. 
+               ayx = c(get_tla2(pxT[age<=65], i), rep(0, 45)),             # need to make up the length of the vector to 81
+               ayxs= c(get_tla2(pxT[age<=65], i, sx[age<65]), rep(0, 45))  # need to make up the length of the vector to 81
                )                              
 
-
-# # calcuate annuity value at retirment a..r, note that get_tla is still valid here.
-# arr <- get_tla(px = desc$pxm[desc$age >=65], i  = i)[1] 
-#  # use survival prob from 65 to 110. The first element is the annuity value at 65.   
+# Following code is dropped since the scalar is just ax[age == 65].
+ # # calcuate annuity value at retirment a..r, note that get_tla is still valid here.
+ # arr <- get_tla(px = desc$pxm[desc$age >=65], i  = i)[1] 
+ #  # use survival prob from 65 to 110. The first element is the annuity value at 65.   
            
 tab5_1 <- desc %>%
-  mutate(PTLx = ifelse(age < 65, Bx * arr * px65m * v^(65-age), Bx[age == 65] * ax),
-         PCLx = ifelse(age < 65, Bx * arr * px65T * v^(65-age), Bx[age == 65] * ax),
+  mutate(PTLx = ifelse(age < 65, Bx * ax[age == 65] * px65m * v^(65-age), Bx[age == 65] * ax),
+         PCLx = ifelse(age < 65, Bx * ax[age == 65] * px65T * v^(65-age), Bx[age == 65] * ax),
          PTLx.pct = 100 * PTLx / PTLx[age == 65],
          PCLx.pct = 100 * PCLx / PCLx[age == 65]) %>%
   select(age, Bx, pxm, pxT, px65m, px65T, PTLx, PTLx.pct, PCLx, PCLx.pct)
@@ -527,8 +552,6 @@ kable(tab5_1, digits = 2)
 # table 5-2 actuarial liability and PVFB ####
 
 tab5_2 <- desc %>% filter(age %in% 30:65) %>%
-#   mutate(ayx = c(0, get_tla2(pxT[age<65], i)),
-#          ayxs= c(0, get_tla2(pxT[age<65], i, sx[age<65]))) %>%
   mutate(PVFBx = ax[age == 65] * Bx[age == 65] * px65T * vrx,
          PVFBx.pct = 100 * PVFBx / PVFBx[age == 65],
          
@@ -551,7 +574,7 @@ tab5_2 <- desc %>% filter(age %in% 30:65) %>%
 kable(tab5_2, digits = 2)
 
 
-# Table 6-1 Normal cost as a percent of attained age salary ####
+## Table 6-1 Normal cost as a percent of attained age salary ####
 
 # Keep using assumptions and data("desc") for chapter 5 tables.
 
@@ -564,7 +587,7 @@ tab6_1 <- desc %>% filter(age %in% 30:65) %>%
          NCx.BP = Bx[age == 65]/Sx[age == 65] * sx * px65T * vrx * ax[age == 65],
          NCx.CD = PVFBx[age == 30] / ayx[age == 65],
          NCx.CP = PVFBx[age == 30] / (sx[age == 30] * ayx[age == 65]) * sx) %>%
-#   # alternative way of calcuating NCs: all NCs as a fraction of the PVFBx
+#   # alternative way of calcuating NCs: NC as a fraction of the PVFBx
 #   mutate(NCx.AB = bx/Bx[age == 65] * PVFBx,
 #          NCx.BD = 1/(65 - 30) * PVFBx,
 #          NCx.BP = sx/Sx[age == 65] * PVFBx,
@@ -580,31 +603,38 @@ tab6_1 <- desc %>% filter(age %in% 30:65) %>%
   select(age, 
          # NCx.AB, NCxBP, NCx.BD, NCx.CP, NCx.CD, 
          NCx.AB.pctSal, NCx.BP.pctSal, NCx.BD.pctSal, NCx.CP.pctSal, NCx.CD.pctSal)
-kable(tab6_1, digits = 3)
+kable(tab6_1, digits = 2)
    
-# Current results differ from the book a lot. Need to find the cause. 
+# Current results slightly differ from the book a lot(difference in CP is significant). Need to find the cause. 
   # Since table 6-3 is succesfully reproduced, our normal cost calculation should be correct. 
   # The calculation of PVFB should be correct, b/c it can be verified in table 5-2
   # Need to double check the formula and the use of sx. 
 
 
-# table 6-3 and table 6-4, percentage and cumulative percentage projected retirment benefit allocated to each age.
+
+## table 6-3 and table 6-4, percentage and cumulative percentage projected retirment benefit allocated to each age. ####
 
 # Formulas for calculating the percentage projected retirment benefit allocated to each age is not explictly 
-  # given in the book. But it is easy to infer that the allocated benefit under a certain method is just the 
-  # increment of the liablity calculated by that method with discounting and survival adjustment. 
+  # given in the book. But it is easy to infer the allocation formulas. 
 
-# formula not given in the book. increment of cost prorate liability without discount and survival adjustment
+# The projected retirment benefit is Bx[age == 65] * ax[age == 65], the multiplies used in each method to get 
+# the allocated benefit at age x are given below: 
+    # AB: bx / Bx[age == 65]  # 
+    # BD: 1/(65 - 30)         # see 3.15a
+    # BP: sx / Sx[age == 65]  # see 3.16a
+    # CD: (ayx[age == x] - ayx[age == x - 1])/ ayx[age == 65]
+    # CP: (ayxs[age == x] - ayxs[age == x - 1])/ ayx[age == 65]
+
 
 tab6_2 <- desc %>% filter(age %in% 30:65) %>%
   mutate(PVFBx = Bx[age == 65] * ax[age == 65] * vrx * px65T,
          bx    = lead(Bx) - Bx) %>%
   # Calculating normal costs under various actuarial methods
   mutate(allct.AB = bx * ax[age == 65],
-         allct.BD = Bx[age == 65]/(65-30) * ax[age == 65],
-         allct.BP = Bx[age == 65]/Sx[age == 65] * sx * ax[age == 65],
-         allct.CD = c(diff(ayx), 0)/ayx[age == 65] * Bx[age == 65] * ax[age == 65], 
-         allct.CP = c(diff(ayxs),0 )/ayxs[age == 65] * Bx[age == 65] * ax[age == 65]
+         allct.BD = Bx[age == 65]/(65-30) * ax[age == 65],   
+         allct.BP = Bx[age == 65]/Sx[age == 65] * sx * ax[age == 65], 
+         allct.CD = c(diff(ayx), 0)/ayx[age == 65] * Bx[age == 65] * ax[age == 65],  # note that 0 is assigned to age 65
+         allct.CP = c(diff(ayxs),0 )/ayxs[age == 65] * Bx[age == 65] * ax[age == 65] # note that 0 is assigned to age 65
          ) %>%
   mutate(allct.AB.pct = allct.AB / (Bx[age == 65] * ax[age == 65]) * 100, 
          allct.BP.pct = allct.BP / (Bx[age == 65] * ax[age == 65]) * 100,
