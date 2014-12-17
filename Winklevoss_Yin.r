@@ -592,7 +592,7 @@ tab6_1 <- desc %>% filter(age %in% 30:65) %>%
 #          NCx.BD = 1/(65 - 30) * PVFBx,
 #          NCx.BP = sx/Sx[age == 65] * PVFBx,
 #          NCx.CD = 1/ayx[age == 65] * v^(age - 30) * c(1, cumprod(pxT[age %in% 30:64])) * PVFBx,
-#          NCx.CP = sx / sx[age == 30] * NCx.CD) %>%
+#          NCx.CP = sx / sx[age == 30] * 1/ayxs[age == 65] * v^(age - 30) * c(1, cumprod(pxT[age %in% 30:64])) * PVFBx) %>%
   # Calculate normal cost as a percent of attained age salary 
   mutate(NCx.AB.pctSal = NCx.AB / sx * 100,
          NCx.BP.pctSal = NCx.BP / sx * 100,
@@ -601,7 +601,7 @@ tab6_1 <- desc %>% filter(age %in% 30:65) %>%
          NCx.CD.pctSal = NCx.CD / sx * 100) %>%
   filter(age %in% seq(30, 64, 2)) %>%
   select(age, 
-         # NCx.AB, NCxBP, NCx.BD, NCx.CP, NCx.CD, 
+         NCx.AB, NCx.BP, NCx.BD, NCx.CP, NCx.CD, 
          NCx.AB.pctSal, NCx.BP.pctSal, NCx.BD.pctSal, NCx.CP.pctSal, NCx.CD.pctSal)
 kable(tab6_1, digits = 2)
    
