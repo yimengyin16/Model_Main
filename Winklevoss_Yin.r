@@ -586,7 +586,7 @@ tab6_1 <- desc %>% filter(age %in% 30:65) %>%
          NCx.BD = Bx[age == 65]/(65-30) * px65T * vrx * ax[age == 65],
          NCx.BP = Bx[age == 65]/Sx[age == 65] * sx * px65T * vrx * ax[age == 65],
          NCx.CD = PVFBx[age == 30] / ayx[age == 65],
-         NCx.CP = PVFBx[age == 30] / (sx[age == 30] * ayx[age == 65]) * sx) %>%
+         NCx.CP = PVFBx[age == 30] / (sx[age == 30] * ayxs[age == 65]) * sx) %>%
 #   # alternative way of calcuating NCs: NC as a fraction of the PVFBx
 #   mutate(NCx.AB = bx/Bx[age == 65] * PVFBx,
 #          NCx.BD = 1/(65 - 30) * PVFBx,
@@ -625,16 +625,22 @@ kable(tab6_1, digits = 2)
     # CD: (ayx[age == x] - ayx[age == x - 1])/ ayx[age == 65]
     # CP: (ayxs[age == x] - ayxs[age == x - 1])/ ayx[age == 65]
 
+# A even simpler way of calculating allocated benefit: it is just the normal cost without discounting and survival 
+  # adjustment factors: allct[age == x] = NCx / (px65T * vrt)
+
 
 tab6_2 <- desc %>% filter(age %in% 30:65) %>%
   mutate(PVFBx = Bx[age == 65] * ax[age == 65] * vrx * px65T,
          bx    = lead(Bx) - Bx) %>%
-  # Calculating normal costs under various actuarial methods
+  # Calculating normal costs under various actuarial methods: note that they are just normal cost divided by px65T * vrx
   mutate(allct.AB = bx * ax[age == 65],
          allct.BD = Bx[age == 65]/(65-30) * ax[age == 65],   
          allct.BP = Bx[age == 65]/Sx[age == 65] * sx * ax[age == 65], 
-         allct.CD = c(diff(ayx), 0)/ayx[age == 65] * Bx[age == 65] * ax[age == 65],  # note that 0 is assigned to age 65
-         allct.CP = c(diff(ayxs),0 )/ayxs[age == 65] * Bx[age == 65] * ax[age == 65] # note that 0 is assigned to age 65
+         allct.CD = (PVFBx[age == 30] / ayx[age == 65]) / (px65T * vrx),
+         allct.CP =((PVFBx[age == 30] / ayxs[age == 65]) * (sx / sx[age == 30])) / (px65T * vrx)
+         # Alternative way of calculating allocated benefit at each age for CD and CP
+         #allct.CD = c(diff(ayx), 0)/ayx[age == 65] * Bx[age == 65] * ax[age == 65],  # note that 0 is assigned to age 65
+         #allct.CP = c(diff(ayxs),0 )/ayxs[age == 65] * Bx[age == 65] * ax[age == 65] # note that 0 is assigned to age 65
          ) %>%
   mutate(allct.AB.pct = allct.AB / (Bx[age == 65] * ax[age == 65]) * 100, 
          allct.BP.pct = allct.BP / (Bx[age == 65] * ax[age == 65]) * 100,
