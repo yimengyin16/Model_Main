@@ -22,7 +22,7 @@
 #****************************************************************************************************
 library(plyr)
 library(ggplot2)
-
+library(reshape2)
 
 #****************************************************************************************************
 #
@@ -40,7 +40,7 @@ library(ggplot2)
 pdiff <- function(aa, xa) return((aa - xa) / xa * 100) # % diff, actual assets from expected assets
 
 pmt <- function(p, i, n) { 
-  # amortization function
+  # amortization function， payment at end of period.
   # p=principal, i=interest rate, n=periods
   pmt <- p * (1+i)^n * i / ((1+i)^n - 1)
   return(pmt)
@@ -52,6 +52,7 @@ pvann <- function(i, n, pmt) {
   return(pv)
 }
 
+
 gaip <- function(p, i, n, g) {
   # graduated annuity initial payment - where payments grow at constant annual rate
   # p=principal, i=interest rate, n=periods, g=growth rate in payments
@@ -61,14 +62,31 @@ gaip <- function(p, i, n, g) {
   return(gaf*p)
 }
 
+gaip2 <- function(p, i, n, g){
+  # p=principal, i=interest rate, n=periods, g=growth rate in payments
+  # calculating gaip directly   
+  k <- (1 + i)/(1 + g)
+  gaf <- (1 + i) * (1 - k)/(k * (k^(-n) - 1))
+  return(gaf*p)
+}
+
+
 # test it out - compare initial payment if growth to a flat initial payment
-# p <- 10e6
-# i <- .075
-# n <- 30
-# g <- .03
-# (ipay.flat <- pmt(p, i, n))
-# (ipay.gaip <- gaip(p, i, n, g))
-# ipay.gaip/ipay.flat * 100 - 100 # it's a big difference, no wonder pension funds like this approach
+p <- 10e6
+i <- .075
+n <- 30
+g <- .03
+(ipay.flat <- pmt(p, i, n))
+(ipay.gaip <- gaip(p, i, n, g))
+(ipay.gaip2<- gaip2(p, i, n, g))
+(ipay.gaip.final<- gaip2(p, i, n, g) * (1 + g)^(n - 1)) # final payment of gaip
+
+ipay.gaip/ipay.flat * 100 - 100 # it's a big difference, no wonder pension funds like this approach
+ipay.gaip.final/ipay.flat * 100 - 100 # the final gaip payment is 73% greater than flat payment 
+
+plot((ipay.gaip2<- gaip2(p, i, n, g)) * (1 + g)^((1:n) - 1))
+abline(h = ipay.flat <- pmt(p, i, n))
+# gaip will exceed flat at year 12. And the final gaip  
 
 
 showdist <- function(mat, probs, showcols){  
