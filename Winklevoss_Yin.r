@@ -667,7 +667,93 @@ kable(filter(tab6_3,!age %in% seq(31, 63, 2)), digit = 2) # table 6.3
 # Restuls for accrued benefit method is slightly different from the book. 
 
 
+
+# Simple workforce model, based on Don's excel file. 
+wf20 <- gam1971 %>% left_join(select(term, age, qxt = ea20)) %>% left_join(disb) %>%
+  filter(age >= 20) %>%
+  mutate(qxr = ifelse(age == 64, 1, 0 ),
+         qxt = ifelse(is.na(qxt), 0, qxt),
+         qxd = ifelse(is.na(qxd), 0, qxd),
+         year = 1:nrow(wf20)) %>%
+  # multi-decrement approx
+  mutate(pqxm = qxm * (1 - qxt/2) * (1 - qxd/2) * (1 - qxr/2),
+         pqxt = (1 - qxm/2) * qxt * (1 - qxd/2) * (1 - qxr/2),
+         pqxd = (1 - qxm/2) * (1 - qxt/2) * qxd * (1 - qxr/2),
+         pqxr = (1 - qxm/2) * (1 - qxt/2) * (1 - qxd/2) * qxr
+  ) %>%
+  # initialize population
+  mutate(active = ifelse(age == 20, 100, 0),
+         sepv   = 0,
+         sepnv  = 0,
+         retr   = 0,
+         disb   = 0,
+         dead   = 0,
+         total  = active + sepv + sepnv + retr + disb + dead)
+
+for (i in 1:nrow(wf20)){
+  if (i > 1){
+    wf20$active[i] = with(wf20, active[i - 1] - activeOUT[i - 1] + activeIN[i - 1])
+    wf20$sepv[i]   = with(wf20, sepv[i - 1]   - sepvOUT[i - 1]    + sepvIN[i - 1])
+    wf20$sepnv[i]  = with(wf20, sepnv[i - 1]  - sepnvOUT[i - 1]   + sepnvIN[i - 1])
+    wf20$disb[i]   = with(wf20, disb[i - 1]   - disbOUT[i - 1]    + disbIN[i - 1])
+    wf20$retr[i]   = with(wf20, retr[i - 1]   - retrOUT[i - 1]    + retrIN[i - 1])
+    wf20$dead[i]   = with(wf20, dead[i - 1]   + deadIN[i - 1])
+    wf20$total[i]   = with(wf20, active[i] + sepv[i] + sepnv[i] + disb[i] + retr[i] + dead[i])
+  }
+  # where did the actives go at the end of the year?
+  wf20$active2sepv[i]  = 0.25 * wf20$active[i] * wf20$pqxt[i]
+  wf20$active2sepnv[i] = 0.75 * wf20$active[i] * wf20$pqxt[i]
+  wf20$active2disb[i]  = wf20$active[i] * wf20$pqxd[i]
+  wf20$active2retr[i]  = wf20$active[i] * wf20$pqxr[i]
+  wf20$active2dead[i]  = wf20$active[i] * wf20$pqxm[i]
+  wf20$activeOUT[i]    = with(wf20, active2sepv[i] + active2sepnv[i] + active2disb[i] + active2retr[i] + active2dead[i])
   
+  # where did the vested seperated go at the end of the year?
+  wf20$sepv2active[i]= 0
+  wf20$sepv2sepnv[i] = 0 
+  wf20$sepv2disb[i]  = 0
+  wf20$sepv2retr[i]  = wf20$sepv[i] * wf20$pqxr[i]
+  wf20$sepv2dead[i]  = wf20$sepv[i] * wf20$pqxm[i]
+  wf20$sepvOUT[i]    = with(wf20, sepv2active[i] + sepv2sepnv[i] + sepv2disb[i] + sepv2retr[i] + sepv2dead[i])
+  
+  # where did the non-vested seperated go at the end of the year?
+  wf20$sepnv2active[i]= 0
+  wf20$sepnv2sepv[i]  = 0 
+  wf20$sepnv2disb[i]  = 0
+  wf20$sepnv2retr[i]  = 0
+  wf20$sepnv2dead[i]  = wf20$sepnv[i] * wf20$pqxm[i]
+  wf20$sepnvOUT[i]    = with(wf20, sepnv2active[i] + sepnv2sepv[i] + sepnv2disb[i] + sepnv2retr[i] + sepnv2dead[i])
+  
+  # where did the disabled go at the end of the year?
+  wf20$disb2active[i]= 0
+  wf20$disb2sepv[i]  = 0 
+  wf20$disb2sepnv[i]  = 0
+  wf20$disb2retr[i]  = wf20$disb[i] * wf20$pqxr[i]
+  wf20$disb2dead[i]  = wf20$disb[i] * wf20$pqxm[i]
+  wf20$disbOUT[i]    = with(wf20, disb2active[i] + disb2sepv[i] + disb2sepnv[i] + disb2retr[i] + disb2dead[i])
+  
+  # where did the retired  go at the end of the year?
+  wf20$retr2active[i]= 0
+  wf20$retr2sepv[i]  = 0 
+  wf20$retr2sepnv[i] = 0
+  wf20$retr2disb[i]  = 0
+  wf20$retr2dead[i]  = wf20$retr[i] * wf20$pqxm[i]
+  wf20$retrOUT[i]    = with(wf20, retr2active[i] + retr2sepv[i] + retr2sepnv[i] + retr2disb[i] + retr2dead[i])
+  
+  # Total inflow to each status
+  wf20$activeIN[i] = with(wf20, sepv2active[i] + sepnv2active[i] + disb2active[i] + retr2active[i])
+  wf20$sepvIN[i]   = with(wf20, active2sepv[i] + sepnv2sepv[i]   + disb2sepv[i]   + retr2sepv[i])
+  wf20$sepnvIN[i]  = with(wf20, active2sepnv[i]+ sepv2sepnv[i]   + disb2sepnv[i]  + retr2sepnv[i])
+  wf20$disbIN[i]   = with(wf20, active2disb[i] + sepv2disb[i]    + sepnv2disb[i]  + retr2disb[i])
+  wf20$retrIN[i]   = with(wf20, active2retr[i] + sepv2retr[i]    + sepnv2retr[i]  + disb2retr[i])
+  wf20$deadIN[i]   = with(wf20, active2dead[i] + sepv2dead[i]    + sepnv2dead[i]  + disb2dead[i] + retr2dead[i])
+  
+  wf20$totalIN[i]  = with(wf20, activeIN[i] + sepvIN[i] + sepnvIN[i] + disbIN[i] + retrIN[i] + deadIN[i]) 
+  wf20$totalOUT[i] = with(wf20, activeOUT[i] + sepvOUT[i] + sepnvOUT[i] + disbOUT[i] + retrOUT[i]) 
+  
+}
+
+options(digits = 2, scipen = 99)
 
 
 
