@@ -12,24 +12,31 @@
 # probably 1,000 cells; after that I think problems will get pretty large and we may need alternative solutions
 
 # this uses memory() which is in btools
-# memory<-function(maxnobjs=5){
-#   # function for getting the sizes of objects in memory
-#   objs<-ls(envir=globalenv())
-#   nobjs<-min(length(objs),maxnobjs)
-#   tmp<-as.data.frame(sapply(objs, function(x) object.size(get(x)))/1048600)
-#   tmp<-data.frame(name=row.names(tmp), sizeMB=tmp[,1])
-#   tmp<-tmp[order(-tmp$sizeMB),]
-#   tmp$sizeMB<-formatC(tmp$sizeMB,format="f",digits=2,big.mark=",",preserve.width="common")
-#   print(paste("Memory available: ",memory.size(NA),sep=""))
-#   print(paste("Memory in use before: ",memory.size(),sep=""))
-#   print("Memory for selected objects: ")
-#   print(head(tmp,nobjs))
-#   print(gc())
-#   print(paste("Memory in use after: ",memory.size(),sep=""))
-# }
+memory<-function(maxnobjs=5){
+  # function for getting the sizes of objects in memory
+  objs<-ls(envir=globalenv())
+  nobjs<-min(length(objs),maxnobjs)
+  tmp<-as.data.frame(sapply(objs, function(x) object.size(get(x)))/1048600)
+  tmp<-data.frame(name=row.names(tmp), sizeMB=tmp[,1])
+  tmp<-tmp[order(-tmp$sizeMB),]
+  tmp$sizeMB<-formatC(tmp$sizeMB,format="f",digits=2,big.mark=",",preserve.width="common")
+  print(paste("Memory available: ",memory.size(NA),sep=""))
+  print(paste("Memory in use before: ",memory.size(),sep=""))
+  print("Memory for selected objects: ")
+  print(head(tmp,nobjs))
+  print(gc())
+  print(paste("Memory in use after: ",memory.size(),sep=""))
+}
 
+library(zoo) # rollapply
+library(knitr)
+library(gdata) # read.xls
+library(dplyr)
+library(ggplot2)
+library(tidyr) # gather, spread
+library(xlsx)
 
-wvd <- "E:\\Dropbox (Personal)\\Pensions\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+wvd <- "c:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 load(paste0(wvd, "winklevossdata.rdata"))
 
 
