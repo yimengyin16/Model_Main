@@ -1,3 +1,8 @@
+# Workflow by 3D array
+# Yimeng Yin
+# 12/29/2014
+
+
 # this uses memory() which is in btools
 memory<-function(maxnobjs=5){
   # function for getting the sizes of objects in memory
@@ -15,6 +20,7 @@ memory<-function(maxnobjs=5){
   print(paste("Memory in use after: ",memory.size(),sep=""))
 }
 
+
 library(zoo) # rollapply
 library(knitr)
 library(gdata) # read.xls
@@ -25,9 +31,8 @@ library(tidyr) # gather, spread
 library(corrplot)
 # library(xlsx)
 
-wvd <- "c:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 load(paste0(wvd, "winklevossdata.rdata"))
-
 
 
 ## setting range of age/entry age, and number of years to be simulated.
@@ -37,48 +42,59 @@ nyears    <- 100
  # Age and entry age make a total of 91 * 9 = 819 cells. 
 
 
-## A 3D array is created for each of the 6 status: 
+## A 3D array is created for each of the 6 status: ####
 #  (1)Active
 #  (2)Terminated, vested
 #  (3)Terminated, non-vested
 #  (4)Disabled
 #  (5)Retired
 #  (6)Dead
-
-# The transition process between status are illustrated in 
-# https://www.lucidchart.com/documents/edit/8b99d535-261b-4982-9723-5cbae5f5e86e
+ 
+ # Retired can be further divided into 3 types by source this feature will be add in future versions
+  #  (5)-1 Retired from active 
+  #  (5)-2 Retired from teriminated, vested
+  #  (5)-3 Retired from disabled
 
 ## In each 3D array, dimension 1(row) represents entry age, dimension 2(column) represents attained age,
-#  dimension 3(depth) represents number of year. 
+   # dimension 3(depth) represents number of year. 
 wf_dim <- c(length(range_ea), length(range_age), nyears)
 wf_dimnames <- list(range_ea, range_age, 1:nyears)
 
 wf_active  <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_term_v  <- array(0, wf_dim, dimnames = wf_dimnames)
-wf_term_vn <- array(0, wf_dim, dimnames = wf_dimnames)
+wf_term_nv <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_disb    <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_retired <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_dead    <- array(0, wf_dim, dimnames = wf_dimnames)
 
 # In each iteration we work with a slice of the array wf_XXX[, , i], which is a matrix
 class(wf_active[, , 1])
-
+dim(wf_active[, , 1]) # 9 entry ages and 91 ages, 819 cells
 
 ## Defining transition matrices ####
 
+# The transition process between status are illustrated in 
+  # https://www.lucidchart.com/documents/edit/8b99d535-261b-4982-9723-5cbae5f5e86e
+
 # Importing decrement rates
+
+# Notes
+# 1. We need to think carefully how to define the retirment process. Here I will define it indirectly, that is, 
+# all those who do not become ineligible to retirement(term-nonvested)/impossible to retire(dead) will retire
+# when they turn 65. Doing this will ensure all active workers who become disabled or terminated-vested during 
+# age 64 will enter the status Retired when they turn 65, rather than entering the pool disabled or terminated-vested
+# when they turn 65. Without doing so (see the the excel file Winkelvoss(13).xlsx shee flow(2)) will cause 
+# the status terminated-vested and disabled still have positive number of members in them after age 65, while 
+# all of them are supposed to retire at age 65. 
+
+# 2. When the only purpose is simulating workforce flow, we do not ditinguish between active-turned retirement,
+# disabled-turned retirement and vested-turned retirement. But when we want to caluculate retirement 
+# benefits, I need to distinguish between them because they will have different benefits. (active-turned and 
+# disabled/vested-turned retiree receive different amount of annuity even thay have the same age and entry age.) 
+
 
 # get decrements - for now make simplifying assumption that single decrements are really multiples ####
 qxrdf <- data.frame(age=20:110) %>% mutate(qxr.p=ifelse(age == 64, 1, 0)) # use .p to signify prime, for single decrement
-
-# We need to think carefully how to define the retirment process. Rather than giving a unit prob to 
-  # retirment at age 64, here I will define it indirectly, that is, all those who do not become ineligible
-  # to retirement(term-nonvested)/impossible to retire(dead) will retire when they turn 65. 
-  
-# When the only purpose is simulating workforce flow, we do not ditinguish between active-turned retirement,
-  # disabled-turned retirement and vested-turned retirement. But when we want to caluculate retirement 
-  # benefits, I need to distinguish between them because they will have different benefits. (active-turned and 
-  # disabled/vested-turned retiree receive different amount of annuity even thay have the same age and entry age.) 
 
 # make term probs dependent on entry age
 term2 <- data.frame(age=20:110) %>% left_join(term) %>% 
@@ -123,17 +139,19 @@ dtab %<>%
   mutate(qxm.r   = qxm.p)
 
 
-
+# Define a function that produce transition matrices from decrement table. 
 make_dmat <- function(qx, df = dtab) {
-  df %<>% select_("age", "ea", qx) %>% ungroup %>% spread_("ea", qx) %>% select(-age) %>% t
-  dimnames(df) <- wf_dimnames[c(1,2)]
+  # inputs:
+   # qx: character, name of the transition probability to be created.
+   # df: data frame, decrement table.
+  # returns:
+   # a transtion matrix
+  df %<>% select_("age", "ea", qx) %>% ungroup %>% spread_("ea", qx) %>% select(-age) %>% t # need to keep "age" when use spread
+  dimnames(df) <- wf_dimnames[c(1,2)] 
   return(df)
 }
-p_active2term_v <- make_dmat("qxtv.a")
+p_active2term_v <- make_dmat("qxtv.a")  # test the function
 
-
-# In each iteration, a flow matrix for each possible transition(eg. active to retired) is created 
-# (if we wanted to track the flow in each period, we create flow arrays instead of flow matrices)
 
 # The transition matrices are defined below. The probabilities (eg. qxr for retirement) of flowing
 # from the current status to the target status for a cell(age and ea combo) are given in the corresponding
@@ -160,21 +178,66 @@ p_disb2dead      <- make_dmat("qxm.d")
 # Where do the retired go
 p_retired2dead   <- make_dmat("qxm.r")
 
-
-# New entrants in each cell. 
-wf_new <- matrix(0, nrow = range_ea, ncol = range_age)
-
+# In each iteration, a flow matrix for each possible transition(eg. active to retired) is created 
+# (if we wanted to track the flow in each period, we create flow arrays instead of flow matrices)
 
 
-# s matrix
-
-M <- diag(length(range_age) + 1)[-1, -(length(range_age) + 1)]
-
-=======
-A <- diag(length(range_age) + 1)[-1, -(length(range_age) + 1)]
+# Define the shifting matrix. When left mutiplied by a workforce matrix, it shifts each element one cell rightward(i.e. age + 1)
+  # A square matrix with the dimension length(range_age)
+  # created by a diagal matrix without 1st row and last coloumn
+A <- diag(length(range_age) + 1)[-1, -(length(range_age) + 1)] 
 corrplot(A, is.corr = F)
 
 
+# Initialize workforce 
+ # case 1: Initial workforece only have workers at eath entry age
+wf_active[, as.character(range_ea), 1] <- diag(seq(1000, by  = -100, length = 9))
+wf_active[, , 1] # check
+
+
+# define function for determining the number of new entrants 
+calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
+ # This function deterimine the number of new entrants based on workforce before and after decrement and workforce 
+   # growth rate. 
+ # inputs:
+    # wf0: a matrix of workforce before decrement. Typically a slice from wf_active
+    # wf1: a matrix of workforce after decrement.  
+    # delta: 
+ # returns:
+    # a matrix with the same dimension of wf0 and wf1, with the number of new entrants in the corresponding cells,
+      # and 0 in all other cells. 
+  
+  # working age
+  working_age <- 20:64
+  # age distribution of new entrants
+  dist <- rep(1/nrow(wf0), nrow(wf0)) # equally distributed for now. 
+  
+  # compute the size of workforce before and after decrement
+  size0 <- sum(wf0[,as.character(working_age)])
+  size1 <- sum(wf1[,as.character(working_age)])
+  
+  # computing new entrants
+  size_target <- size0*(1 + delta)   # size of the workforce next year
+  size_hire   <- size_target - size1 # number of workers need to hire
+  ne <- size_hire*dist               #  vector, number of new entrants by age
+
+  # Create the new entrant matrix 
+  NE <- wf0; NE[ ,] <- 0
+  
+  if (no.entrants){ 
+    return(NE) 
+  } else {
+    NE[, rownames(NE)] <- diag(ne) # place ne on the matrix of new entrants
+    return(NE)
+  }
+
+}
+
+# test the function 
+wf0 <- wf_active[, , 1]
+wf1 <- wf_active[, , 1]*(1 - p_active2term_v)
+sum(wf0) - sum(wf1)
+sum(calc_entrants(wf0, wf1, 0))
 
 
 # Now the next slice of the array (array[, , i + 1]) is defined
@@ -182,7 +245,68 @@ corrplot(A, is.corr = F)
 # wf_active[, , i + 1] <- (wf_active[, , i] + inflow_active[, , i] - outflow_active[, , i]) %*% A + wf_new[, , i + 1]
 # i runs from 2 to nyears. 
 
+a <- proc.time()
+for (i in 1:(nyears - 1)){
 
+# compute the inflow to and outflow
+active2term_v  <- wf_active[, , i]*p_active2term_v
+active2term_nv <- wf_active[, , i]*p_active2term_nv
+active2disb    <- wf_active[, , i]*p_active2disb
+active2dead    <- wf_active[, , i]*p_active2dead
+active2retried <- wf_active[, , i]*p_active2retried
+
+# Where do the terminated_vested go
+term_v2dead    <- wf_term_v[, , i]*p_term_v2dead
+term_v2retried <- wf_term_v[, , i]*p_term_v2retried
+
+# Where do the terminated_non-vested go
+term_nv2dead   <- wf_term_nv[, , i]*p_term_nv2dead
+
+# Where do the disabled go
+disb2retried   <- wf_disb[, , i]*p_disb2retried
+disb2dead      <- wf_disb[, , i]*p_disb2dead
+
+# Where do the retired go
+retired2dead   <- wf_retired[, , i]*p_retired2dead
+
+
+# Total inflow and outflow for each status
+out_active <- active2term_v + active2term_nv + active2disb + active2retried + active2dead 
+new_entrants <- calc_entrants(wf_active[, , 1], wf_active[, , 1] - out_active, 0) # new entrants
+
+out_term_v <- term_v2dead + term_v2retried
+in_term_v  <- active2term_v
+
+out_term_nv <-term_nv2dead
+in_term_nv  <-active2term_nv 
+
+out_disb <- disb2dead + disb2retried
+in_disb  <- active2disb
+
+out_retired <- retired2dead
+in_retired  <- active2retried + term_v2retried + disb2retried
+
+in_dead <- active2dead + term_v2dead + term_nv2dead + disb2dead + retired2dead
+
+# Calculate workforce for next year. 
+wf_active[, , i + 1]  <- (wf_active[, , i] - out_active) %*% A + new_entrants
+wf_term_v[, , i + 1]  <- (wf_term_v[, , i] + in_term_v - out_term_v) %*% A
+wf_term_nv[, , i + 1] <- (wf_term_nv[, , i] + in_term_nv - out_term_nv) %*% A
+wf_disb[, , i + 1]    <- (wf_disb[, , i] + in_disb - out_disb) %*% A
+wf_retired[, , i + 1] <- (wf_retired[, , i] + in_retired - out_retired) %*% A
+wf_dead[, , i + 1]    <- (wf_dead[, , i] + in_dead) %*% A
+}
+b <- proc.time()
+b-a # seems pretty fast
+
+
+
+# corrplot(wf_active[, , 100], is.corr = F)
+# corrplot(wf_retired[, , 100], is.corr = F)
+# corrplot(wf_dead[, , 100], is.corr = F)
+# corrplot(wf_term_v[, , 100], is.corr = F)
+# corrplot(wf_term_nv[, , 100], is.corr = F)
+# corrplot(wf_disb[, , 100], is.corr = F)
 
 
 

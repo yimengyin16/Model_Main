@@ -36,7 +36,7 @@ library(ggplot2)
 library(tidyr) # gather, spread
 library(xlsx)
 
-wvd <- "c:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 load(paste0(wvd, "winklevossdata.rdata"))
 
 
