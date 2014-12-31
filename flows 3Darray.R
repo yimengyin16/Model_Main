@@ -22,6 +22,7 @@ library(dplyr)
 library(ggplot2)
 library(tidyr) # gather, spread
 library(xlsx)
+library(corrplot)
 
 wvd <- "c:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 load(paste0(wvd, "winklevossdata.rdata"))
@@ -91,7 +92,7 @@ wf_new <- matrix(0, nrow = range_ea, ncol = range_age)
 # Moving matrix
 
 M <- diag(length(range_age) + 1)[-1, -(length(range_age) + 1)]
-
+corrplot(M, is.corr = F)
 
 
 
