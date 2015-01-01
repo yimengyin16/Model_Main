@@ -71,6 +71,14 @@ wf_dead    <- array(0, wf_dim, dimnames = wf_dimnames)
 class(wf_active[, , 1])
 dim(wf_active[, , 1]) # 9 entry ages and 91 ages, 819 cells
 
+# idea: we can even combine the 6 arrays above into a 4D array, where the 4th dimension represents the status. 
+  # While this may make the the code slightly less straitforward, it can make the code neater and the summarization 
+  # easier.
+  # eg. extract the active: wf[, , , "active"]
+  # eg. get the total population over time: apply(wf, 3, sum)
+
+
+
 ## Defining transition matrices ####
 
 # The transition process between status are illustrated in 
@@ -245,6 +253,7 @@ sum(calc_entrants(wf0, wf1, 0))
 # wf_active[, , i + 1] <- (wf_active[, , i] + inflow_active[, , i] - outflow_active[, , i]) %*% A + wf_new[, , i + 1]
 # i runs from 2 to nyears. 
 
+
 a <- proc.time()
 for (i in 1:(nyears - 1)){
 
@@ -271,8 +280,8 @@ retired2dead   <- wf_retired[, , i]*p_retired2dead
 
 
 # Total inflow and outflow for each status
-out_active <- active2term_v + active2term_nv + active2disb + active2retried + active2dead 
-new_entrants <- calc_entrants(wf_active[, , 1], wf_active[, , 1] - out_active, 0) # new entrants
+out_active   <- active2term_v + active2term_nv + active2disb + active2retried + active2dead 
+new_entrants <- calc_entrants(wf_active[, , 1], wf_active[, , 1] - out_active, 0.01, no.entrants = FALSE) # new entrants
 
 out_term_v <- term_v2dead + term_v2retried
 in_term_v  <- active2term_v
@@ -297,17 +306,52 @@ wf_retired[, , i + 1] <- (wf_retired[, , i] + in_retired - out_retired) %*% A
 wf_dead[, , i + 1]    <- (wf_dead[, , i] + in_dead) %*% A
 }
 b <- proc.time()
-b-a # seems pretty fast
+Time <- b-a 
+Time # seems pretty fast
 
 
 
-# corrplot(wf_active[, , 100], is.corr = F)
-# corrplot(wf_retired[, , 100], is.corr = F)
-# corrplot(wf_dead[, , 100], is.corr = F)
-# corrplot(wf_term_v[, , 100], is.corr = F)
-# corrplot(wf_term_nv[, , 100], is.corr = F)
-# corrplot(wf_disb[, , 100], is.corr = F)
+# Test the loop with no new entrants, set no.entrants = TRUE in cal_entrants()
+  apply(wf_active, 3, sum) + 
+  apply(wf_retired, 3, sum) + 
+  apply(wf_term_v, 3, sum) + 
+  apply(wf_term_nv, 3, sum) + 
+  apply(wf_disb, 3, sum) + 
+  apply(wf_dead, 3, sum)
 
+
+# summarizing the results
+
+# popluation by status
+apply(wf_active, 3, sum)  %>%  plot(type = "b") 
+apply(wf_retired, 3, sum) %>%  plot(type = "b")   
+apply(wf_term_v, 3, sum)  %>%  plot(type = "b")  
+apply(wf_term_nv, 3, sum) %>%  plot(type = "b")  
+apply(wf_disb, 3, sum)    %>%  plot(type = "b")  
+apply(wf_dead, 3, sum)    %>%  plot(type = "b")  
+
+
+# Total population
+ (apply(wf_active, 3, sum) + 
+  apply(wf_retired, 3, sum) + 
+  apply(wf_term_v, 3, sum) + 
+  apply(wf_term_nv, 3, sum) + 
+  apply(wf_disb, 3, sum)) %>% plot(type = "b")
+
+
+apply(wf_active, c(1,3), sum)
+
+
+
+
+
+j <- 50
+corrplot(wf_active[, , j], is.corr = F)
+corrplot(wf_retired[, , j], is.corr = F)
+corrplot(wf_dead[, , j], is.corr = F)
+corrplot(wf_term_v[, , j], is.corr = F)
+corrplot(wf_term_nv[, , j], is.corr = F)
+corrplot(wf_disb[, , j], is.corr = F)
 
 
 
