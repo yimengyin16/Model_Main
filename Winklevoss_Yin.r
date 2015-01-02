@@ -426,7 +426,9 @@ tab3_8 <- gam1971 %>% left_join(term) %>% left_join(disb) %>% left_join(merit) %
   group_by(entry) %>%
   mutate(ax65s = get_tla(pxT, int, scaletot)) %>%
   filter(entry %in% seq(20, 60, 10)) %>%
-  ungroup %>%
+  ungroup 
+
+%>%
   select(age, entry, ax65s) %>%
   spread(entry, ax65s)
 kable(tab3_8, digits = 2)
@@ -530,7 +532,7 @@ desc <- gam1971 %>% left_join(select(term, age, qxt = ea30)) %>% left_join(disb)
                Bx = benfactor * yos * fas,                        # accrued benefits
                ax = ifelse(age < 65, NA, get_tla(pxm, i)), # Since retiree die at 110 for sure, the life annuity is equivalent to temporary annuity up to age 110. 
                ayx = c(get_tla2(pxT[age<=65], i), rep(0, 45)),             # need to make up the length of the vector to 81
-               ayxs= c(get_tla2(pxT[age<=65], i, sx[age<65]), rep(0, 45))  # need to make up the length of the vector to 81
+               ayxs= c(get_tla2(pxT[age<=65], i, sx[age<=65]), rep(0, 45))  # need to make up the length of the vector to 81
                )                              
 
 # Following code is dropped since the scalar is just ax[age == 65].
