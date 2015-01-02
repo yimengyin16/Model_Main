@@ -58,4 +58,4 @@ get_tla2 = function(px, i, sx = rep(1, length(px))){
   } 
   return(tla) 
 }
-get_tla2(rep(0.98, 65), 0.08) # test the function
+get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65)) %>% length # test the function
