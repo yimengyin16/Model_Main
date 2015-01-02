@@ -1,8 +1,8 @@
-# Workflow by 3D array
+# Workforce flow by 3D arrays
 # Yimeng Yin
 # 12/29/2014
 
-
+## preamble ####
 # this uses memory() which is in btools
 memory<-function(maxnobjs=5){
   # function for getting the sizes of objects in memory
@@ -20,7 +20,6 @@ memory<-function(maxnobjs=5){
   print(paste("Memory in use after: ",memory.size(),sep=""))
 }
 
-
 library(zoo) # rollapply
 library(knitr)
 library(gdata) # read.xls
@@ -29,10 +28,18 @@ library(ggplot2)
 library(magrittr)
 library(tidyr) # gather, spread
 library(corrplot)
-# library(xlsx)
 
 wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 load(paste0(wvd, "winklevossdata.rdata"))
+
+
+## Inputs and Initialization ####
+ # Currently only initial workforce is defined in this section. 
+ # Need a complete list of initial inputs:
+   # Initial workforce
+   # Decrement table
+   # vesting policy
+   # growth of workforce(controlled by growth rate or pre-defined path of growth.)
 
 
 ## setting range of age/entry age, and number of years to be simulated.
@@ -41,8 +48,7 @@ range_age <- 20:110
 nyears    <- 100 
  # Age and entry age make a total of 91 * 9 = 819 cells. 
 
-
-## A 3D array is created for each of the 6 status: ####
+## A 3D array is created for each of the 6 status:
 #  (1)Active
 #  (2)Terminated, vested
 #  (3)Terminated, non-vested
@@ -77,9 +83,13 @@ dim(wf_active[, , 1]) # 9 entry ages and 91 ages, 819 cells
   # eg. extract the active: wf[, , , "active"]
   # eg. get the total population over time: apply(wf, 3, sum)
 
+# Initialize workforce 
+# case 1: Initial workforece only have workers at eath entry age
+wf_active[, as.character(range_ea), 1] <- diag(seq(1000, by  = -100, length = 9))
+wf_active[, , 1] # check
 
 
-## Defining transition matrices ####
+## Transition matrices ####
 
 # The transition process between status are illustrated in 
   # https://www.lucidchart.com/documents/edit/8b99d535-261b-4982-9723-5cbae5f5e86e
@@ -100,8 +110,11 @@ dim(wf_active[, , 1]) # 9 entry ages and 91 ages, 819 cells
 # benefits, I need to distinguish between them because they will have different benefits. (active-turned and 
 # disabled/vested-turned retiree receive different amount of annuity even thay have the same age and entry age.) 
 
+# 3. Feature to be added: More realistic rule for determining whether a terminated worker will become vested
+# or non-vested. eg. 5 yos to become vested. 
 
-# get decrements - for now make simplifying assumption that single decrements are really multiples ####
+
+# get decrements - for now make simplifying assumption that single decrements are really multiples
 qxrdf <- data.frame(age=20:110) %>% mutate(qxr.p=ifelse(age == 64, 1, 0)) # use .p to signify prime, for single decrement
 
 # make term probs dependent on entry age
@@ -196,13 +209,6 @@ p_retired2dead   <- make_dmat("qxm.r")
 A <- diag(length(range_age) + 1)[-1, -(length(range_age) + 1)] 
 corrplot(A, is.corr = F)
 
-
-# Initialize workforce 
- # case 1: Initial workforece only have workers at eath entry age
-wf_active[, as.character(range_ea), 1] <- diag(seq(1000, by  = -100, length = 9))
-wf_active[, , 1] # check
-
-
 # define function for determining the number of new entrants 
 calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
  # This function deterimine the number of new entrants based on workforce before and after decrement and workforce 
@@ -248,11 +254,11 @@ sum(wf0) - sum(wf1)
 sum(calc_entrants(wf0, wf1, 0))
 
 
-# Now the next slice of the array (array[, , i + 1]) is defined
+# Workforce simulation ####
 
+# Now the next slice of the array (array[, , i + 1]) is defined
 # wf_active[, , i + 1] <- (wf_active[, , i] + inflow_active[, , i] - outflow_active[, , i]) %*% A + wf_new[, , i + 1]
 # i runs from 2 to nyears. 
-
 
 a <- proc.time()
 for (i in 1:(nyears - 1)){
@@ -310,7 +316,7 @@ Time <- b-a
 Time # seems pretty fast
 
 
-
+## Look at the results ####
 # Test the loop with no new entrants, set no.entrants = TRUE in cal_entrants()
   apply(wf_active, 3, sum) + 
   apply(wf_retired, 3, sum) + 
@@ -338,20 +344,24 @@ apply(wf_dead, 3, sum)    %>%  plot(type = "b")
   apply(wf_term_nv, 3, sum) + 
   apply(wf_disb, 3, sum)) %>% plot(type = "b")
 
-
+# Look at workforce by entry age
 apply(wf_active, c(1,3), sum)
 
+# Look at workforce by age
+options(digits = 2, scipen = 99)
+apply(wf_active, c(2,3), sum)
+  # Potential problem, values for age over 65 are not exact 0s, although may be computationally equivalent to 0s.
 
 
 
-
-j <- 50
-corrplot(wf_active[, , j], is.corr = F)
-corrplot(wf_retired[, , j], is.corr = F)
-corrplot(wf_dead[, , j], is.corr = F)
-corrplot(wf_term_v[, , j], is.corr = F)
-corrplot(wf_term_nv[, , j], is.corr = F)
-corrplot(wf_disb[, , j], is.corr = F)
+# 
+# j <- 50
+# corrplot(wf_active[, , j], is.corr = F)
+# corrplot(wf_retired[, , j], is.corr = F)
+# corrplot(wf_dead[, , j], is.corr = F)
+# corrplot(wf_term_v[, , j], is.corr = F)
+# corrplot(wf_term_nv[, , j], is.corr = F)
+# corrplot(wf_disb[, , j], is.corr = F)
 
 
 
