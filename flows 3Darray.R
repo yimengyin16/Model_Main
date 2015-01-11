@@ -100,8 +100,8 @@ wf_active[, , 1] # check
 # 1. We need to think carefully how to define the retirment process. Here I will define it indirectly, that is, 
 # all those who do not become ineligible to retirement(term-nonvested)/impossible to retire(dead) will retire
 # when they turn 65. Doing this will ensure all active workers who become disabled or terminated-vested during 
-# age 64 will enter the status Retired when they turn 65, rather than entering the pool disabled or terminated-vested
-# when they turn 65. Without doing so (see the the excel file Winkelvoss(13).xlsx shee flow(2)) will cause 
+# age 64 will enter the status Retired when they turn 65, rather than entering the pool of disabled or terminated-vested
+# when they turn 65. Without doing so (see the the excel file Winkelvoss(13).xlsx sheet flow(2)) will cause 
 # the status terminated-vested and disabled still have positive number of members in them after age 65, while 
 # all of them are supposed to retire at age 65. 
 
@@ -114,7 +114,7 @@ wf_active[, , 1] # check
 # or non-vested. eg. 5 yos to become vested. 
 
 
-# get decrements - for now make simplifying assumption that single decrements are really multiples
+# get decrements
 qxrdf <- data.frame(age=20:110) %>% mutate(qxr.p=ifelse(age == 64, 1, 0)) # use .p to signify prime, for single decrement
 
 # make term probs dependent on entry age
@@ -183,17 +183,17 @@ p_active2term_v  <- make_dmat("qxtv.a")
 p_active2term_nv <- make_dmat("qxtnv.a")
 p_active2disb    <- make_dmat("qxd.a")
 p_active2dead    <- make_dmat("qxm.a")
-p_active2retried <- make_dmat("qxr.a")
+p_active2retired <- make_dmat("qxr.a")
 
 # Where do the terminated_vested go
 p_term_v2dead    <- make_dmat("qxm.v")
-p_term_v2retried <- make_dmat("qxr.v")
+p_term_v2retired <- make_dmat("qxr.v")
 
 # Where do the terminated_non-vested go
 p_term_nv2dead   <- make_dmat("qxm.n")
 
 # Where do the disabled go
-p_disb2retried   <- make_dmat("qxr.d")
+p_disb2retired   <- make_dmat("qxr.d")
 p_disb2dead      <- make_dmat("qxm.d")
 
 # Where do the retired go
@@ -216,7 +216,7 @@ calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
  # inputs:
     # wf0: a matrix of workforce before decrement. Typically a slice from wf_active
     # wf1: a matrix of workforce after decrement.  
-    # delta: 
+    # delta: growth rate of workforce
  # returns:
     # a matrix with the same dimension of wf0 and wf1, with the number of new entrants in the corresponding cells,
       # and 0 in all other cells. 
@@ -254,12 +254,13 @@ sum(wf0) - sum(wf1)
 sum(calc_entrants(wf0, wf1, 0))
 
 
-# Workforce simulation ####
 
 # Now the next slice of the array (array[, , i + 1]) is defined
 # wf_active[, , i + 1] <- (wf_active[, , i] + inflow_active[, , i] - outflow_active[, , i]) %*% A + wf_new[, , i + 1]
 # i runs from 2 to nyears. 
 
+
+wf_growth <- 0.01
 a <- proc.time()
 for (i in 1:(nyears - 1)){
 
@@ -268,17 +269,17 @@ active2term_v  <- wf_active[, , i]*p_active2term_v
 active2term_nv <- wf_active[, , i]*p_active2term_nv
 active2disb    <- wf_active[, , i]*p_active2disb
 active2dead    <- wf_active[, , i]*p_active2dead
-active2retried <- wf_active[, , i]*p_active2retried
+active2retired <- wf_active[, , i]*p_active2retired
 
 # Where do the terminated_vested go
 term_v2dead    <- wf_term_v[, , i]*p_term_v2dead
-term_v2retried <- wf_term_v[, , i]*p_term_v2retried
+term_v2retired <- wf_term_v[, , i]*p_term_v2retired
 
 # Where do the terminated_non-vested go
 term_nv2dead   <- wf_term_nv[, , i]*p_term_nv2dead
 
 # Where do the disabled go
-disb2retried   <- wf_disb[, , i]*p_disb2retried
+disb2retired   <- wf_disb[, , i]*p_disb2retired
 disb2dead      <- wf_disb[, , i]*p_disb2dead
 
 # Where do the retired go
@@ -286,20 +287,20 @@ retired2dead   <- wf_retired[, , i]*p_retired2dead
 
 
 # Total inflow and outflow for each status
-out_active   <- active2term_v + active2term_nv + active2disb + active2retried + active2dead 
-new_entrants <- calc_entrants(wf_active[, , 1], wf_active[, , 1] - out_active, 0.01, no.entrants = FALSE) # new entrants
+out_active   <- active2term_v + active2term_nv + active2disb + active2retired + active2dead 
+new_entrants <- calc_entrants(wf_active[, , 1], wf_active[, , 1] - out_active, wf_growth, no.entrants = FALSE) # new entrants
 
-out_term_v <- term_v2dead + term_v2retried
+out_term_v <- term_v2dead + term_v2retired
 in_term_v  <- active2term_v
 
 out_term_nv <-term_nv2dead
 in_term_nv  <-active2term_nv 
 
-out_disb <- disb2dead + disb2retried
+out_disb <- disb2dead + disb2retired
 in_disb  <- active2disb
 
 out_retired <- retired2dead
-in_retired  <- active2retried + term_v2retried + disb2retried
+in_retired  <- active2retired + term_v2retired + disb2retired
 
 in_dead <- active2dead + term_v2dead + term_nv2dead + disb2dead + retired2dead
 
@@ -365,6 +366,7 @@ apply(wf_active, c(2,3), sum)
 
 
 
+large.array <- array(c(2124.1000001, 234,2), dim = c(45, 81, 45, 100))
 
 
 

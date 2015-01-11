@@ -9,7 +9,7 @@
  # We start out with the case where 
     # (1) the starting salary at each entry age increases at the rate of productivity growth plus inflation.
     # (2) The starting salary at each entry age are obtained by scaling up the the salary at entry age 20,
-    #     hence the age-30 entrants at age 30 have the same salary as the age-20 entrants at age 30. 
+    #     hence at any given period, the age-30 entrants at age 30 have the same salary as the age-20 entrants at age 30. 
  # The first step is to produce tables for a given year's starting salary. 
 
 
@@ -40,7 +40,9 @@ library(magrittr)
 library(tidyr) # gather, spread
 library(corrplot)
 
-wvd <- "C:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+source("Functions.R")
+
+wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 load(paste0(wvd, "winklevossdata.rdata"))
 
 
@@ -115,7 +117,13 @@ salary <- expand.grid(start.year = 1:2, ea = c(20, 25), age = 20:30) %>%
 
 # get down to the real business!
 
-growth <- data.frame(start.year = 1:144) %>%
+term2 <- data.frame(age = 20:110) %>% left_join(select(term, age, everything())) %>% gather(ea, qxt, -age) %>%
+  mutate(ea = as.numeric(gsub("[^0-9]", "", ea)))
+# filter(gam1971, age >= 20) %>% left_join(term2) %>% select(age, ea, everything()) %>% arrange(ea, age)
+
+
+growth <- data.fra
+me(start.year = 1:144) %>%
   mutate(growth = (1 + infl + prod)^(start.year - 1 ))
 
 salary <- expand.grid(start.year = 1:144, ea = seq(20, 60, 5), age = 20:110) %>% 
@@ -152,7 +160,20 @@ desc <- salary %>% left_join(filter(gam1971, age>=20)) %>% left_join(term2) %>% 
   ) 
 
 
+# Extract the variables in a single time period
 
+Salary_slice <- desc %>% ungroup %>% filter(year == 120) %>% select(ea, age, sx) %>% arrange(ea, age) %>%
+  spread(age, sx)
+rownames(Salary_slice) = Salary_slice$ea
+Salary_slice %<>% select(-ea) %>% as.matrix
+
+# Note that workers at the same age have the same salary, this is because we assume the starting salary at each 
+# entry age are obtained by scaling up the the salary at entry age 20. It will not be the case if we adopt other
+# way of determining starting salary at various entry age
+
+
+# calculating total payroll at a particular time period.
+# (wf_active[, , 120] * Salary_slice) %>% sum(na.rm = TRUE)
 
 
 
