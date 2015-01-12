@@ -59,3 +59,22 @@ get_tla2 = function(px, i, sx = rep(1, length(px))){
   return(tla) 
 }
 get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65)) %>% length # test the function
+
+
+
+pmt <- function(p, i, n){
+  # amortization function, with payment at the end of period. 
+  # p = principle, i = interest rate, n = periods. 
+  pmt <- p * (1 + i)^n * i/((1 + i)^n - 1)
+  return(pmt)  
+}
+
+gaip2 <- function(p, i, n, g){
+  # p=principal, i=interest rate, n=periods, g=growth rate in payments
+  # calculating gaip directly   
+  k <- (1 + i)/(1 + g)
+  gaf <- (1 + i) * (1 - k)/(k * (k^(-n) - 1))
+  return(gaf*p)
+}
+
+

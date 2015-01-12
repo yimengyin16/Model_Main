@@ -22,6 +22,8 @@ library(ggplot2)
 library(tidyr) # gather, spread
 library(xlsx)
 
+source("Functions.R")
+
 # functions created by Don
 cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric, eliminating "," "$" "%". chars will become NA
 ht <- function (df, nrecs=6) {print(head(df, nrecs)); print(tail(df, nrecs))} # head tail
@@ -756,6 +758,96 @@ for (i in 1:nrow(wf20)){
 }
 
 options(digits = 2, scipen = 99)
+
+
+
+
+## Chpater7 Supplemental Costs ####
+
+# Learning coding supplemental costs through 3 steps:
+  # Step 1: Given a increase of the supplemental cost at a single period, calculate the path of amortization.
+  # Step 2: Given assumed deterministic paths of inflow and outflow of the pension fund, calculate amortization for all period
+    # and the supplemental cost at each period.
+  # Step 3: Similar to step 2, but the inflow and outflow of fund are governed by the acutarial assumptions, acutuarial methods and other factors that 
+   # influence the funding stutus. 
+# Finally, we need to know exactly how to model each of the 5 possible sources of unfunded liabilities mentioned in Ch7. 
+# We also need to figure out the role of interest rate in the amortization procedure. 
+
+
+# a..|-m(m year period certain annuity): sum of the present value of m year fixed payment of $1.
+
+# Step 1
+p <- 100 # principle
+m <- 15 # year of amortization
+
+infl <- 0.04        # inflation
+prod <- 0.01        # productivity
+g <- (1 + infl)*(1 + prod) - 1
+i <- 0.08           # interest rate
+d <- i/(1 + i)      # discount factor 
+
+
+## Amortization by three methods
+
+# Constant percent amortization method
+cd <- rep(pmt(p, i, m), m)
+
+# Constant dollar amortization method
+cp <- gaip2(p, i, m, g)*(g + 1)^(1:m - 1)
+
+# Strait line method
+pp <- p*(1 + i)
+sl <- d*(pp - pp*(1:m)/m) + pp/m
+
+
+# Simulate amortization
+
+amort <- data.frame(year = 0:m, UL.cd = c(p, rep(0, m)), UL.cp = c(p, rep(0, m)), UL.sl = c(p, rep(0, m)),
+                                cd = c(0, cd), cp = c(0, cp), sl = c(0, sl)) 
+
+for (j in 1:15){
+  amort[amort$year == j, "UL.cd"] <- amort[amort$year == j - 1, "UL.cd"]*(1 + i) - amort[amort$year == j, "cd"]
+  amort[amort$year == j, "UL.cp"] <- amort[amort$year == j - 1, "UL.cp"]*(1 + i) - amort[amort$year == j, "cp"]
+  amort[amort$year == j, "UL.sl"] <- amort[amort$year == j - 1, "UL.sl"]*(1 + i) - amort[amort$year == j, "sl"]
+}
+
+kable(amort)
+
+# Reproduce the graphs in p103 and p104
+
+# figure 7-1a
+amort %>% select(year, cd, cp, sl) %>% filter(year>0) %>%
+  gather(methods, SC, -year) %>% 
+  ggplot(aes(x = year, y = SC, color = methods)) + theme_bw() + 
+  geom_line(size = 1) + geom_point(size = 3) +  
+  scale_x_continuous(breaks = 1:m, limits = c(1, m)) + 
+  scale_y_continuous(breaks = seq(0, 18, 2), limits = c(0, 18)) +
+  scale_color_discrete(label = c("Constant Dollar","Constant Percent", "Straight Line")) + 
+  theme(legend.justification=c(0,0), legend.position=c(0, 0))
+  
+
+# figure 7-2a
+amort %>% select(year, UL.cd, UL.cp, UL.sl) %>%
+  gather(methods, balance, -year) %>% 
+  ggplot(aes(x = year, y = balance, color = methods)) + theme_bw() + 
+  geom_line(size = 1) + geom_point(size = 3) +  
+  scale_x_continuous(breaks = 0:m, limits = c(0, m)) + 
+  scale_y_continuous(breaks = seq(0, 100, 10), limits = c(-1, 100)) +
+  scale_color_discrete(label = c("Constant Dollar","Constant Percent", "Straight Line")) + 
+  theme(legend.justification=c(0,0), legend.position=c(0, 0))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
