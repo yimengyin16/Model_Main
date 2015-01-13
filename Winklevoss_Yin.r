@@ -10,7 +10,7 @@
 ## Preamble ####
 
 # Defining data directory and data file
-wvd <- "E:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
+wvd <- "C:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
 wvxl <- "Winklevoss(6).xlsx"
 
 
@@ -21,6 +21,7 @@ library(dplyr)
 library(ggplot2)
 library(tidyr) # gather, spread
 library(xlsx)
+library("magrittr")
 
 source("Functions.R")
 
@@ -766,10 +767,11 @@ options(digits = 2, scipen = 99)
 
 # Learning coding supplemental costs through 3 steps:
   # Step 1: Given a increase of the supplemental cost at a single period, calculate the path of amortization.
-  # Step 2: Given assumed deterministic paths of inflow and outflow of the pension fund, calculate amortization for all period
-    # and the supplemental cost at each period.
-  # Step 3: Similar to step 2, but the inflow and outflow of fund are governed by the acutarial assumptions, acutuarial methods and other factors that 
-   # influence the funding stutus. 
+  # Step 2: Given assumed deterministic paths of inflow and outflow of the pension fund, calculate 
+    # amortization for all period and the supplemental cost at each period.
+  # Step 3: Similar to step 2, but the inflow and outflow of fund are governed by the acutarial assumptions, 
+    # acutuarial methods and other factors that 
+    # influence the funding stutus. 
 # Finally, we need to know exactly how to model each of the 5 possible sources of unfunded liabilities mentioned in Ch7. 
 # We also need to figure out the role of interest rate in the amortization procedure. 
 
@@ -789,10 +791,10 @@ d <- i/(1 + i)      # discount factor
 
 ## Amortization by three methods
 
-# Constant percent amortization method
+# Constant dollar amortization method
 cd <- rep(pmt(p, i, m), m)
 
-# Constant dollar amortization method
+# Constant percent amortization method
 cp <- gaip2(p, i, m, g)*(g + 1)^(1:m - 1)
 
 # Strait line method
@@ -837,33 +839,142 @@ amort %>% select(year, UL.cd, UL.cp, UL.sl) %>%
   theme(legend.justification=c(0,0), legend.position=c(0, 0))
 
 
+# Step 2 
+
+# The two fundamental variables are acturial liabilities(AL) and assets(AS)
+ # The actual AL is determined by   AL(n+1) = [AL(n) + NC(n) - B(n)]*(1 + i)   
+ # The actual AS is determined by   AS(n+1) = [AS(n) + Cont(n) - B(n)]*(1 + i)   
+
+# The expected AL(n+1) and AS(n+1) at n, i.e. E[AL(n+1)] and E[AS(n+1)], also follows the formula above 
+   # but uses teh expected NC(n), Cont(n) and B(n):
+   # E[AL(n+1)]n = [E[AL(n)]n + E[NC(n)]   - E[B(n)] ]*(1 + E[i])
+   # E[AS(n+1)]n = [E[AS(n)]n + E[Cont(n)] - E[B(n)] ]*(1 + E[i])
+ # We here assume the contribution is equal to the sum of payments for normal cost and total supplemental costs
+   # Cont(n)    = PNC(n) + sum(SC(n)) 
+   # E[Cont(n)] = E[PNC(n)] + sum(SC(n)); where E[PNC(n)] = E[NC(n)]
+   # Note that sum(SC(n)) includes the amortized payments for unfunded liablities from all previous periods. 
+   # Note that the sponsor is expected to pay the normal cost each period, but the acutal payment may differ. 
+   
+ # The sources of unfunded liabilities
+   # - AL(n) vs E[AL(n)]n
+   # - AS(n) vs E[AS(n)]n
+   # - NC(n) vs E[NC(n)]
+   # - PNC(n) vs E[PNC(n)] (E[NC(n)])
+   # - i vs E[i] 
+   # - (here we assume the amortized UL are always paid in full at each period)
+
+ # Note that expectation notation E[.] is used to denote the values without any events that may lead 
+   # to supplemental costs(eg. actuarial gain/loss, assumption changes). So "expectation" here has little
+   # to do with probability.   
+
+ # The inital inputs to the simulation:
+   # - initial values for AL and AS
+   # - paths of expected NC, B, i
+   # - paths of actual   NC, B, i
+   # - (note that contribution is determined by NC and SC in this model.)
+   
+ # By setting the paths for actual AL, AS, NC, B, i, we can simulate the 5(6?) sources of supplemental costs. 
+   # - Experience Variations
+   # - Assumption Changes
+   # - Benefit changes
+   # - Past service accruals 
+   # - Contribution variations
+   # - (unexpected low/high rate of return on asset.)
 
 
+# Parameters ()
+m <- 5 # year of amortization
+infl <- 0.04        # inflation
+prod <- 0.01        # productivity
+g <- (1 + infl)*(1 + prod) - 1
+i <- 0.08           # interest rate
+d <- i/(1 + i)      # discount factor 
+
+nyear <- 11
 
 
+# Creating data frame for assets and liabilities
+
+# Set up data frame
+penSim <- data.frame(year = (1:(nyear + m))) %>%
+  mutate(AL = ifelse(year == 1, 1000, 0),  # actual AL(n)
+         EAL= ifelse(year == 1, 1000, 0),  # expected AL: E[AL(n+1)]n
+         AS = ifelse(year == 1, 1000, 0),  # actual AS(n)
+         EAS= ifelse(year == 1, 1000, 0),  # expected AS: E[AS(n+1)]n
+         UL = 0,                          # unfunded liability: AL - AS
+         EUL= 0,                          # expected unfunded liability: E[AL(n+1)]n - E[AS(n+1)]n
+         dUL= 0,                          # change in unexpected liablity: dUL(n) = UL(n+1) - E[UL(n+1)]
+         NC  = 0,                         # actual NC(n)
+         ENC = 0,                         # expected NC: E[NC(n)]
+         B   = 0,                         # Benefit payment
+         SC  = 0,                         # supplement cost
+         PNC = 0,                         # actual contribution for NC
+         EPNC= 0,                         # Expected contribution for NC
+         Cont= 0,                         # acutal contribution: PNC + SC
+         ECont = 0,                       # expected contribution: EPNC + SC
+         i   = i,                         # actual rate of return
+         Ei  = i                          # expected rate of reurn
+                    )
+
+# set up scenario of paths
+
+# Start with a simple case: the only source of supplemental costs is the discrepancy between PNC and NC
+
+penSim %<>% mutate(NC = seq(10, by = 0, l = nyear + m),
+                   ENC= NC,                               # assume no unexpected NC
+                   B  = seq(10, by = 0, l = nyear + m),
+                   EPNC = NC,                             # sponsor is expected to pay full normal cost
+                   PNC  = ifelse(year>=nyear, EPNC, ifelse(year<= nyear/2, 8, 12))
+                   ) 
 
 
+# matrix representation of amortization: better visualization but large size, used in this excercise
+SC_amort <- matrix(0, nyear + m + m, nyear + m + m)
+
+# data frame representation of amortization: much smaller size, can be used in real model later.
+#SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
 
-
-
-
-
-
-
-
-
-
-
-
+for (j in 2:(nyear + m)){
   
+  penSim[penSim$year == j - 1, "Cont"]  <- penSim[penSim$year == j - 1, "PNC"]  + penSim[penSim$year == j - 1, "SC"] 
+  penSim[penSim$year == j - 1, "ECont"] <- penSim[penSim$year == j - 1, "EPNC"] + penSim[penSim$year == j - 1, "SC"] 
+  
+  
+  # Actual and expected AL
+  penSim[penSim$year == j, "AL"] <- (penSim[penSim$year == j - 1, "AL"] + penSim[penSim$year == j - 1, "NC"] - penSim[penSim$year == j - 1, "B"]) * 
+                                        (penSim[penSim$year == j - 1, "i"] + 1) 
+  penSim[penSim$year == j, "EAL"] <- (penSim[penSim$year == j - 1, "AL"] + penSim[penSim$year == j - 1, "ENC"] - penSim[penSim$year == j - 1, "B"]) * 
+                                        (penSim[penSim$year == j - 1, "Ei"] + 1) 
+  
+  # Actual and expected AL
+  
+                                           
+  penSim[penSim$year == j, "AS"] <- (penSim[penSim$year == j - 1, "AS"] + penSim[penSim$year == j - 1, "Cont"] - penSim[penSim$year == j - 1, "B"]) * 
+    (penSim[penSim$year == j - 1, "i"] + 1) 
+  penSim[penSim$year == j, "EAS"] <- (penSim[penSim$year == j - 1, "AS"] + penSim[penSim$year == j - 1, "ECont"] - penSim[penSim$year == j - 1, "B"]) * 
+    (penSim[penSim$year == j - 1, "Ei"] + 1) 
+  
+  # UL and EUL
+  penSim[penSim$year == j, "UL"]  <- penSim[penSim$year == j, "AL"] - penSim[penSim$year == j, "AS"] 
+  penSim[penSim$year == j, "EUL"] <- penSim[penSim$year == j, "EAL"] - penSim[penSim$year == j, "EAS"] 
 
+  # change in UL
+  penSim[penSim$year == j - 1, "dUL"] <- penSim[penSim$year == j, "UL"] - penSim[penSim$year == j, "EUL"] 
+  
+  # Amortize dUL at j over the next m years
+  #SC_amort[j, j:(j + m - 1)] <- rep(pmt(penSim[penSim$year == j - 1, "dUL"], i, m), m)  # constant dollar amortization
+   SC_amort[j, j:(j + m - 1)] <- gaip2(penSim[penSim$year == j - 1, "dUL"], i, m, g)*(g + 1)^(1:m - 1)  # constant percent amortization
+  # Supplemental cost in j
+  
+  penSim[penSim$year == j, "SC"] <- sum(SC_amort[, j])
+   
+ 
+}
 
+SC_amort
 
-
-
-
-
+# In last period, unfunded liabilities are "almost" funded, but not exactlyu. Any problem in the code?
 
 
 

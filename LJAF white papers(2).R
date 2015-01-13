@@ -15,7 +15,7 @@
 a0 <- 20 # youngest age of entry
 az <- 25 # last possible year of working
 k <- az - a0 + 1 # number of rows and columns in the wf matrix (number of years); one version of the paper forgot to add 1
-k
+kff
 
 
 wf0 <- matrix(0, nrow=k, ncol=k, dimnames=list(a0:az, a0:az)) # initial workforce
