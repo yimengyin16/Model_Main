@@ -887,20 +887,21 @@ m <- 5 # year of amortization
 infl <- 0.04        # inflation
 prod <- 0.01        # productivity
 g <- (1 + infl)*(1 + prod) - 1
-i <- 0.08           # interest rate
+i <- 0.1           # interest rate
 d <- i/(1 + i)      # discount factor 
 
-nyear <- 11
+nyear <- 10
 
+AL1 <- 1e8
 
 # Creating data frame for assets and liabilities
 
 # Set up data frame
 penSim <- data.frame(year = (1:(nyear + m))) %>%
-  mutate(AL = ifelse(year == 1, 1000, 0),  # actual AL(n)
-         EAL= ifelse(year == 1, 1000, 0),  # expected AL: E[AL(n+1)]n
-         AS = ifelse(year == 1, 1000, 0),  # actual AS(n)
-         EAS= ifelse(year == 1, 1000, 0),  # expected AS: E[AS(n+1)]n
+  mutate(AL = ifelse(year == 1, AL1, 0),  # actual AL(n)
+         EAL= ifelse(year == 1, AL1, 0),  # expected AL: E[AL(n+1)]n
+         AS = ifelse(year == 1, AL1, 0),  # actual AS(n)
+         EAS= ifelse(year == 1, AL1, 0),  # expected AS: E[AS(n+1)]n
          UL = 0,                          # unfunded liability: AL - AS
          EUL= 0,                          # expected unfunded liability: E[AL(n+1)]n - E[AS(n+1)]n
          dUL= 0,                          # change in unexpected liablity: dUL(n) = UL(n+1) - E[UL(n+1)]
@@ -937,8 +938,6 @@ SC_amort <- matrix(0, nyear + m + m, nyear + m + m)
 
 for (j in 2:(nyear + m)){
   
-  penSim[penSim$year == j - 1, "Cont"]  <- penSim[penSim$year == j - 1, "PNC"]  + penSim[penSim$year == j - 1, "SC"] 
-  penSim[penSim$year == j - 1, "ECont"] <- penSim[penSim$year == j - 1, "EPNC"] + penSim[penSim$year == j - 1, "SC"] 
   
   
   # Actual and expected AL
@@ -947,8 +946,10 @@ for (j in 2:(nyear + m)){
   penSim[penSim$year == j, "EAL"] <- (penSim[penSim$year == j - 1, "AL"] + penSim[penSim$year == j - 1, "ENC"] - penSim[penSim$year == j - 1, "B"]) * 
                                         (penSim[penSim$year == j - 1, "Ei"] + 1) 
   
-  # Actual and expected AL
+  # Actual and expected AS
   
+  penSim[penSim$year == j - 1, "Cont"]  <- penSim[penSim$year == j - 1, "PNC"]  + penSim[penSim$year == j - 1, "SC"] 
+  penSim[penSim$year == j - 1, "ECont"] <- penSim[penSim$year == j - 1, "EPNC"] + penSim[penSim$year == j - 1, "SC"] 
                                            
   penSim[penSim$year == j, "AS"] <- (penSim[penSim$year == j - 1, "AS"] + penSim[penSim$year == j - 1, "Cont"] - penSim[penSim$year == j - 1, "B"]) * 
     (penSim[penSim$year == j - 1, "i"] + 1) 
@@ -960,7 +961,7 @@ for (j in 2:(nyear + m)){
   penSim[penSim$year == j, "EUL"] <- penSim[penSim$year == j, "EAL"] - penSim[penSim$year == j, "EAS"] 
 
   # change in UL
-  penSim[penSim$year == j - 1, "dUL"] <- penSim[penSim$year == j, "UL"] - penSim[penSim$year == j, "EUL"] 
+  penSim[penSim$year == j - 1, "dUL"] <- (penSim[penSim$year == j, "UL"] - penSim[penSim$year == j, "EUL"])/(penSim[penSim$year == j - 1, "i"] + 1) 
   
   # Amortize dUL at j over the next m years
   #SC_amort[j, j:(j + m - 1)] <- rep(pmt(penSim[penSim$year == j - 1, "dUL"], i, m), m)  # constant dollar amortization
@@ -973,6 +974,9 @@ for (j in 2:(nyear + m)){
 }
 
 SC_amort
+kable(penSim, digits = 3)
+
+
 
 # In last period, unfunded liabilities are "almost" funded, but not exactlyu. Any problem in the code?
 
