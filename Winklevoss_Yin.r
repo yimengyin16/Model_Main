@@ -883,16 +883,16 @@ amort %>% select(year, UL.cd, UL.cp, UL.sl) %>%
 
 
 # Parameters ()
-m <- 5 # year of amortization
+m <- 15 # year of amortization
 infl <- 0.04        # inflation
 prod <- 0.01        # productivity
 g <- (1 + infl)*(1 + prod) - 1
-i <- 0.1           # interest rate
+i <- 0.08           # interest rate
 d <- i/(1 + i)      # discount factor 
 
-nyear <- 10
+nyear <- 100
 
-AL1 <- 1e8
+AL1 <- 1e3
 
 # Creating data frame for assets and liabilities
 
@@ -979,9 +979,12 @@ kable(penSim, digits = 3)
 
 
 # In last period, unfunded liabilities are "almost" funded, but not exactlyu. Any problem in the code?
-# Possible reason: There should be another component in Cont(n): the interest of the unfunded liability. 
-# This component plus the normal cost paid in full will make the unfunded liablity constant over time. 
+  
+  # Possible reason: There should be another component in Cont(n): the interest of the unfunded liability. 
+  # This component plus the normal cost paid in full will make the unfunded liablity constant over time. 
 
+  # Follow up: above is actually not the reason.  Sticking to Winklevoss book solves the problem. 
+  # Note dUL(n) is the change in UL at the END of period n. 
 
 
 
