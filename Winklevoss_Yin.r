@@ -979,6 +979,8 @@ kable(penSim, digits = 3)
 
 
 # In last period, unfunded liabilities are "almost" funded, but not exactlyu. Any problem in the code?
+# Possible reason: There should be another component in Cont(n): the interest of the unfunded liability. 
+# This component plus the normal cost paid in full will make the unfunded liablity constant over time. 
 
 
 
