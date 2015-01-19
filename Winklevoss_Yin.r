@@ -883,14 +883,14 @@ amort %>% select(year, UL.cd, UL.cp, UL.sl) %>%
 
 
 # Parameters ()
-m <- 15 # year of amortization
+m <- 5 # year of amortization
 infl <- 0.04        # inflation
 prod <- 0.01        # productivity
 g <- (1 + infl)*(1 + prod) - 1
 i <- 0.08           # interest rate
 d <- i/(1 + i)      # discount factor 
 
-nyear <- 100
+nyear <- 10
 
 AL1 <- 1e3
 
@@ -909,6 +909,7 @@ penSim <- data.frame(year = (1:(nyear + m))) %>%
          ENC = 0,                         # expected NC: E[NC(n)]
          B   = 0,                         # Benefit payment
          SC  = 0,                         # supplement cost
+         SC2 = 0,                         # supplement cost by alternative approach
          PNC = 0,                         # actual contribution for NC
          EPNC= 0,                         # Expected contribution for NC
          Cont= 0,                         # acutal contribution: PNC + SC
@@ -961,16 +962,15 @@ for (j in 2:(nyear + m)){
   penSim[penSim$year == j, "EUL"] <- penSim[penSim$year == j, "EAL"] - penSim[penSim$year == j, "EAS"] 
 
   # change in UL
-  penSim[penSim$year == j - 1, "dUL"] <- (penSim[penSim$year == j, "UL"] - penSim[penSim$year == j, "EUL"])/(penSim[penSim$year == j - 1, "i"] + 1) 
+  penSim[penSim$year == j - 1, "dUL"] <- penSim[penSim$year == j, "UL"] - penSim[penSim$year == j, "EUL"]
   
   # Amortize dUL at j over the next m years
-  #SC_amort[j, j:(j + m - 1)] <- rep(pmt(penSim[penSim$year == j - 1, "dUL"], i, m), m)  # constant dollar amortization
-   SC_amort[j, j:(j + m - 1)] <- gaip2(penSim[penSim$year == j - 1, "dUL"], i, m, g)*(g + 1)^(1:m - 1)  # constant percent amortization
+  SC_amort[j, j:(j + m - 1)] <- rep(pmt(penSim[penSim$year == j - 1, "dUL"], i, m), m)  # constant dollar amortization
+  #SC_amort[j, j:(j + m - 1)] <- gaip2(penSim[penSim$year == j - 1, "dUL"], i, m, g)*(g + 1)^(1:m - 1)  # constant percent amortization
   # Supplemental cost in j
-  
   penSim[penSim$year == j, "SC"] <- sum(SC_amort[, j])
-   
- 
+  penSim[penSim$year == j, "SC2"] <- pmt(penSim[penSim$year == j, "UL"], i, m)
+  
 }
 
 SC_amort
@@ -986,7 +986,7 @@ kable(penSim, digits = 3)
   # Follow up: above is actually not the reason.  Sticking to Winklevoss book solves the problem. 
   # Note dUL(n) is the change in UL at the END of period n. 
 
-
+pmt(penSim[penSim$year == 2, "UL"], i, m)
 
 
 
