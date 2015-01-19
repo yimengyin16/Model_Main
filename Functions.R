@@ -62,19 +62,48 @@ get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65)) %>% length # test the function
 
 
 
-pmt <- function(p, i, n){
-  # amortization function, with payment at the end of period. 
+# pmt <- function(p, i, n){
+#   # amortization function, with payment at the end of period. 
+#   # p = principle, i = interest rate, n = periods. 
+#   pmt <- p * (1 + i)^n * i/((1 + i)^n - 1)
+#   return(pmt)  
+# }
+
+pmt <- function(p, i, n, end = FALSE){
+  # amortization function with constant payment at each period 
   # p = principle, i = interest rate, n = periods. 
-  pmt <- p * (1 + i)^n * i/((1 + i)^n - 1)
+  # end: , if TRUE, payment at the end of period. 
+  if(end) p <- p*(1 + i)
+  a_n <- (1 - (1 + i)^(-n))/(1 - 1/(1 + i))
+  pmt <- p / a_n
   return(pmt)  
 }
 
-gaip2 <- function(p, i, n, g){
+# pmt(100, 0.08, 10)
+# pmt2(100, 0.08, 10, TRUE)
+# pmt2(-100, 0.08, 10)
+
+# gaip2 <- function(p, i, n, g){
+#   # p=principal, i=interest rate, n=periods, g=growth rate in payments
+#   # calculating gaip directly
+#   # end: , if TRUE, payment at the end of period. 
+#   #if(end) p <- p*(1 + i) 
+#   k <- (1 + i)/(1 + g)
+#   gaf <- (1 + i) * (1 - k)/(k * (k^(-n) - 1))
+#   return(gaf*p)
+# }
+
+gaip2 <- function(p, i, n, g, end = FALSE){
   # p=principal, i=interest rate, n=periods, g=growth rate in payments
-  # calculating gaip directly   
-  k <- (1 + i)/(1 + g)
-  gaf <- (1 + i) * (1 - k)/(k * (k^(-n) - 1))
-  return(gaf*p)
+  # calculating gaip directly
+  # end: , if TRUE, payment at the end of period. 
+  if(end) p <- p*(1 + i) 
+  k <- (1 + g)/(1 + i)
+  a_sn <- (1 - k^n )/(1 - k)
+  pmt <- p/a_sn
+  return(pmt)
 }
 
+# gaip2(100, 0.08, 10, 0.04)
+# gaip3(100, 0.08, 10, 0.02, end = TRUE)
 
