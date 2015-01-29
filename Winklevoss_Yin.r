@@ -771,7 +771,7 @@ options(digits = 2, scipen = 99)
     # amortization for all period and the supplemental cost at each period.
   # Step 3: Similar to step 2, but the inflow and outflow of fund are governed by the acutarial assumptions, 
     # acutuarial methods and other factors that 
-    # influence the funding stutus. 
+    # the funding stutus. 
 # Finally, we need to know exactly how to model each of the 5 possible sources of unfunded liabilities mentioned in Ch7. 
 # We also need to figure out the role of interest rate in the amortization procedure. 
 
@@ -846,7 +846,7 @@ amort %>% select(year, UL.cd, UL.cp, UL.sl) %>%
  # The actual AS is determined by   AS(n+1) = [AS(n) + Cont(n) - B(n)]*(1 + i)   
 
 # The expected AL(n+1) and AS(n+1) at n, i.e. E[AL(n+1)] and E[AS(n+1)], also follows the formula above 
-   # but uses teh expected NC(n), Cont(n) and B(n):
+   # but uses the expected NC(n), Cont(n) and B(n):
    # E[AL(n+1)]n = [E[AL(n)]n + E[NC(n)]   - E[B(n)] ]*(1 + E[i])
    # E[AS(n+1)]n = [E[AS(n)]n + E[Cont(n)] - E[B(n)] ]*(1 + E[i])
  # We here assume the contribution is equal to the sum of payments for normal cost and total supplemental costs
@@ -909,7 +909,7 @@ penSim <- data.frame(year = (1:(nyear + m))) %>%
          ENC = 0,                         # expected NC: E[NC(n)]
          B   = 0,                         # Benefit payment
          SC  = 0,                         # supplement cost
-         SC2 = 0,                         # supplement cost by alternative approach
+         #SC2 = 0,                         # supplement cost by alternative approach
          PNC = 0,                         # actual contribution for NC
          EPNC= 0,                         # Expected contribution for NC
          Cont= 0,                         # acutal contribution: PNC + SC
@@ -932,7 +932,7 @@ penSim %<>% mutate(NC = seq(10, by = 0, l = nyear + m),
 
 # matrix representation of amortization: better visualization but large size, used in this excercise
 SC_amort <- matrix(0, nyear + m + m, nyear + m + m)
-
+SC_amort
 # data frame representation of amortization: much smaller size, can be used in real model later.
 #SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
@@ -940,7 +940,7 @@ SC_amort <- matrix(0, nyear + m + m, nyear + m + m)
 for (j in 2:(nyear + m)){
   
   
-  
+
   # Actual and expected AL
   penSim[penSim$year == j, "AL"] <- (penSim[penSim$year == j - 1, "AL"] + penSim[penSim$year == j - 1, "NC"] - penSim[penSim$year == j - 1, "B"]) * 
                                         (penSim[penSim$year == j - 1, "i"] + 1) 
@@ -969,7 +969,7 @@ for (j in 2:(nyear + m)){
   #SC_amort[j, j:(j + m - 1)] <- gaip2(penSim[penSim$year == j - 1, "dUL"], i, m, g)*(g + 1)^(1:m - 1)  # constant percent amortization
   # Supplemental cost in j
   penSim[penSim$year == j, "SC"] <- sum(SC_amort[, j])
-  penSim[penSim$year == j, "SC2"] <- pmt(penSim[penSim$year == j, "UL"], i, m)
+  #penSim[penSim$year == j, "SC2"] <- pmt(penSim[penSim$year == j, "UL"], i, m)
   
 }
 
