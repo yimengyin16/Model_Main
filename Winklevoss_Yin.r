@@ -10,7 +10,7 @@
 ## Preamble ####
 
 # Defining data directory and data file
-wvd <- "C:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
+wvd <- "E:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
 wvxl <- "Winklevoss(6).xlsx"
 
 
@@ -943,9 +943,11 @@ for (j in 2:(nyear + m)){
 
   # Actual and expected AL
   penSim[penSim$year == j, "AL"] <- (penSim[penSim$year == j - 1, "AL"] + penSim[penSim$year == j - 1, "NC"] - penSim[penSim$year == j - 1, "B"]) * 
-                                        (penSim[penSim$year == j - 1, "i"] + 1) 
+                                        (penSim[penSim$year == j - 1, "Ei"] + 1)
   penSim[penSim$year == j, "EAL"] <- (penSim[penSim$year == j - 1, "AL"] + penSim[penSim$year == j - 1, "ENC"] - penSim[penSim$year == j - 1, "B"]) * 
                                         (penSim[penSim$year == j - 1, "Ei"] + 1) 
+  
+    # Note that when calculating liability, no matter actual or expected, the assumed interest rate is used. 
   
   # Actual and expected AS
   
@@ -976,6 +978,15 @@ for (j in 2:(nyear + m)){
 SC_amort
 kable(penSim, digits = 3)
 
+# In a real model, EUL(t+1)t is computed using similar formulas defined above, while UL(t+1) is obtained from the real experience of the model.
+  # The gain/loss is then calculated as dUL = EU(t+1)t - UL(t+1). This formula is applicable when arbitrary types of sources of UL are present, but 
+  # it cannot distinguish these sources. 
+  # # - Experience Variations
+    # - Assumption Changes
+    # - Benefit changes
+    # - Past service accruals 
+    # - Contribution variations
+    # - (unexpected low/high rate of return on asset.)
 
 
 # In last period, unfunded liabilities are "almost" funded, but not exactlyu. Any problem in the code?

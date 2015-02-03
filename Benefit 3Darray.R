@@ -122,8 +122,7 @@ term2 <- data.frame(age = 20:110) %>% left_join(select(term, age, everything()))
 # filter(gam1971, age >= 20) %>% left_join(term2) %>% select(age, ea, everything()) %>% arrange(ea, age)
 
 
-growth <- data.fra
-me(start.year = 1:144) %>%
+growth <- data.frame(start.year = 1:144) %>%
   mutate(growth = (1 + infl + prod)^(start.year - 1 ))
 
 salary <- expand.grid(start.year = 1:144, ea = seq(20, 60, 5), age = 20:110) %>% 

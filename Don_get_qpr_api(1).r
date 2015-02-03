@@ -3,10 +3,20 @@
 # Get data from the Census quarterly public retirement systems survey
 
 # following items are built into my system but Yimeng needs them
-# censusapikey <- "b27cb41e46ffe3488af186dd80c64dce66bd5e87"  # djb API key; you may want to get your own
-# mdyfn <-  function(m, d, y) as.Date(ISOdate(y, m, d)) # pass numeric month, day, year, get back a full date
-# qy <- function(q, y) mdyfn(q * 3 - 2, 1, y) # pass numeric quarter and year to this fn, get back first date in the quarter
+#censusapikey <- "b27cb41e46ffe3488af186dd80c64dce66bd5e87"  # djb API key; you may want to get your own
+censusapikey <- "5435cbc6b6275965ca83cf300a380321a7311de0"   # Yimeng's API key
+mdyfn <-  function(m, d, y) as.Date(ISOdate(y, m, d)) # pass numeric month, day, year, get back a full date
+qy <- function(q, y) mdyfn(q * 3 - 2, 1, y) # pass numeric quarter and year to this fn, get back first date in the quarter
 # you will need jsonlite and maybe rcurl if you don't have them
+
+cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric, eliminating "," "$" "%". chars will become NA
+ht <- function (df, nrecs=6) {print(head(df, nrecs)); print(tail(df, nrecs))} # head tail
+
+library("jsonlite")
+library("magrittr")
+library(dplyr)
+library("tidyr")
+library("ggplot2")
 
 pre <- "http://api.census.gov/data/eits/qpr?key="
 post <- "&get=cell_value,time_slot_name,seasonally_adj,geo_level_code,category_code,data_type_code,error_data"
@@ -59,9 +69,9 @@ df2 <- df %>% filter(datacode %in% c("HLDTOT", "RVCNTG", "RVCNTE", "RVCNTT", "RV
          xcfpct=xcf / HLDTOT * 100)
 
 title <- "Large public pension fund quarterly cash flows as % of assets\nMultiply by 4 for approx annual rates"
-df2 %>% filter(year(date)>=1974) %>%
+df2 %>% filter(as.numeric(format(date, "%Y"))>=1974) %>%
   select(date, ctpct, bpct, xcfpct) %>% 
   gather(variable, value, -date) %>%  
   qplot(date, value, data=., colour=variable, geom=c("point", "line"), main=title) + geom_hline(y=0)
 
-
+df2$date
