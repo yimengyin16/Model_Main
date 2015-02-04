@@ -107,3 +107,31 @@ gaip2 <- function(p, i, n, g, end = FALSE){
 # gaip2(100, 0.08, 10, 0.04)
 # gaip3(100, 0.08, 10, 0.02, end = TRUE)
 
+
+
+
+
+# functions created by Don
+
+cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric, eliminating "," "$" "%". chars will become NA
+
+ht <- function (df, nrecs=6) {print(head(df, nrecs)); print(tail(df, nrecs))} # head tail
+
+memory<-function(maxnobjs=5){
+  # function for getting the sizes of objects in memory
+  objs<-ls(envir=globalenv())
+  nobjs<-min(length(objs),maxnobjs)
+  tmp<-as.data.frame(sapply(objs, function(x) object.size(get(x)))/1048600)
+  tmp<-data.frame(name=row.names(tmp), sizeMB=tmp[,1])
+  tmp<-tmp[order(-tmp$sizeMB),]
+  tmp$sizeMB<-formatC(tmp$sizeMB,format="f",digits=2,big.mark=",",preserve.width="common")
+  print(paste("Memory available: ",memory.size(NA),sep=""))
+  print(paste("Memory in use before: ",memory.size(),sep=""))
+  print("Memory for selected objects: ")
+  print(head(tmp,nobjs))
+  print(gc())
+  print(paste("Memory in use after: ",memory.size(),sep=""))
+}
+
+
+

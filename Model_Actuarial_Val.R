@@ -54,11 +54,6 @@ source("Functions.R")
 wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 
-
-
-
-
-
 # 0. Parameters implied by assumptions ####
 benfactor <- 0.01  # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
@@ -69,62 +64,13 @@ v <- 1/(1 + i)      # discount factor
 nyear <- 2         # The simulation only contains 2 years.
 
 
-# 1. Workforce ####
-
-# The workforce can be discribed by a slice of the workforce 3-D array 
-
-range_ea  <- seq(20, 60, 5) # For now, assume new entrants only enter the workforce with interval of 5 years. 
-range_age <- 20:110 
-nyears    <- 2 # For time 0 and 1
-
-wf_dim <- c(length(range_ea), length(range_age), nyears) # dimension of 3D arrays
-wf_dimnames <- list(range_ea, range_age, 1:nyears)       # define name for each dimension
-
-wf_active  <- array(0, wf_dim, dimnames = wf_dimnames)
-wf_term_v  <- array(0, wf_dim, dimnames = wf_dimnames)
-wf_term_nv <- array(0, wf_dim, dimnames = wf_dimnames)
-wf_retired <- array(0, wf_dim, dimnames = wf_dimnames)
-wf_dead    <- array(0, wf_dim, dimnames = wf_dimnames)
-
-# Setting inital workforce 
- # For convenience, first define a function that can fill cells in a 3D arrary. 
-
-fill_cell <- function(Fill, year, wf){
-  # This function fill cells in a workforce array.
-  # Input:
-    # Fill: numeric with 3 elements or matrix/dataframe with 3 columns. 1: entry age, 2: attained age, 3: number of people 
-    # year: numeric, which year in the array to fill
-    # wf  : name of the arrary to be filled.
-  # Output:
-    # wf  : the workforce array filled.  
-  
-  if(class(Fill) == c("numeric")){
-    wf[as.character(Fill[1]), as.character(Fill[2]) , year] = Fill[3]} else {
-    for (i in 1:nrow(Fill))
-      wf[as.character(Fill[i,1]), as.character(Fill[i,2]) , year] = Fill[i,3]
-    }  
-  return(wf)
-}
-
-# Test the function
-#fill_cell(c(50, 65, 30), 1, wf_active)
-#fill_cell(matrix(c(20, 25, 100, 30, 64, 80), 2,3, byrow = T), 2, wf_active)
-#fill_cell(data.frame(c(20, 30), c(25, 64), c(100, 80)), 2, wf_active)
-
-# Workforce evolution
-
-
-
-
-
-
-# 2. Decrement table ####
-  # For now, we assume all decrement rates do not change over time. 
-  # Use decrement rates from winklevoss.  
-    load(paste0(wvd, "winklevossdata.rdata"))
+# 1. Decrement table ####
+# For now, we assume all decrement rates do not change over time. 
+# Use decrement rates from winklevoss.  
+load(paste0(wvd, "winklevossdata.rdata"))
 
 # Reorganize termination table into long format
-term <- data.frame(age = 20:110) %>% left_join(select(term, age, everything())) %>% gather(ea, qxt, -age) %>%
+term2 <- data.frame(age = 20:110) %>% left_join(select(term, age, everything())) %>% gather(ea, qxt, -age) %>%
   mutate(ea = as.numeric(gsub("[^0-9]", "", ea)))
 
 # Create decrement table and calculate probability of survival
@@ -141,40 +87,41 @@ decrement <- filter(gam1971, age>=20) %>% left_join(term2) %>% left_join(disb) %
           p65xm = cumprod(ifelse(age <= 65, 1, lag(pxm))))            # prob of surviving to x from 65, mortality only
 
 
-# 3. Salary scale 
- # We start out with the case where 
- # (1) the starting salary at each entry age increases at the rate of productivity growth plus inflation.
- # (2) The starting salary at each entry age are obtained by scaling up the the salary at entry age 20,
- #     hence at any given period, the age-30 entrants at age 30 have the same salary as the age-20 entrants at age 30. 
- # The first step is to produce tables for a given year's starting salary. 
+
+# 2. Salary scale #### 
+# We start out with the case where 
+# (1) the starting salary at each entry age increases at the rate of productivity growth plus inflation.
+# (2) The starting salary at each entry age are obtained by scaling up the the salary at entry age 20,
+#     hence at any given period, the age-30 entrants at age 30 have the same salary as the age-20 entrants at age 30. 
+# The first step is to produce tables for a given year's starting salary. 
 
 # Notes:
-  # At time 1, in order to determine the salary for the age 20 entrants who are at age 64, we need to trace back 
-  # to the year when they are 20, which is -43. 
+# At time 1, in order to determine the liability for the age 20 entrants who are at age 110, we need to trace back 
+# to the year when they are 20, which is -89. 
 
 # scale for starting salary 
-growth <- data.frame(start.year = -43:nyear) %>%
+growth <- data.frame(start.year = -89:nyear) %>%
   mutate(growth = (1 + infl + prod)^(start.year - 1 ))
 
 # Salary scale for all starting year
-salary <- expand.grid(start.year = -43:nyear, ea = seq(20, 60, 5), age = 20:64) %>% 
+salary <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:64) %>% 
   filter(age >= ea) %>%
   arrange(start.year, ea, age) %>%
   left_join(merit) %>% left_join(growth) %>%
   group_by(start.year, ea) %>%
-  mutate(year = start.year + age -ea,  # year index in the simulation
-         sx = growth*scale*(1 + infl + prod)^(age - min(age)))
+  mutate( sx = growth*scale*(1 + infl + prod)^(age - min(age)))
 
-# 3. Individual AL and NC by age and entry age
+salary %>% filter(start.year == -89) %>% as.data.frame
 
+# 3. Individual AL and NC by age and entry age ####
 
-liab <- expand.grid(start.year = -43:nyear, ea = seq(20, 60, 5), age = 20:110) %>%
+liab <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:110) %>%
   left_join(salary) %>% right_join(decrement) %>%
-  select(start.year, year, ea, age, everything()) %>% 
   arrange(start.year, ea, age) %>%
   group_by(start.year, ea) %>%
   # Calculate salary and benefits
   mutate(# sx = scale * (1 + infl + prod)^(age - min(age)),   # Composite salary scale
+    year = start.year + age -ea,  # year index in the simulation
     vrx = v^(65-age),                                  # discount factor
     Sx = ifelse(age == min(age), 0, lag(cumsum(sx))),  # Cumulative salary
     yos= age - min(age),                               # years of service
@@ -182,18 +129,107 @@ liab <- expand.grid(start.year = -43:nyear, ea = seq(20, 60, 5), age = 20:110) %
     fas= ifelse(yos < fasyears, Sx/n, (Sx - lag(Sx, fasyears))/n), # final average salary
     fas= ifelse(age == min(age), 0, fas),
     Bx = benfactor * yos * fas,                        # accrued benefits
-    bx = lead(Bx) - Bx,                            # benefit accrual at age x
+    bx = lead(Bx) - Bx,                                # benefit accrual at age x
     ax = ifelse(age < 65, NA, get_tla(pxm, i)),        # Since retiree die at 110 for sure, the life annuity is equivalent to temporary annuity up to age 110. 
     ayx = c(get_tla2(pxT[age <= 65], i), rep(0, 45)),                # need to make up the length of the vector up to age 110
-    ayxs= c(get_tla2(pxT[age <= 65], i,  sx[age <= 65]), rep(0, 45))  # need to make up the length of the vector up to age 110
+    ayxs= c(get_tla2(pxT[age <= 65], i,  sx[age <= 65]), rep(0, 45)),  # need to make up the length of the vector up to age 110
+    B   = ifelse(age>=65, Bx[age == 65], 0)            # annual benefit 
   ) %>%
+  # Calculate normal costs (following Winklevoss, normal costs are calculated as a multiple of PVFB)
   mutate(
     PVFBx = Bx[age == 65] * ax[age == 65] * vrx * px65T,
-    NCx.PUC = bx * ax[age == 65] * px65T * vrx,                             # Normal cost of PUC
-    NCx.EAN.CD = PVFBx[age == min(age)] / ayx[age == 65],                         # Normal cost of EAN, constant dollar
+    NCx.PUC = bx * ax[age == 65] * px65T * vrx,                                         # Normal cost of PUC
+    NCx.EAN.CD = PVFBx[age == min(age)] / ayx[age == 65],                               # Normal cost of EAN, constant dollar
     NCx.EAN.CP = PVFBx[age == min(age)] / (sx[age == min(age)] * ayxs[age == 65]) * sx  # Normal cost of EAN, constant percent
-  )
+  ) %>% 
+  # Calculate accrued liablity
+  mutate(
+    ALx.PUC = Bx/Bx[age == 65] * PVFBx,
+    ALx.EAN.CD = ayx/ayx[age == 65] * PVFBx,
+    ALx.EAN.CP = ayxs/ayxs[age == 65] * PVFBx,
+    ALx.r      = ax * Bx[age == 65]             # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods
+    ) %>% 
+  select(start.year, year, ea, age, everything()) 
 
+# 4. Workforce ####
+
+# The workforce can be discribed by a slice of the workforce 3-D array 
+
+range_ea  <- seq(20, 60, 5) # For now, assume new entrants only enter the workforce with interval of 5 years. 
+range_age <- 20:110 
+nyears    <- 2 # For time 0 and 1
+
+# Simulation of the workforce is done in the file below: 
+source("Model_Actuarial_Val_wf.R")
+
+
+
+# 5. Calculate Total Actuarial liabilities and Normal costs 
+
+# Extract the variables in a single time period
+
+extract_slice <- function(Var, Year,  data = liab){
+  # This function extract information for a specific year.
+  # inputs:
+    # Year: numeric
+    # Var : character, variable name 
+    # data: name of the data frame
+  # outputs:
+    # Slice: data frame. A data frame with the same structure as the workforce data.
+  Slice <- data %>% ungroup %>% filter(year == Year) %>% 
+    select_("ea", "age", Var) %>% arrange(ea, age) %>% spread_("age", Var, fill = 0)
+  rownames(Slice) = Slice$ea
+  Slice %<>% select(-ea) %>% as.matrix
+  return(Slice)
+}
+
+extract_slice("NCx.EAN.CP",1)
+extract_slice("NCx.EAN.CD",1)
+extract_slice("NCx.PUC", 1)
+
+extract_slice("ALx.EAN.CP",1)
+extract_slice("ALx.EAN.CD",1)
+extract_slice("ALx.PUC", 1)
+extract_slice("ALx.r", 1)
+
+extract_slice("B", 1) # note that in the absence of COLA, within a time period older retirees receive less benefit than younger retirees do.
+
+
+
+# Total AL for Active participants
+sum(wf_active[, , 1] * extract_slice("ALx.EAN.CP",1))
+sum(wf_active[, , 1] * extract_slice("ALx.EAN.CP",2))
+
+sum(wf_active[, , 1] * extract_slice("ALx.EAN.CD",1))
+sum(wf_active[, , 1] * extract_slice("ALx.EAN.CD",2))
+
+sum(wf_active[, , 1] * extract_slice("ALx.PUC",1))
+sum(wf_active[, , 1] * extract_slice("ALx.PUC",2))
+
+
+# Total Normal Costs
+sum(wf_active[, , 1] * extract_slice("NCx.EAN.CP",1))
+sum(wf_active[, , 1] * extract_slice("NCx.EAN.CP",2))
+
+sum(wf_active[, , 1] * extract_slice("NCx.EAN.CD",1))
+sum(wf_active[, , 1] * extract_slice("NCx.EAN.CD",2))
+
+sum(wf_active[, , 1] * extract_slice("NCx.PUC",1))
+sum(wf_active[, , 1] * extract_slice("NCx.PUC",2))
+
+# Total AL for retirees
+sum(wf_retired[, , 1] * extract_slice("ALx.r",1))
+sum(wf_retired[, , 1] * extract_slice("ALx.r",2))
+
+# Total benefit payment
+sum(wf_retired[, , 1] * extract_slice("B",1))
+sum(wf_retired[, , 1] * extract_slice("B",2))
+
+
+
+
+x <- liab %>% filter(start.year == -88) %>% as.data.frame
+x
 
 
 
