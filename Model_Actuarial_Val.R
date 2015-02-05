@@ -1,7 +1,7 @@
 # Actuarial Valuation in a simple setting
 # Yimeng Yin
 # 2/1/2015
-# Expected to be finished on 2/4/2015
+
 
 # Goal: 
 # 1. Conduct an actuarial valuation at time 1 based on plan design, actuarial assumptions, and plan data.
@@ -21,7 +21,7 @@
   # 2) PUC(Projected Unit Credit)
 
  # Actuarial Assumptions
-  # Decrements: Mortality and termination
+  # Decrements: Mortality, termination, disability
   # Salary scale
   # Assumed interest rate
   # Inflation
@@ -38,7 +38,7 @@
   # Funded Ratio
 
 
-# Preamble ##############################################################################################
+# Preamble ###############################################################################################
 
 library(zoo) # rollapply
 library(knitr)
@@ -53,9 +53,12 @@ source("Functions.R")
 
 wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-# 0. Parameters implied by assumptions ####
-benfactor <- 0.01  # benefit factor, 1% per year of yos
+
+
+# 0. Parameters ####
+benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
 infl <- 0.04        # Assumed inflation
 prod <- 0.01        # Assumed productivity
@@ -94,7 +97,7 @@ decrement <- filter(gam1971, age>=20) %>% left_join(term2) %>% left_join(disb) %
 # (1) the starting salary at each entry age increases at the rate of productivity growth plus inflation.
 # (2) The starting salary at each entry age are obtained by scaling up the the salary at entry age 20,
 #     hence at any given period, the age-30 entrants at age 30 have the same salary as the age-20 entrants at age 30. 
-# The first step is to produce tables for a given year's starting salary. 
+ 
 
 # Notes:
 # At time 1, in order to determine the liability for the age 20 entrants who are at age 110, we need to trace back 
@@ -112,7 +115,6 @@ salary <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:64) 
   group_by(start.year, ea) %>%
   mutate( sx = growth*scale*(1 + infl + prod)^(age - min(age)))
 
-salary %>% filter(start.year == -89) %>% as.data.frame
 
 # 3. Individual AL and NC by age and entry age ####
 
@@ -122,7 +124,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:110) %
   group_by(start.year, ea) %>%
   # Calculate salary and benefits
   mutate(# sx = scale * (1 + infl + prod)^(age - min(age)),   # Composite salary scale
-    year = start.year + age -ea,  # year index in the simulation
+    year = start.year + age - ea,                      # year index in the simulation
     vrx = v^(65-age),                                  # discount factor
     Sx = ifelse(age == min(age), 0, lag(cumsum(sx))),  # Cumulative salary
     yos= age - min(age),                               # years of service
@@ -143,7 +145,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:110) %
     NCx.EAN.CD = PVFBx[age == min(age)] / ayx[age == 65],                               # Normal cost of EAN, constant dollar
     NCx.EAN.CP = PVFBx[age == min(age)] / (sx[age == min(age)] * ayxs[age == 65]) * sx  # Normal cost of EAN, constant percent
   ) %>% 
-  # Calculate accrued liablity
+  # Calculate actuarial liablity
   mutate(
     ALx.PUC = Bx/Bx[age == 65] * PVFBx,
     ALx.EAN.CD = ayx/ayx[age == 65] * PVFBx,
@@ -158,7 +160,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:110) %
 
 range_ea  <- seq(20, 60, 5) # For now, assume new entrants only enter the workforce with interval of 5 years. 
 range_age <- 20:110 
-nyears    <- 2 # For time 0 and 1
+nyears    <- 2 # For time 1 and 2
 
 # Simulation of the workforce is done in the file below: 
 source("Model_Actuarial_Val_wf.R")
@@ -197,43 +199,27 @@ extract_slice("B", 1) # note that in the absence of COLA, within a time period o
 
 # Total AL for Active participants
 sum(wf_active[, , 1] * extract_slice("ALx.EAN.CP",1))
-sum(wf_active[, , 1] * extract_slice("ALx.EAN.CP",2))
-
 sum(wf_active[, , 1] * extract_slice("ALx.EAN.CD",1))
-sum(wf_active[, , 1] * extract_slice("ALx.EAN.CD",2))
-
 sum(wf_active[, , 1] * extract_slice("ALx.PUC",1))
-sum(wf_active[, , 1] * extract_slice("ALx.PUC",2))
 
 
 # Total Normal Costs
 sum(wf_active[, , 1] * extract_slice("NCx.EAN.CP",1))
-sum(wf_active[, , 1] * extract_slice("NCx.EAN.CP",2))
-
 sum(wf_active[, , 1] * extract_slice("NCx.EAN.CD",1))
-sum(wf_active[, , 1] * extract_slice("NCx.EAN.CD",2))
-
 sum(wf_active[, , 1] * extract_slice("NCx.PUC",1))
-sum(wf_active[, , 1] * extract_slice("NCx.PUC",2))
 
 # Total AL for retirees
 sum(wf_retired[, , 1] * extract_slice("ALx.r",1))
-sum(wf_retired[, , 1] * extract_slice("ALx.r",2))
 
 # Total benefit payment
 sum(wf_retired[, , 1] * extract_slice("B",1))
-sum(wf_retired[, , 1] * extract_slice("B",2))
 
 
-
-x <- liab %>% filter(start.year == -88) %>% as.data.frame
-
-
-
-
+# x <- liab %>% filter(start.year == -88) %>% as.data.frame
 # Todo:
 # vesting
 # retirement benefit for disabled. 
+
 
 
 # 6. Actuarial Valuation
@@ -244,6 +230,7 @@ x <- liab %>% filter(start.year == -88) %>% as.data.frame
   # NC: Normal Cost  
   # AA: Value of assets.
   # UAAL: Unfunded accrued actuarial liability, defined as AL - NC
+  # EUAAL:Expected UAAL. 
   # LG: Loss/Gain, total loss(positive) or gain(negative), Caculated as LG(t+1) = (UAAL(t) + NC(t))(1+i) - C - Ic - UAAL(t+1), 
            # i is assumed interest rate. ELs of each period will be amortized seperately.  
   # SC: Supplement cost 
@@ -253,8 +240,7 @@ x <- liab %>% filter(start.year == -88) %>% as.data.frame
   # Ia: Assumed interest from AA, equal to i*AA if the entire asset is investible. 
   # Ib: Assumed interest loss due to benefit payment, equal to i*B if the payment is made at the beginning of period
   # I : Total ACTUAL interet gain, I = i.r*(AA + C - B), if AA is all investible, C and B are made at the beginning of period.
-  
-# Funded Ratio: AA / AL
+  # Funded Ratio: AA / AL
 
 # Formulas
   # AL(t), NC(t), B(t) at each period are calculated using the workforce matrix and the liability matrix.
@@ -289,19 +275,19 @@ amort_fun <- amort_cd # Constant dollar
 AM <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
 
 
-
 # Set up data frame
 penSim <- data.frame(year = 1:nyear) %>%
   mutate(AL   = 0, #
          AA   = 0, #
+         FR   = 0, #
          UAAL = 0, #
-         EUAAL= 0,
+         EUAAL= 0, #
          LG   = 0, #
          NC   = 0, #
          SC   = 0, #
          C    = 0, #
          B    = 0, #                        
-         I    = 0,                        
+         I    = 0, #                        
          Ia   = 0, #                         
          Ib   = 0, #                         
          Ic   = 0, #  
@@ -360,6 +346,10 @@ for (j in 1:nyear){
   
   # I(j)
   penSim$I[penSim$year == j] <- with(penSim, i.r[year == j] *( AA[year == j] + C[year == j] - B[year == j]))
+
+  # Funded Ratio
+  penSim$FR[penSim$year == j] <- with(penSim, AA[year == j] / AL[year == j])
+
 }
 
 View(penSim)
