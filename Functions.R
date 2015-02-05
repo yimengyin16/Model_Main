@@ -62,12 +62,7 @@ get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65)) %>% length # test the function
 
 
 
-# pmt <- function(p, i, n){
-#   # amortization function, with payment at the end of period. 
-#   # p = principle, i = interest rate, n = periods. 
-#   pmt <- p * (1 + i)^n * i/((1 + i)^n - 1)
-#   return(pmt)  
-# }
+# 2. Amortization Functions
 
 pmt <- function(p, i, n, end = FALSE){
   # amortization function with constant payment at each period 
@@ -83,17 +78,7 @@ pmt <- function(p, i, n, end = FALSE){
 # pmt2(100, 0.08, 10, TRUE)
 # pmt2(-100, 0.08, 10)
 
-# gaip2 <- function(p, i, n, g){
-#   # p=principal, i=interest rate, n=periods, g=growth rate in payments
-#   # calculating gaip directly
-#   # end: , if TRUE, payment at the end of period. 
-#   #if(end) p <- p*(1 + i) 
-#   k <- (1 + i)/(1 + g)
-#   gaf <- (1 + i) * (1 - k)/(k * (k^(-n) - 1))
-#   return(gaf*p)
-# }
-
-gaip2 <- function(p, i, n, g, end = FALSE){
+gaip <- function(p, i, n, g, end = FALSE){
   # p=principal, i=interest rate, n=periods, g=growth rate in payments
   # calculating gaip directly
   # end: , if TRUE, payment at the end of period. 
@@ -106,6 +91,29 @@ gaip2 <- function(p, i, n, g, end = FALSE){
 
 # gaip2(100, 0.08, 10, 0.04)
 # gaip3(100, 0.08, 10, 0.02, end = TRUE)
+
+
+# Constant dollar amortization method
+amort_cd <- function(p, i, m, end = FALSE) rep(pmt(p, i, m, end), m)
+
+# Constant percent amortization method
+amort_cp <- function(p, i, m, g, end = FALSE) gaip(p, i, m, g, end)*(g + 1)^(1:m - 1)
+
+# Strait line method #
+amort_sl <- function(p, i, m, end = FALSE){
+  if(end) p <- p*(1 + i)
+  d <- 1/(1+i)
+  sl <- d*(p - p*(1:m)/m) + p/m}
+
+# Test the functions
+amort_cd(100, 0.08, 10, F)
+amort_cp(100, 0.08, 10, 0.05, F)
+
+
+
+
+
+
 
 
 
@@ -133,5 +141,23 @@ memory<-function(maxnobjs=5){
   print(paste("Memory in use after: ",memory.size(),sep=""))
 }
 
+
+
+# pmt <- function(p, i, n){
+#   # amortization function, with payment at the end of period. 
+#   # p = principle, i = interest rate, n = periods. 
+#   pmt <- p * (1 + i)^n * i/((1 + i)^n - 1)
+#   return(pmt)  
+# }
+
+# gaip2 <- function(p, i, n, g){
+#   # p=principal, i=interest rate, n=periods, g=growth rate in payments
+#   # calculating gaip directly
+#   # end: , if TRUE, payment at the end of period. 
+#   #if(end) p <- p*(1 + i) 
+#   k <- (1 + i)/(1 + g)
+#   gaf <- (1 + i) * (1 - k)/(k * (k^(-n) - 1))
+#   return(gaf*p)
+# }
 
 

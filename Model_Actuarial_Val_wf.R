@@ -15,7 +15,7 @@ library(dplyr)
 library(ggplot2)
 library(magrittr)
 library(tidyr) # gather, spread
-library(corrplot)
+# library(corrplot)
 
 wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 load(paste0(wvd, "winklevossdata.rdata"))
@@ -137,18 +137,28 @@ dtab <- filter(rename(gam1971, qxm.p = qxm), age>=20) %>% # use .p to signify pr
 dtab %<>% 
   # For active(denoted by ".a"), target status are term-vested, term-non-vested, disabled, retired, dead. 
   # For now, no one will become vested 
-  mutate(qxtv.a  = qxt.p         * (1 - qxd.p/2) * (1 - qxr.p/2) * (1 - qxm.p/2) * 0,
-         qxtnv.a = qxt.p         * (1 - qxd.p/2) * (1 - qxr.p/2) * (1 - qxm.p/2) * 1,
-         qxd.a   = (1 - qxt.p/2) * qxd.p         * (1 - qxr.p/2) * (1 - qxm.p/2),
-         qxm.a   = (1 - qxt.p/2) * (1 - qxd.p/2) * (1 - qxr.p/2) * qxm.p, 
-         qxr.a   = ifelse(age == 64, 1 - qxm.a  - qxtnv.a - qxd.a, 0),
+  mutate(
+#          qxtv.a  = qxt.p         * (1 - qxd.p/2) * (1 - qxr.p/2) * (1 - qxm.p/2) * 0,
+#          qxtnv.a = qxt.p         * (1 - qxd.p/2) * (1 - qxr.p/2) * (1 - qxm.p/2) * 1,
+#          qxd.a   = (1 - qxt.p/2) * qxd.p         * (1 - qxr.p/2) * (1 - qxm.p/2),
+#          qxm.a   = (1 - qxt.p/2) * (1 - qxd.p/2) * (1 - qxr.p/2) * qxm.p, 
+#          qxr.a   = ifelse(age == 64, 1 - qxm.a  - qxtnv.a - qxd.a, 0),
+         # Correct the code abvoe:
+           # Retirement is not a risk competing with other risks(death, terminatin, diability). Rather, it is
+           # an event that happens for sure for all participant who have survived all other risks at the beginning of age 65. 
+         qxtv.a  = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * 0,
+         qxtnv.a = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * 1,
+         qxd.a   = (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
+         qxm.a   = (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
+         qxr.a   = ifelse(age == 64, 1 - qxm.a  - qxtnv.a - qxd.a, 0), 
+    
          # set probs of vested to 0 at 64, since they are already included in the prob of retirement. 
          # this will be modified later when multiple retirement matrices are added. 
          #qxd.a   = ifelse(age >= 64, 0, qxd.a),
          qxtv.a  = ifelse(age >= 64, 0, qxtv.a)
          ) %>%
   # For terminated-vested(".v"), target status are dead and retired. 
-  mutate(qxm.v   = (1 - qxr.p/2) * qxm.p, 
+  mutate(qxm.v   = qxm.p, 
          qxr.v   = ifelse(age == 64, 1 - qxm.v, 0)) %>%
   # For terminated-nonvested(".n"), target status is dead only. 
   mutate(qxm.n   = qxm.p) %>%
@@ -263,33 +273,33 @@ sum(calc_entrants(wf0, wf1, 0), na.rm = T)
 
 wf_growth <- 0.00
 a <- proc.time()
-for (i in 1:(nyears - 1)){
+for (j in 1:(nyears - 1)){
 #i <-  1  
   # compute the inflow to and outflow
-  active2term_v  <- wf_active[, , i]*p_active2term_v
-  active2term_nv <- wf_active[, , i]*p_active2term_nv
-  active2disb    <- wf_active[, , i]*p_active2disb
-  active2dead    <- wf_active[, , i]*p_active2dead
-  active2retired <- wf_active[, , i]*p_active2retired
+  active2term_v  <- wf_active[, , j]*p_active2term_v
+  active2term_nv <- wf_active[, , j]*p_active2term_nv
+  active2disb    <- wf_active[, , j]*p_active2disb
+  active2dead    <- wf_active[, , j]*p_active2dead
+  active2retired <- wf_active[, , j]*p_active2retired
   
   # Where do the terminated_vested go
-  term_v2dead    <- wf_term_v[, , i]*p_term_v2dead
-  term_v2retired <- wf_term_v[, , i]*p_term_v2retired
+  term_v2dead    <- wf_term_v[, , j]*p_term_v2dead
+  term_v2retired <- wf_term_v[, , j]*p_term_v2retired
   
   # Where do the terminated_non-vested go
-  term_nv2dead   <- wf_term_nv[, , i]*p_term_nv2dead
+  term_nv2dead   <- wf_term_nv[, , j]*p_term_nv2dead
   
   # Where do the disabled go
-  #disb2retired   <- wf_disb[, , i]*p_disb2retired
-  disb2dead      <- wf_disb[, , i]*p_disb2dead
+  #disb2retired   <- wf_disb[, , j]*p_disb2retired
+  disb2dead      <- wf_disb[, , j]*p_disb2dead
   
   # Where do the retired go
-  retired2dead   <- wf_retired[, , i]*p_retired2dead
+  retired2dead   <- wf_retired[, , j]*p_retired2dead
   
   
   # Total inflow and outflow for each status
   out_active   <- active2term_v + active2term_nv + active2disb + active2retired + active2dead 
-  new_entrants <- calc_entrants(wf_active[, , i], wf_active[, , i] - out_active, wf_growth, no.entrants = TRUE) # new entrants
+  new_entrants <- calc_entrants(wf_active[, , j], wf_active[, , j] - out_active, wf_growth, no.entrants = TRUE) # new entrants
   
   out_term_v <- term_v2dead + term_v2retired
   in_term_v  <- active2term_v
@@ -306,12 +316,12 @@ for (i in 1:(nyears - 1)){
   in_dead <- active2dead + term_v2dead + term_nv2dead + disb2dead + retired2dead
   
   # Calculate workforce for next year. 
-  wf_active[, , i + 1]  <- (wf_active[, , i] - out_active) %*% A + new_entrants
-  wf_term_v[, , i + 1]  <- (wf_term_v[, , i] + in_term_v - out_term_v) %*% A
-  wf_term_nv[, , i + 1] <- (wf_term_nv[, , i] + in_term_nv - out_term_nv) %*% A
-  wf_disb[, , i + 1]    <- (wf_disb[, , i] + in_disb - out_disb) %*% A
-  wf_retired[, , i + 1] <- (wf_retired[, , i] + in_retired - out_retired) %*% A
-  wf_dead[, , i + 1]    <- (wf_dead[, , i] + in_dead) %*% A
+  wf_active[, , j + 1]  <- (wf_active[, , j] - out_active) %*% A + new_entrants
+  wf_term_v[, , j + 1]  <- (wf_term_v[, , j] + in_term_v - out_term_v) %*% A
+  wf_term_nv[, ,j + 1] <- (wf_term_nv[, , j] + in_term_nv - out_term_nv) %*% A
+  wf_disb[, ,   j + 1]    <- (wf_disb[, , j] + in_disb - out_disb) %*% A
+  wf_retired[, ,j + 1] <- (wf_retired[, , j] + in_retired - out_retired) %*% A
+  wf_dead[, ,   j + 1]    <- (wf_dead[, , j] + in_dead) %*% A
 }
 b <- proc.time()
 Time <- b-a 
@@ -365,22 +375,11 @@ apply(wf_dead, 3, sum)    %>%  plot(type = "b")
 apply(wf_active, c(1,3), sum)
 
 # Look at workforce by age
-options(digits = 4, scipen = 99)
+# options(digits = 4, scipen = 99)
 apply(wf_active, c(2,3), sum)
 # Potential problem, values for age over 65 are not exact 0s, although may be computationally equivalent to 0s.
 
 
-
-# 
-# j <- 50
-# corrplot(wf_active[, , j], is.corr = F)
-# corrplot(wf_retired[, , j], is.corr = F)
-# corrplot(wf_dead[, , j], is.corr = F)
-# corrplot(wf_term_v[, , j], is.corr = F)
-# corrplot(wf_term_nv[, , j], is.corr = F)
-# corrplot(wf_disb[, , j], is.corr = F)
-
-# large.array <- array(c(2124.1000001, 234,2), dim = c(45, 81, 45, 100))
 
 
 

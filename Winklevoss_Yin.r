@@ -968,7 +968,7 @@ for (j in 2:(nyear + m)){
   
   # Amortize dUL at j over the next m years
   SC_amort[j, j:(j + m - 1)] <- rep(pmt(penSim[penSim$year == j - 1, "dUL"], i, m), m)  # constant dollar amortization
-  #SC_amort[j, j:(j + m - 1)] <- gaip2(penSim[penSim$year == j - 1, "dUL"], i, m, g)*(g + 1)^(1:m - 1)  # constant percent amortization
+  #SC_amort[j, j:(j + m - 1)] <- gaip(penSim[penSim$year == j - 1, "dUL"], i, m, g)*(g + 1)^(1:m - 1)  # constant percent amortization
   # Supplemental cost in j
   penSim[penSim$year == j, "SC"] <- sum(SC_amort[, j])
   #penSim[penSim$year == j, "SC2"] <- pmt(penSim[penSim$year == j, "UL"], i, m)
