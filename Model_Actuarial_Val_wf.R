@@ -92,12 +92,11 @@ fill_cell <- function(Fill, year, wf){
 #fill_cell(data.frame(c(20, 30), c(25, 64), c(100, 80)), 2, wf_active)
 
 # Setting an inital distribution of workforce and retirees.
-wf_active <- fill_cell(rbind(c(20, 20, 10),
-                             c(20, 40, 10),
-                             c(20, 64, 10)) , 1, wf_active)
 
-wf_retired <- fill_cell(rbind(c(20, 65, 10),
-                              c(20, 85, 10)) , 1, wf_retired)
+
+wf_active <- fill_cell(init_active, 1, wf_active)
+
+wf_retired <- fill_cell(init_retired, 1, wf_retired)
 
 
 
@@ -331,55 +330,55 @@ Time # seems pretty fast
 
 
 
-## Look at the results ####
-
-# The workforce arrays
-wf_active
-wf_retired
-wf_term_nv
-wf_term_v
-wf_disb
-wf_dead
-
-
-
-# Test the loop with no new entrants, set no.entrants = TRUE in cal_entrants()
-  
-  apply(wf_active, 3, sum) + 
-  apply(wf_retired, 3, sum) + 
-  apply(wf_term_v, 3, sum) + 
-  apply(wf_term_nv, 3, sum) + 
-  apply(wf_disb, 3, sum) + 
-  apply(wf_dead, 3, sum)
-
-
-# summarizing the results
-
-# popluation by status
-apply(wf_active, 3, sum)  %>%  plot(type = "b") 
-apply(wf_retired, 3, sum) %>%  plot(type = "b")   
-apply(wf_term_v, 3, sum)  %>%  plot(type = "b")  
-apply(wf_term_nv, 3, sum) %>%  plot(type = "b")  
-apply(wf_disb, 3, sum)    %>%  plot(type = "b")  
-apply(wf_dead, 3, sum)    %>%  plot(type = "b")  
-
-
-# Total population
-(apply(wf_active, 3, sum) + 
-   apply(wf_retired, 3, sum) + 
-   apply(wf_term_v, 3, sum) + 
-   apply(wf_term_nv, 3, sum) + 
-   apply(wf_disb, 3, sum)) %>% plot(type = "b")
-
-# Look at workforce by entry age
-apply(wf_active, c(1,3), sum)
-
-# Look at workforce by age
-# options(digits = 4, scipen = 99)
-apply(wf_active, c(2,3), sum)
-# Potential problem, values for age over 65 are not exact 0s, although may be computationally equivalent to 0s.
-
-
+# ## Look at the results ####
+# 
+# # The workforce arrays
+# wf_active
+# wf_retired
+# wf_term_nv
+# wf_term_v
+# wf_disb
+# wf_dead
+# 
+# 
+# 
+# # Test the loop with no new entrants, set no.entrants = TRUE in cal_entrants()
+#   
+#   apply(wf_active, 3, sum) + 
+#   apply(wf_retired, 3, sum) + 
+#   apply(wf_term_v, 3, sum) + 
+#   apply(wf_term_nv, 3, sum) + 
+#   apply(wf_disb, 3, sum) + 
+#   apply(wf_dead, 3, sum)
+# 
+# 
+# # summarizing the results
+# 
+# # popluation by status
+# apply(wf_active, 3, sum)  %>%  plot(type = "b") 
+# apply(wf_retired, 3, sum) %>%  plot(type = "b")   
+# apply(wf_term_v, 3, sum)  %>%  plot(type = "b")  
+# apply(wf_term_nv, 3, sum) %>%  plot(type = "b")  
+# apply(wf_disb, 3, sum)    %>%  plot(type = "b")  
+# apply(wf_dead, 3, sum)    %>%  plot(type = "b")  
+# 
+# 
+# # Total population
+# (apply(wf_active, 3, sum) + 
+#    apply(wf_retired, 3, sum) + 
+#    apply(wf_term_v, 3, sum) + 
+#    apply(wf_term_nv, 3, sum) + 
+#    apply(wf_disb, 3, sum)) %>% plot(type = "b")
+# 
+# # Look at workforce by entry age
+# apply(wf_active, c(1,3), sum)
+# 
+# # Look at workforce by age
+# # options(digits = 4, scipen = 99)
+# apply(wf_active, c(2,3), sum)
+# # Potential problem, values for age over 65 are not exact 0s, although may be computationally equivalent to 0s.
+# 
+# 
 
 
 

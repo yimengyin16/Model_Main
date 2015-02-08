@@ -40,6 +40,8 @@
 
 # Preamble ###############################################################################################
 
+rm(list = ls())
+
 library(zoo) # rollapply
 library(knitr)
 library(gdata) # read.xls
@@ -154,6 +156,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:110) %
     ) %>% 
   select(start.year, year, ea, age, everything()) 
 
+
 # 4. Workforce ####
 
 # The workforce can be discribed by a slice of the workforce 3-D array 
@@ -161,6 +164,17 @@ liab <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:110) %
 range_ea  <- seq(20, 60, 5) # For now, assume new entrants only enter the workforce with interval of 5 years. 
 range_age <- 20:110 
 nyears    <- 2 # For time 1 and 2
+
+# Set inital workforce
+
+# Active
+init_active <- rbind(c(20, 20, 10),
+                     c(20, 40, 10),
+                     c(20, 64, 10))
+
+# Retired 
+init_retired <- rbind(c(20, 65, 10),
+                      c(20, 85, 10))
 
 # Simulation of the workforce is done in the file below: 
 source("Model_Actuarial_Val_wf.R")
@@ -263,13 +277,11 @@ sum(wf_retired[, , 1] * extract_slice("B",1))
 
 
 # Set real rate of return
-i.r <- rep(0.08, nyear)
+i.r <- rep(0.05, nyear)
 AA0 <- 200
 
 # Choose amortization method. 
-amort_fun <- amort_cd # Constant dollar
-# amort_fun <- amort_cp # Constant percent
-                        # straight line : coming soon...
+amort_method <- "cd" # Constant dollar
 
 # Choose actuarial method
 AM <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
@@ -310,7 +322,7 @@ for (j in 1:nyear){
   penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * extract_slice(paste0("NCx.", AM),j))
   
   # B(j)
-  penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , 1] * extract_slice("B",1))
+  penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * extract_slice("B",j))
   
   # AA(j)
   # if(j == 1) penSim[penSim$year == j, "AA"] <- AA0 
@@ -331,7 +343,7 @@ for (j in 1:nyear){
   }   
   
   # Amortize LG(j)
-  SC_amort[j, j:(j + m - 1)] <- amort_fun(penSim$LG[penSim$year == j], i, m)  
+  SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$LG[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
   
   # Supplemental cost in j
   penSim$SC[penSim$year == j] <- sum(SC_amort[, j])

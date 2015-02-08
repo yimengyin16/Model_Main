@@ -101,18 +101,35 @@ amort_cp <- function(p, i, m, g, end = FALSE) gaip(p, i, m, g, end)*(g + 1)^(1:m
 
 # Strait line method #
 amort_sl <- function(p, i, m, end = FALSE){
-  if(end) p <- p*(1 + i)
-  d <- 1/(1+i)
-  sl <- d*(p - p*(1:m)/m) + p/m}
-
+  # Straitline amortization method
+  # See Winklevoss(1993, p101)
+  if(end){
+    sl <- i*(p - p*(0:(m - 1))/m) + p/m
+  } else {
+    d <- 1/(1+i)
+    sl <- d*(p - p*(1:m)/m) + p/m}
+  return(sl)
+  }
+    
 # Test the functions
 amort_cd(100, 0.08, 10, F)
 amort_cp(100, 0.08, 10, 0.05, F)
+amort_sl(100, 0.08, 10, F)
 
+# Function for choosing amortization methods
 
+amort_LG <- function(p, i, m, g, end = FALSE, method = "cd"){
+  # amortize the gain/loss using specified amortization method
+  switch(method,
+         cd = amort_cd(p, i ,m, end),
+         cp = amort_cp(p, i, m, g, end),
+         sl = amort_sl(p, i, m, end)
+         )
+  }
 
-
-
+amort_LG(100, 0.08, 10, end = FALSE, method = "cd")
+amort_LG(100, 0.08, 10, 0.05, end = FALSE, method = "cp")
+amort_LG(100, 0.08, 10, end = FALSE, method = "sl")
 
 
 
