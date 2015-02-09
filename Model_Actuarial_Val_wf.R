@@ -49,13 +49,13 @@ load(paste0(wvd, "winklevossdata.rdata"))
  #  These parameters are defined in Model_Actuarial_Val.R
    range_ea    # all possible entry ages  
    range_age   # range of age
-   nyears      # number of years in simulation
+   nyear      # number of years in simulation
 
 
 ## In each 3D array, dimension 1(row) represents entry age, dimension 2(column) represents attained age,
 # dimension 3(depth) represents number of year. 
-wf_dim <- c(length(range_ea), length(range_age), nyears)
-wf_dimnames <- list(range_ea, range_age, 1:nyears)
+wf_dim <- c(length(range_ea), length(range_age), nyear)
+wf_dimnames <- list(range_ea, range_age, 1:nyear)
 
 wf_active  <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_term_v  <- array(0, wf_dim, dimnames = wf_dimnames)
@@ -182,7 +182,7 @@ make_dmat <- function(qx, df = dtab) {
   dimnames(df) <- wf_dimnames[c(1,2)] 
   return(df)
 }
-(p_active2term_nv <- make_dmat("qxtnv.a"))  # test the function
+#(p_active2term_nv <- make_dmat("qxtnv.a"))  # test the function
 
 
 # The transition matrices are defined below. The probabilities (eg. qxr for retirement) of flowing
@@ -244,7 +244,7 @@ calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
   # computing new entrants
   size_target <- size0*(1 + delta)   # size of the workforce next year
   size_hire   <- size_target - size1 # number of workers need to hire
-  ne <- size_hire*dist               #  vector, number of new entrants by age
+  ne <- size_hire*dist               # vector, number of new entrants by age
   
   # Create the new entrant matrix 
   NE <- wf0; NE[ ,] <- 0
@@ -264,15 +264,14 @@ sum(wf0, na.rm = T) - sum(wf1, na.rm = T)
 sum(calc_entrants(wf0, wf1, 0), na.rm = T)
 
 
-
 # Now the next slice of the array (array[, , i + 1]) is defined
 # wf_active[, , i + 1] <- (wf_active[, , i] + inflow_active[, , i] - outflow_active[, , i]) %*% A + wf_new[, , i + 1]
-# i runs from 2 to nyears. 
+# i runs from 2 to nyear. 
 
 
 wf_growth <- 0.00
 a <- proc.time()
-for (j in 1:(nyears - 1)){
+for (j in 1:(nyear - 1)){
 #i <-  1  
   # compute the inflow to and outflow
   active2term_v  <- wf_active[, , j]*p_active2term_v

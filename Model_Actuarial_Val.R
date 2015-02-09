@@ -57,17 +57,51 @@ wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension fu
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+time_start <- proc.time()
 
 # 0. Parameters ####
+
+# Assumptions
+nyear <- 75          # The simulation only contains 2 years.
+
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
+
 infl <- 0.04        # Assumed inflation
 prod <- 0.01        # Assumed productivity
 i <- 0.08           # Assumed interest rate
 v <- 1/(1 + i)      # discount factor
-nyear <- 2          # The simulation only contains 2 years.
-m = 3               # years of amortization of gain/loss
+
+# i.r <- rep(0.06, nyear) # real rate of return
+i.r <- rnorm(nyear, mean = 0.08, sd = 0.12) 
+i.r
+
+# Actuarial method
+actuarial_method <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
+
+# Amortization 
+amort_method <- "cd" # "cd" for Constant dollar, "cp" for constant percent, "sl" for straitline
+m = 3                # years of amortization of gain/loss
+
+
+# Age and entry age combinations  
+range_ea  <- seq(20, 60, 5) # For now, assume new entrants only enter the workforce with interval of 5 years. 
+range_age <- 20:110 
+
+# Initial Active
+init_active <- rbind(c(20, 20, 10),
+                     c(20, 40, 10),
+                     c(20, 64, 10))
+
+# Initial Retired 
+init_retired <- rbind(c(20, 65, 10),
+                      c(20, 85, 10))
+
+# Set real rate of return
+AA_0 <- 200
+init_AA <- "AA0"  # "AA0" for preset value; "AL0" for being equal to initial liability 
+
+
 
 
 # 1. Decrement table ####
@@ -76,7 +110,7 @@ m = 3               # years of amortization of gain/loss
 load(paste0(wvd, "winklevossdata.rdata"))
 
 # Reorganize termination table into long format
-term2 <- data.frame(age = 20:110) %>% left_join(select(term, age, everything())) %>% gather(ea, qxt, -age) %>%
+term2 <- data.frame(age = range_age) %>% left_join(select(term, age, everything())) %>% gather(ea, qxt, -age) %>%
   mutate(ea = as.numeric(gsub("[^0-9]", "", ea)))
 
 # Create decrement table and calculate probability of survival
@@ -110,7 +144,7 @@ growth <- data.frame(start.year = -89:nyear) %>%
   mutate(growth = (1 + infl + prod)^(start.year - 1 ))
 
 # Salary scale for all starting year
-salary <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:64) %>% 
+salary <- expand.grid(start.year = -89:nyear, ea = range_ea, age = 20:64) %>% 
   filter(age >= ea) %>%
   arrange(start.year, ea, age) %>%
   left_join(merit) %>% left_join(growth) %>%
@@ -120,7 +154,7 @@ salary <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:64) 
 
 # 3. Individual AL and NC by age and entry age ####
 
-liab <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:110) %>%
+liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
   left_join(salary) %>% right_join(decrement) %>%
   arrange(start.year, ea, age) %>%
   group_by(start.year, ea) %>%
@@ -158,23 +192,6 @@ liab <- expand.grid(start.year = -89:nyear, ea = seq(20, 60, 5), age = 20:110) %
 
 
 # 4. Workforce ####
-
-# The workforce can be discribed by a slice of the workforce 3-D array 
-
-range_ea  <- seq(20, 60, 5) # For now, assume new entrants only enter the workforce with interval of 5 years. 
-range_age <- 20:110 
-nyears    <- 2 # For time 1 and 2
-
-# Set inital workforce
-
-# Active
-init_active <- rbind(c(20, 20, 10),
-                     c(20, 40, 10),
-                     c(20, 64, 10))
-
-# Retired 
-init_retired <- rbind(c(20, 65, 10),
-                      c(20, 85, 10))
 
 # Simulation of the workforce is done in the file below: 
 source("Model_Actuarial_Val_wf.R")
@@ -276,15 +293,7 @@ sum(wf_retired[, , 1] * extract_slice("B",1))
   # which will make I(t) != Ia(t) + Ic(t) - Ib(t)
 
 
-# Set real rate of return
-i.r <- rep(0.05, nyear)
-AA0 <- 200
 
-# Choose amortization method. 
-amort_method <- "cd" # Constant dollar
-
-# Choose actuarial method
-AM <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
 
 
 # Set up data frame
@@ -312,21 +321,22 @@ SC_amort
 # data frame representation of amortization: much smaller size, can be used in real model later.
 #SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
-
+start_time_loop <- proc.time()
 for (j in 1:nyear){
   #j <- 1
   # AL(j)
-  penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * extract_slice(paste0("ALx.",AM),j)) + 
+  penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * extract_slice(paste0("ALx.", actuarial_method),j)) + 
                                     sum(wf_retired[, ,j] * extract_slice("ALx.r",j))
   # NC(j)
-  penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * extract_slice(paste0("NCx.", AM),j))
+  penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * extract_slice(paste0("NCx.", actuarial_method),j))
   
   # B(j)
   penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * extract_slice("B",j))
   
-  # AA(j)
-  # if(j == 1) penSim[penSim$year == j, "AA"] <- AA0 
-  if(j == 1) penSim[penSim$year == j, "AA"] <- penSim[penSim$year == j, "AL"] # Assume inital fund equals inital liability. 
+  # AA(j)  
+  if(j == 1) penSim[penSim$year == j, "AA"] <- switch(init_AA,
+                                                      AA0 = AA_0,                            # Use preset value
+                                                      AL0 = penSim[penSim$year == j, "AL"]) # Assume inital fund equals inital liability. 
   if(j > 1)  penSim[penSim$year == j, "AA"] <- with(penSim, AA[year == j - 1] + I[year == j - 1] + C[year == j - 1] - B[year == j- 1])
   
   # UAAL(j)
@@ -363,10 +373,22 @@ for (j in 1:nyear){
   penSim$FR[penSim$year == j] <- with(penSim, AA[year == j] / AL[year == j])
 
 }
+end_time_loop <- proc.time()
 
+
+
+
+getOption("scipen")
+options(digits = 2, scipen = 3)
 View(penSim)
-SC_amort
+kable(penSim, digits = 3)
+# SC_amort
 
+time_end <- proc.time()
+Time <- time_end - time_start 
+Time_loop <- end_time_loop - start_time_loop 
+Time
+Time_loop
 
 
 
