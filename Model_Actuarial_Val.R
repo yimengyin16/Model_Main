@@ -49,6 +49,8 @@ library(dplyr)
 library(ggplot2)
 library(magrittr)
 library(tidyr) # gather, spread
+library("foreach")
+library("doParallel")
 #library(corrplot)
 
 source("Functions.R")
@@ -62,7 +64,8 @@ time_start <- proc.time()
 # 0. Parameters ####
 
 # Assumptions
-nyear <- 75          # The simulation only contains 2 years.
+nyear <- 100          # The simulation only contains 2 years.
+nsim  <- 10000
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
@@ -73,8 +76,9 @@ i <- 0.08           # Assumed interest rate
 v <- 1/(1 + i)      # discount factor
 
 # i.r <- rep(0.06, nyear) # real rate of return
-i.r <- rnorm(nyear, mean = 0.08, sd = 0.12) 
-i.r
+set.seed(1234)
+i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
+
 
 # Actuarial method
 actuarial_method <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
@@ -295,9 +299,8 @@ sum(wf_retired[, , 1] * extract_slice("B",1))
 
 
 
-
 # Set up data frame
-penSim <- data.frame(year = 1:nyear) %>%
+penSim0 <- data.frame(year = 1:nyear) %>%
   mutate(AL   = 0, #
          AA   = 0, #
          FR   = 0, #
@@ -313,15 +316,29 @@ penSim <- data.frame(year = 1:nyear) %>%
          Ib   = 0, #                         
          Ic   = 0, #  
          i    = i,
-         i.r  = i.r)
+         i.r  = 0)
 
 # matrix representation of amortization: better visualization but large size, used in this excercise
-SC_amort <- matrix(0, nyear + m, nyear + m)
-SC_amort
+SC_amort0 <- matrix(0, nyear + m, nyear + m)
+#SC_amort0
 # data frame representation of amortization: much smaller size, can be used in real model later.
 #SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
+cl <- makeCluster(8) 
+registerDoParallel(cl)
+
 start_time_loop <- proc.time()
+
+#penSim_results <- list()
+#for(k in 1:nsim){
+
+penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
+
+  # initialize
+  penSim <- penSim0
+  SC_amort <- SC_amort0 
+  penSim[,"i.r"] <- i.r[, k]
+  
 for (j in 1:nyear){
   #j <- 1
   # AL(j)
@@ -373,16 +390,23 @@ for (j in 1:nyear){
   penSim$FR[penSim$year == j] <- with(penSim, AA[year == j] / AL[year == j])
 
 }
+
+#penSim_results[[k]] <- penSim
+penSim
+}
+
+stopCluster(cl)
+
 end_time_loop <- proc.time()
-
-
 
 
 getOption("scipen")
 options(digits = 2, scipen = 3)
-View(penSim)
-kable(penSim, digits = 3)
+View(penSim_results[[1]])
+kable(penSim_results[[2]], digits = 3)
 # SC_amort
+#penSim_results
+
 
 time_end <- proc.time()
 Time <- time_end - time_start 
@@ -391,15 +415,25 @@ Time
 Time_loop
 
 
+# 5 simulations
+# sequential: 35.45 sec
+# 4 cores:    19.78 sec
+# 8 cores:    18.54 sec
 
 
+# 10 simulations
+# 4 cores:    26.75  21.19
+# 8 cores:    25.84  19.27 
 
 
+# 30 sims
+# 4 cores:    59.66/ 53.39
+# 8 cores:    47.53/ 39.36
 
+# 100 sims
+# 8 cores:     130.93/120.36
 
-
-
-
+save(penSim_results, Time, Time_loop,  "penSim_results.Rdata")
 
 
 
