@@ -440,7 +440,7 @@ Time_loop
 # 100 sims
 # 8 cores:     130.93/120.36
 
-save(penSim_results, Time, Time_loop, file = "penSim_results5k.Rdata")
+#save(penSim_results, Time, Time_loop, file = "penSim_results5k.Rdata")
 
 # user  system elapsed 
 # 1.63    0.81 1097.69 
