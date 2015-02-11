@@ -18,7 +18,7 @@ library(magrittr)
 library(tidyr) # gather, spread
 # library(corrplot)
 
-wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+
 load(paste0(wvd, "winklevossdata.rdata"))
 
 
