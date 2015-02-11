@@ -65,7 +65,7 @@ time_start <- proc.time()
 
 # Assumptions
 nyear <- 100          # The simulation only contains 2 years.
-nsim  <- 10000
+nsim  <- 1
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
@@ -77,8 +77,8 @@ v <- 1/(1 + i)      # discount factor
 
 # i.r <- rep(0.06, nyear) # real rate of return
 set.seed(1234)
-i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
-
+#i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
+i.r <- matrix(0.08, nrow = nyear, ncol = nsim)
 
 # Actuarial method
 actuarial_method <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
@@ -220,16 +220,23 @@ extract_slice <- function(Var, Year,  data = liab){
   return(Slice)
 }
 
+a <- proc.time()
 extract_slice("NCx.EAN.CP",1)
 extract_slice("NCx.EAN.CD",1)
 extract_slice("NCx.PUC", 1)
+b <- proc.time()
+b-a
+
 
 extract_slice("ALx.EAN.CP",1)
 extract_slice("ALx.EAN.CD",1)
 extract_slice("ALx.PUC", 1)
 extract_slice("ALx.r", 1)
 
+
 extract_slice("B", 1) # note that in the absence of COLA, within a time period older retirees receive less benefit than younger retirees do.
+b <- proc.time()
+b-a
 
 
 # Total AL for Active participants
@@ -403,7 +410,7 @@ end_time_loop <- proc.time()
 getOption("scipen")
 options(digits = 2, scipen = 3)
 View(penSim_results[[1]])
-kable(penSim_results[[2]], digits = 3)
+kable(penSim_results[[1]], digits = 3)
 # SC_amort
 #penSim_results
 
@@ -433,7 +440,9 @@ Time_loop
 # 100 sims
 # 8 cores:     130.93/120.36
 
-save(penSim_results, Time, Time_loop,  "penSim_results.Rdata")
+save(penSim_results, Time, Time_loop, file = "penSim_results5k.Rdata")
 
-
+# user  system elapsed 
+# 1.63    0.81 1097.69 
+# Time of 1000 simulations, why does the elapsed much greater than the sum of user and system?
 
