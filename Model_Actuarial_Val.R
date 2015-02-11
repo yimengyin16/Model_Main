@@ -45,6 +45,7 @@ rm(list = ls())
 library(zoo) # rollapply
 library(knitr)
 library(gdata) # read.xls
+library("plyr")
 library(dplyr)
 library(ggplot2)
 library(magrittr)
@@ -55,7 +56,7 @@ library("doParallel")
 
 source("Functions.R")
 
-wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+wvd <- "C:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -65,7 +66,7 @@ time_start <- proc.time()
 
 # Assumptions
 nyear <- 100          # The simulation only contains 2 years.
-nsim  <- 1
+nsim  <- 10000
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
@@ -77,8 +78,8 @@ v <- 1/(1 + i)      # discount factor
 
 # i.r <- rep(0.06, nyear) # real rate of return
 set.seed(1234)
-#i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
-i.r <- matrix(0.08, nrow = nyear, ncol = nsim)
+i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
+#i.r <- matrix(0.08, nrow = nyear, ncol = nsim)
 
 # Actuarial method
 actuarial_method <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
@@ -103,7 +104,7 @@ init_retired <- rbind(c(20, 65, 10),
 
 # Set real rate of return
 AA_0 <- 200
-init_AA <- "AA0"  # "AA0" for preset value; "AL0" for being equal to initial liability 
+init_AA <- "AL0"  # "AA0" for preset value; "AL0" for being equal to initial liability 
 
 
 
@@ -192,9 +193,9 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     ALx.EAN.CP = ayxs/ayxs[age == 65] * PVFBx,
     ALx.r      = ax * Bx[age == 65]             # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods
     ) %>% 
+  ungroup %>% 
   select(start.year, year, ea, age, everything()) 
 
-liab %<>% ungroup
 
 # 4. Workforce ####
 
@@ -223,6 +224,20 @@ extract_slice <- function(Var, Year,  data = liab){
   Slice %<>% select(-ea) %>% as.matrix
   return(Slice)
 }
+
+# Extract variables in liab that will be used in the simulation, and put them in a list.
+# Storing the variables this way can significantly boost the speed of the loop. 
+
+var.names <- liab %>% select(B:ALx.r) %>% colnames()
+liab_list <- alply(var.names, 1, function(var){
+               alply(1:nyear,1, function(n) extract_slice(var, n))
+                 }
+             )
+names(liab_list) <- var.names
+
+#eg. extract "B" for year 1, a matrix is returned
+liab_list[["B"]][[1]]
+
 
 a <- proc.time()
 extract_slice("NCx.EAN.CP",1)
@@ -335,7 +350,8 @@ SC_amort0 <- matrix(0, nyear + m, nyear + m)
 # data frame representation of amortization: much smaller size, can be used in real model later.
 #SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
-cl <- makeCluster(2) 
+
+cl <- makeCluster(4) 
 registerDoParallel(cl)
 
 start_time_loop <- proc.time()
@@ -351,15 +367,17 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   penSim[,"i.r"] <- i.r[, k]
   
 for (j in 1:nyear){
-  #j <- 1
+  # j <- 1
   # AL(j)
-  # penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * extract_slice(paste0("ALx.", actuarial_method),j)) + 
-  #                                 sum(wf_retired[, ,j] * extract_slice("ALx.r",j))
-  # # NC(j)
-  # penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * extract_slice(paste0("NCx.", actuarial_method),j))
-  #   
+   penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * liab_list[[paste0("ALx.", actuarial_method)]][[j]]) + 
+                                     sum(wf_retired[, ,j] * liab_list[["ALx.r"]][[j]])
+  # NC(j)
+   penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * liab_list[[paste0("NCx.", actuarial_method)]][[j]]) 
+     
   # B(j)
-  # penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * extract_slice("B",j))
+   penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * liab_list[["B"]][[j]])
+  
+  # for testing purpose
   # penSim[penSim$year == j, "B"] <-  sum(extract_slice("B",j))
   # penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j])
   
@@ -408,37 +426,40 @@ for (j in 1:nyear){
 penSim
 }
 
-stopCluster(cl)
-
 end_time_loop <- proc.time()
 (Time_loop <- end_time_loop - start_time_loop)
+
+stopCluster(cl)
+
+
 
 
 getOption("scipen")
 options(digits = 2, scipen = 3)
 View(penSim_results[[1]])
 kable(penSim_results[[1]], digits = 3)
+kable(penSim_results[[2]], digits = 3)
 # SC_amort
 #penSim_results
 
 
 time_end <- proc.time()
+
 Time <- time_end - time_start 
 Time_loop <- end_time_loop - start_time_loop 
-Time
-Time_loop
 
+
+
+## Original Performance:
 
 # 5 simulations
 # sequential: 35.45 sec
 # 4 cores:    19.78 sec
 # 8 cores:    18.54 sec
 
-
 # 10 simulations
 # 4 cores:    26.75  21.19
 # 8 cores:    25.84  19.27 
-
 
 # 30 sims
 # 4 cores:    59.66/ 53.39
@@ -447,10 +468,29 @@ Time_loop
 # 100 sims
 # 8 cores:     130.93/120.36
 
+
+## After optimization
+#  100 sims
+#  4 cores: 16.74 / 3.29
+#  8 cores: 17.59 / 3.72   
+# 
+#  1000 sims
+#  4 cores: 34.8  / 21.56 
+#  8 cores: 33.07 / 18.91
+
+#  5000 sims
+#  4 cores: 118.30 / 105.11
+#  8 cores: 101.2  / 87.2
+
+#  10000 sims
+#  4 cores: 216.2  / 202.8
+#  8 cores: 186.1  / 171.6
+
+
 #save(penSim_results, Time, Time_loop, file = "penSim_results5k.Rdata")
+ 
 
-# user  system elapsed 
-# 1.63    0.81 1097.69 
-# Time of 1000 simulations, why does the elapsed much greater than the sum of user and system?
+Time
+Time_loop
 
-# change 
+
