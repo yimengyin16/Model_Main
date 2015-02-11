@@ -194,7 +194,6 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     ) %>% 
   select(start.year, year, ea, age, everything()) 
 
-liab %<>% ungroup
 
 # 4. Workforce ####
 
@@ -205,7 +204,6 @@ source("Model_Actuarial_Val_wf.R")
 
 # 5. Calculate Total Actuarial liabilities and Normal costs 
 
-
 # Define a function to extract the variables in a single time period
 extract_slice <- function(Var, Year,  data = liab){
   # This function extract information for a specific year.
@@ -215,9 +213,7 @@ extract_slice <- function(Var, Year,  data = liab){
     # data: name of the data frame
   # outputs:
     # Slice: data frame. A data frame with the same structure as the workforce data.
-  Slice <- data %>% 
-    # ungroup %>% 
-    filter(year == Year) %>% 
+  Slice <- data %>% ungroup %>% filter(year == Year) %>% 
     select_("ea", "age", Var) %>% arrange(ea, age) %>% spread_("age", Var, fill = 0)
   rownames(Slice) = Slice$ea
   Slice %<>% select(-ea) %>% as.matrix
@@ -237,7 +233,7 @@ extract_slice("ALx.EAN.CD",1)
 extract_slice("ALx.PUC", 1)
 extract_slice("ALx.r", 1)
 
-a <- proc.time()
+
 extract_slice("B", 1) # note that in the absence of COLA, within a time period older retirees receive less benefit than younger retirees do.
 b <- proc.time()
 b-a
@@ -335,7 +331,7 @@ SC_amort0 <- matrix(0, nyear + m, nyear + m)
 # data frame representation of amortization: much smaller size, can be used in real model later.
 #SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
-cl <- makeCluster(2) 
+cl <- makeCluster(8) 
 registerDoParallel(cl)
 
 start_time_loop <- proc.time()
@@ -353,15 +349,13 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
 for (j in 1:nyear){
   #j <- 1
   # AL(j)
-  # penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * extract_slice(paste0("ALx.", actuarial_method),j)) + 
-  #                                 sum(wf_retired[, ,j] * extract_slice("ALx.r",j))
-  # # NC(j)
-  # penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * extract_slice(paste0("NCx.", actuarial_method),j))
-  #   
+  penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * extract_slice(paste0("ALx.", actuarial_method),j)) + 
+                                    sum(wf_retired[, ,j] * extract_slice("ALx.r",j))
+  # NC(j)
+  penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * extract_slice(paste0("NCx.", actuarial_method),j))
+  
   # B(j)
-  # penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * extract_slice("B",j))
-  # penSim[penSim$year == j, "B"] <-  sum(extract_slice("B",j))
-  # penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j])
+  penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * extract_slice("B",j))
   
   # AA(j)  
   if(j == 1) penSim[penSim$year == j, "AA"] <- switch(init_AA,
@@ -383,10 +377,10 @@ for (j in 1:nyear){
   }   
   
   # Amortize LG(j)
-   SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$LG[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
+  SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$LG[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
   
   # Supplemental cost in j
-   penSim$SC[penSim$year == j] <- sum(SC_amort[, j])
+  penSim$SC[penSim$year == j] <- sum(SC_amort[, j])
   
   # C(j)
   penSim$C[penSim$year == j] <- with(penSim, NC[year == j] + SC[year == j]) 
@@ -411,7 +405,6 @@ penSim
 stopCluster(cl)
 
 end_time_loop <- proc.time()
-(Time_loop <- end_time_loop - start_time_loop)
 
 
 getOption("scipen")
