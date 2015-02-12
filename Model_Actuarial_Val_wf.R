@@ -11,7 +11,7 @@
 
 library(zoo) # rollapply
 library(knitr)
-library(gdata) # read.xls
+#library(gdata) # read.xls
 library(dplyr)
 library(ggplot2)
 library(magrittr)
