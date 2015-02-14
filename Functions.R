@@ -127,13 +127,6 @@ amort_LG <- function(p, i, m, g, end = FALSE, method = "cd"){
          )
   }
 
-amort_LG(100, 0.08, 10, end = FALSE, method = "cd")
-amort_LG(100, 0.08, 10, 0.05, end = FALSE, method = "cp")
-amort_LG(100, 0.08, 10, end = FALSE, method = "sl")
-
-
-
-
 
 
 # functions created by Don

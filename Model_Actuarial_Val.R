@@ -1,7 +1,10 @@
 # Actuarial Valuation in a simple setting
 # Yimeng Yin
 # 2/1/2015
-
+# Note: This program consists of 3 files:
+  # Model_Actuarial_Val.R
+  # Model_Actuarial_Val_wf.R
+  # Functions.R
 
 # Goal: 
 # 1. Conduct an actuarial valuation at time 1 based on plan design, actuarial assumptions, and plan data.
@@ -45,19 +48,25 @@ rm(list = ls())
 library(zoo) # rollapply
 library(knitr)
 library(gdata) # read.xls
-library("plyr")
+library(plyr)
 library(dplyr)
 library(ggplot2)
 library(magrittr)
 library(tidyr) # gather, spread
-library("foreach")
-library("doParallel")
+library(foreach)
+library(doParallel)
 #library(corrplot)
 
 source("Functions.R")
 
-# wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+# Use the path below when Don is running the program
+wvd <- "E:\\Dropbox (Personal)\\Pensions\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
+# Use the path below when Yimeng is running the program
+wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+
+
+ 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 time_start <- proc.time()
@@ -66,7 +75,7 @@ time_start <- proc.time()
 
 # Assumptions
 nyear <- 100          # The simulation only contains 2 years.
-nsim  <- 100            # # of sims
+nsim  <- 10          # # of sims
 ncore <- 4            # # of CPU cores used in parallelled loops
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
@@ -383,7 +392,17 @@ for (j in 1:nyear){
      
   # B(j)
    penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * liab_list[["B"]][[j]])
-  
+#   
+#    # AL(j)  
+#    penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * .subset2(liab_list, paste0("ALx.", actuarial_method))[[j]]) + 
+#                                      sum(wf_retired[, ,j] * .subset2(liab_list, "ALx.r")[[j]])
+#    # NC(j)
+#    penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * .subset2(liab_list, paste0("NCx.", actuarial_method))[[j]]) 
+#    
+#    # B(j)
+#    penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * .subset2(liab_list, "B")[[j]])
+#    
+#    
   # for testing purpose
   # penSim[penSim$year == j, "B"] <-  sum(extract_slice("B",j))
   # penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j])
