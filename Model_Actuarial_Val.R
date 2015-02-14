@@ -10,6 +10,8 @@
 # 1. Conduct an actuarial valuation at time 1 based on plan design, actuarial assumptions, and plan data.
 # 2. Conduct an actuarial valuation at time 2 based on the plan experience during the period [1, 2), and calculate
 #    supplemental costs at time 2 based on the experience gain/loss or assumption changes. 
+# 3. Conduct actuarial valuations each year during a time period of 100 years, allowing for stochastic investment returns.
+# 4. Conduct the stochastic simulation in 3 for 10k times. 
 
 # Assumptions
  # Plan Desgin
