@@ -66,7 +66,7 @@ source("Functions.R")
 # wvd <- "E:\\Dropbox (Personal)\\Pensions\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 # Use the path below when Yimeng is running the program
-# wvd <- "C:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+ wvd <- "C:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 
  
@@ -461,7 +461,7 @@ stopCluster(cl)
 getOption("scipen")
 options(digits = 2, scipen = 3)
 #View(penSim_results[[1]])
-kable(penSim_results[[2]], digits = 3)
+kable(penSim_results[[2]], digits = 5)
 #kable(penSim_results[[2]], digits = 3)
 
 #SC_amort
