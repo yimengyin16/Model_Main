@@ -65,7 +65,7 @@ source("Functions.R")
 # wvd <- "E:\\Dropbox (Personal)\\Pensions\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 # Use the path below when Yimeng is running the program
- wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+# wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 
  
