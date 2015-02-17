@@ -65,7 +65,7 @@ source("Functions.R")
 # wvd <- "E:\\Dropbox (Personal)\\Pensions\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 # Use the path below when Yimeng is running the program
-# wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+ wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 
  
@@ -90,8 +90,8 @@ v <- 1/(1 + i)      # discount factor
 
 # i.r <- rep(0.06, nyear) # real rate of return
 set.seed(1234)
-i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
-#i.r <- matrix(0.08, nrow = nyear, ncol = nsim)
+#i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
+i.r <- matrix(0.08, nrow = nyear, ncol = nsim)
 
 # Actuarial method
 actuarial_method <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
@@ -378,81 +378,71 @@ start_time_loop <- proc.time()
 #for(k in 1:nsim){
 
 penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
-#k <- 1
+# k <- 1
   # initialize
   penSim <- penSim0
   SC_amort <- SC_amort0 
   penSim[,"i.r"] <- i.r[, k]
   
-for (j in 1:nyear){
-   #j <- 1
+for (j.year in 1:nyear){
+  # j.year <- 1
   # AL(j)
-   penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * liab_list[[paste0("ALx.", actuarial_method)]][[j]]) + 
-                                     sum(wf_retired[, ,j] * liab_list[["ALx.r"]][[j]])
+   penSim[j.year, "AL"] <- sum(wf_active[, , j.year] * liab_list[[paste0("ALx.", actuarial_method)]][[j.year]]) + 
+                                     sum(wf_retired[, , j.year] * liab_list[["ALx.r"]][[j.year]])
   # NC(j)
-   penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * liab_list[[paste0("NCx.", actuarial_method)]][[j]]) 
+   penSim[j.year, "NC"] <- sum(wf_active[, , j.year] * liab_list[[paste0("NCx.", actuarial_method)]][[j.year]]) 
      
   # B(j)
-   penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * liab_list[["B"]][[j]])
-#   
-#    # AL(j)  
-#    penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * .subset2(liab_list, paste0("ALx.", actuarial_method))[[j]]) + 
-#                                      sum(wf_retired[, ,j] * .subset2(liab_list, "ALx.r")[[j]])
-#    # NC(j)
-#    penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * .subset2(liab_list, paste0("NCx.", actuarial_method))[[j]]) 
-#    
-#    # B(j)
-#    penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * .subset2(liab_list, "B")[[j]])
-#    
-#    
+   penSim[j.year, "B"] <-  sum(wf_retired[, , j.year] * liab_list[["B"]][[j.year]])
+
   # for testing purpose
-  # penSim[penSim$year == j, "B"] <-  sum(extract_slice("B",j))
-  # penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j])
+  # penSim[penSim$year == j.year, "B"] <-  sum(extract_slice("B",j.year))
+  # penSim[penSim$year == j.year, "B"] <-  sum(wf_retired[, , j.year])
   
   # AA(j)  
-  if(j == 1) penSim[penSim$year == j, "AA"] <- switch(init_AA,
+  if(j.year == 1) penSim[j.year, "AA"] <- switch(init_AA,
                                                       AA0 = AA_0,                           # Use preset value
-                                                      AL0 = penSim[penSim$year == j, "AL"]) # Assume inital fund equals inital liability. 
-  if(j > 1)  penSim[penSim$year == j, "AA"] <- with(penSim, AA[year == j - 1] + I.r[year == j - 1] + C[year == j - 1] - B[year == j- 1])
+                                                      AL0 = penSim[j.year, "AL"]) # Assume inital fund equals inital liability. 
+  if(j.year > 1)  penSim[j.year, "AA"] <- with(penSim, AA[j.year - 1] + I.r[j.year - 1] + C[j.year - 1] - B[j.year - 1])
   
   # UAAL(j)
-  penSim$UAAL[penSim$year == j] <- with(penSim, AL[year == j] - AA[year == j]) 
+  penSim$UAAL[j.year] <- with(penSim, AL[j.year] - AA[j.year]) 
   
   # LG(j)
-  if (j == 1){
-    penSim$EUAAL[penSim$year == j] <- 0
-    penSim$LG[penSim$year == j] <- with(penSim,  UAAL[year == j])
+  if (j.year == 1){
+    penSim$EUAAL[j.year] <- 0
+    penSim$LG[j.year] <- with(penSim,  UAAL[j.year])
   }
-  if (j > 1){
-    penSim$EUAAL[penSim$year == j] <- with(penSim, (UAAL[year == j - 1] + NC[year == j - 1])*(1 + i[year == j-1]) - C[year == j - 1] - Ic[year == j - 1])
-    penSim$LG[penSim$year == j] <- with(penSim,  UAAL[year == j] - EUAAL[year == j])
+  if (j.year > 1){
+    penSim$EUAAL[j.year] <- with(penSim, (UAAL[j.year - 1] + NC[j.year - 1])*(1 + i[j.year - 1]) - C[j.year - 1] - Ic[j.year - 1])
+    penSim$LG[j.year] <- with(penSim,  UAAL[j.year] - EUAAL[j.year])
   }   
   
   # Amortize LG(j)
-   SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$LG[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
+   SC_amort[j.year, j.year:(j.year + m - 1)] <- amort_LG(penSim$LG[penSim$year == j.year], i, m, g, end = FALSE, method = amort_method)  
   
-  # Supplemental cost in j
-   penSim$SC[penSim$year == j] <- sum(SC_amort[, j])
+  # Supplemental cost in j.year
+   penSim$SC[j.year] <- sum(SC_amort[, j.year])
   
   # C(j)
-  penSim$C[penSim$year == j] <- with(penSim, NC[year == j] + SC[year == j]) 
+  penSim$C[j.year] <- with(penSim, NC[j.year] + SC[j.year]) 
   
   # Ia(j), Ib(j), Ic(j)
-  penSim$Ia[penSim$year == j] <- with(penSim, AA[year == j] * i[year == j])
-  penSim$Ib[penSim$year == j] <- with(penSim,  B[year == j] * i[year == j])
-  penSim$Ic[penSim$year == j] <- with(penSim,  C[year == j] * i[year == j])
+  penSim$Ia[j.year] <- with(penSim, AA[j.year] * i[j.year])
+  penSim$Ib[j.year] <- with(penSim,  B[j.year] * i[j.year])
+  penSim$Ic[j.year] <- with(penSim,  C[j.year] * i[j.year])
   
   # I.e(j)
-  penSim$I.e[penSim$year == j] <- with(penSim, Ia[year == j] + Ic[year == j] - Ib[year == j])
+  penSim$I.e[j.year] <- with(penSim, Ia[j.year] + Ic[j.year] - Ib[j.year])
   
   # I.r(j)
-  penSim$I.r[penSim$year == j] <- with(penSim, i.r[year == j] *( AA[year == j] + C[year == j] - B[year == j]))
+  penSim$I.r[j.year] <- with(penSim, i.r[j.year] *( AA[j.year] + C[j.year] - B[j.year]))
 
   # Funded Ratio
-  penSim$FR[penSim$year == j] <- with(penSim, AA[year == j] / AL[year == j])
+  penSim$FR[j.year] <- with(penSim, AA[j.year] / AL[j.year])
  
   # External fund
-  penSim$ExF[penSim$year == j] <- with(penSim, B[year == j] - C[year == j])
+  penSim$ExF[j.year] <- with(penSim, B[j.year] - C[j.year])
 }
 
 #penSim_results[[k]] <- penSim
@@ -523,9 +513,72 @@ Time_loop <- end_time_loop - start_time_loop
 
 
 #save(penSim_results, Time, Time_loop, file = "penSim_results5k.Rdata")
- 
+
+
+# for (j in 1:nyear){
+#   #j <- 1
+#   # AL(j)
+#   penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * liab_list[[paste0("ALx.", actuarial_method)]][[j]]) + 
+#     sum(wf_retired[, ,j] * liab_list[["ALx.r"]][[j]])
+#   # NC(j)
+#   penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * liab_list[[paste0("NCx.", actuarial_method)]][[j]]) 
+#   
+#   # B(j)
+#   penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * liab_list[["B"]][[j]])
+#   
+#   # for testing purpose
+#   # penSim[penSim$year == j, "B"] <-  sum(extract_slice("B",j))
+#   # penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j])
+#   
+#   # AA(j)  
+#   if(j == 1) penSim[penSim$year == j, "AA"] <- switch(init_AA,
+#                                                       AA0 = AA_0,                           # Use preset value
+#                                                       AL0 = penSim[penSim$year == j, "AL"]) # Assume inital fund equals inital liability. 
+#   if(j > 1)  penSim[penSim$year == j, "AA"] <- with(penSim, AA[year == j - 1] + I.r[year == j - 1] + C[year == j - 1] - B[year == j- 1])
+#   
+#   # UAAL(j)
+#   penSim$UAAL[penSim$year == j] <- with(penSim, AL[year == j] - AA[year == j]) 
+#   
+#   # LG(j)
+#   if (j == 1){
+#     penSim$EUAAL[penSim$year == j] <- 0
+#     penSim$LG[penSim$year == j] <- with(penSim,  UAAL[year == j])
+#   }
+#   if (j > 1){
+#     penSim$EUAAL[penSim$year == j] <- with(penSim, (UAAL[year == j - 1] + NC[year == j - 1])*(1 + i[year == j-1]) - C[year == j - 1] - Ic[year == j - 1])
+#     penSim$LG[penSim$year == j] <- with(penSim,  UAAL[year == j] - EUAAL[year == j])
+#   }   
+#   
+#   # Amortize LG(j)
+#   SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$LG[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
+#   
+#   # Supplemental cost in j
+#   penSim$SC[penSim$year == j] <- sum(SC_amort[, j])
+#   
+#   # C(j)
+#   penSim$C[penSim$year == j] <- with(penSim, NC[year == j] + SC[year == j]) 
+#   
+#   # Ia(j), Ib(j), Ic(j)
+#   penSim$Ia[penSim$year == j] <- with(penSim, AA[year == j] * i[year == j])
+#   penSim$Ib[penSim$year == j] <- with(penSim,  B[year == j] * i[year == j])
+#   penSim$Ic[penSim$year == j] <- with(penSim,  C[year == j] * i[year == j])
+#   
+#   # I.e(j)
+#   penSim$I.e[penSim$year == j] <- with(penSim, Ia[year == j] + Ic[year == j] - Ib[year == j])
+#   
+#   # I.r(j)
+#   penSim$I.r[penSim$year == j] <- with(penSim, i.r[year == j] *( AA[year == j] + C[year == j] - B[year == j]))
+#   
+#   # Funded Ratio
+#   penSim$FR[penSim$year == j] <- with(penSim, AA[year == j] / AL[year == j])
+#   
+#   # External fund
+#   penSim$ExF[penSim$year == j] <- with(penSim, B[year == j] - C[year == j])
+# } 
 
 Time
 Time_loop
+
+
 
 
