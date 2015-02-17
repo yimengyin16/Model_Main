@@ -1,12 +1,17 @@
 # Actuarial Valuation in a simple setting
 # Yimeng Yin
 # 2/1/2015
-
+# Note: This program consists of 3 files:
+  # Model_Actuarial_Val.R
+  # Model_Actuarial_Val_wf.R
+  # Functions.R
 
 # Goal: 
 # 1. Conduct an actuarial valuation at time 1 based on plan design, actuarial assumptions, and plan data.
 # 2. Conduct an actuarial valuation at time 2 based on the plan experience during the period [1, 2), and calculate
 #    supplemental costs at time 2 based on the experience gain/loss or assumption changes. 
+# 3. Conduct actuarial valuations each year during a time period of 100 years, allowing for stochastic investment returns.
+# 4. Conduct the stochastic simulation in 3 for 10k times. 
 
 # Assumptions
  # Plan Desgin
@@ -45,18 +50,26 @@ rm(list = ls())
 library(zoo) # rollapply
 library(knitr)
 library(gdata) # read.xls
+library(plyr)
 library(dplyr)
 library(ggplot2)
 library(magrittr)
 library(tidyr) # gather, spread
-library("foreach")
-library("doParallel")
+library(foreach)
+library(doParallel)
 #library(corrplot)
 
 source("Functions.R")
 
-# wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
+# Use the path below when Don is running the program
+# wvd <- "E:\\Dropbox (Personal)\\Pensions\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+
+# Use the path below when Yimeng is running the program
+# wvd <- "C:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+
+
+ 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 time_start <- proc.time()
@@ -65,7 +78,8 @@ time_start <- proc.time()
 
 # Assumptions
 nyear <- 100          # The simulation only contains 2 years.
-nsim  <- 1
+nsim  <- 100         # # of sims
+ncore <- 4            # # of CPU cores used in parallelled loops
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
@@ -93,17 +107,18 @@ range_ea  <- seq(20, 60, 5) # For now, assume new entrants only enter the workfo
 range_age <- 20:110 
 
 # Initial Active
-init_active <- rbind(c(20, 20, 10),
-                     c(20, 40, 10),
-                     c(20, 64, 10))
+init_active <- rbind(c(20, 20, 100),
+                     c(20, 40, 100),
+                     c(20, 64, 100))
 
 # Initial Retired 
-init_retired <- rbind(c(20, 65, 10),
-                      c(20, 85, 10))
+init_retired <- rbind(c(20, 65, 100),
+                      c(20, 85, 100))
 
 # Set real rate of return
 AA_0 <- 200
-init_AA <- "AA0"  # "AA0" for preset value; "AL0" for being equal to initial liability 
+init_AA <- "AL0"  # "AA0" for preset value; "AL0" for being equal to initial liability 
+
 
 
 
@@ -192,6 +207,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     ALx.EAN.CP = ayxs/ayxs[age == 65] * PVFBx,
     ALx.r      = ax * Bx[age == 65]             # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods
     ) %>% 
+  ungroup %>% 
   select(start.year, year, ea, age, everything()) 
 
 
@@ -219,6 +235,20 @@ extract_slice <- function(Var, Year,  data = liab){
   Slice %<>% select(-ea) %>% as.matrix
   return(Slice)
 }
+
+# Extract variables in liab that will be used in the simulation, and put them in a list.
+# Storing the variables this way can significantly boost the speed of the loop. 
+
+var.names <- liab %>% select(B:ALx.r) %>% colnames()
+liab_list <- alply(var.names, 1, function(var){
+               alply(1:nyear,1, function(n) extract_slice(var, n))
+                 }
+             )
+names(liab_list) <- var.names
+
+#eg. extract "B" for year 1, a matrix is returned
+liab_list[["B"]][[1]]
+
 
 a <- proc.time()
 extract_slice("NCx.EAN.CP",1)
@@ -281,16 +311,18 @@ sum(wf_retired[, , 1] * extract_slice("B",1))
   # Ic: Assumed interest from contribution, equal to i*C if C is made at the beginning of time period. i.r is real rate of return. 
   # Ia: Assumed interest from AA, equal to i*AA if the entire asset is investible. 
   # Ib: Assumed interest loss due to benefit payment, equal to i*B if the payment is made at the beginning of period
-  # I : Total ACTUAL interet gain, I = i.r*(AA + C - B), if AA is all investible, C and B are made at the beginning of period.
+  # I.r : Total ACTUAL interet gain, I = i.r*(AA + C - B), if AA is all investible, C and B are made at the beginning of period.
+  # S : Total payrol
   # Funded Ratio: AA / AL
 
 # Formulas
   # AL(t), NC(t), B(t) at each period are calculated using the workforce matrix and the liability matrix.
   # AA(t+1) = AA(t) + I(t) + C(t) - B(t), AA(1) is given
-  # I(t) = i.r(t)*[AA(t) + C(t) - B(t)]
+  # I.r(t) = i.r(t)*[AA(t) + C(t) - B(t)]
   # Ia(t) = i * AA(t)
   # Ib(t) = i * B(t)
   # Ic(t) = i * C(t)
+  # EI(t) = Ia(t) - Ib(t) + Ic(t) 
   # C(t) = NC(t) + SC(t)
   # UAAL(t) = AL(t) - AA(t)
   # EUAAL(t) = [UAAL(t-1) + NC(t-1)](1+i(t-1)) - C(t-1) - Ic(t-1)
@@ -298,6 +330,7 @@ sum(wf_retired[, , 1] * extract_slice("B",1))
   # More on LG(t): When LG(t) is calculated, the value will be amortized thourgh m years. This stream of amortized values(a m vector) will be 
     # placed in SC_amort[t, t + m - 1]
   # SC = sum(SC_amort[,t])
+  # ExF = B(j) - C(j)
 
 # About gains and losses
   # In this program, the only source of gain or loss is the difference between assumed interest rate i and real rate of return i.r,
@@ -311,6 +344,7 @@ penSim0 <- data.frame(year = 1:nyear) %>%
   mutate(AL   = 0, #
          AA   = 0, #
          FR   = 0, #
+         ExF  = 0, # 
          UAAL = 0, #
          EUAAL= 0, #
          LG   = 0, #
@@ -318,7 +352,8 @@ penSim0 <- data.frame(year = 1:nyear) %>%
          SC   = 0, #
          C    = 0, #
          B    = 0, #                        
-         I    = 0, #                        
+         I.r  = 0, #                        
+         I.e  = 0, #
          Ia   = 0, #                         
          Ib   = 0, #                         
          Ic   = 0, #  
@@ -331,7 +366,8 @@ SC_amort0 <- matrix(0, nyear + m, nyear + m)
 # data frame representation of amortization: much smaller size, can be used in real model later.
 #SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
-cl <- makeCluster(8) 
+
+cl <- makeCluster(ncore) 
 registerDoParallel(cl)
 
 start_time_loop <- proc.time()
@@ -340,98 +376,115 @@ start_time_loop <- proc.time()
 #for(k in 1:nsim){
 
 penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
-
+# k <- 1
   # initialize
   penSim <- penSim0
   SC_amort <- SC_amort0 
   penSim[,"i.r"] <- i.r[, k]
   
-for (j in 1:nyear){
-  #j <- 1
+for (j.year in 1:nyear){
+  # j.year <- 1
   # AL(j)
-  penSim[penSim$year == j, "AL"] <- sum(wf_active[, , j] * extract_slice(paste0("ALx.", actuarial_method),j)) + 
-                                    sum(wf_retired[, ,j] * extract_slice("ALx.r",j))
+
+   penSim[j.year, "AL"] <- sum(wf_active[, , j.year] * liab_list[[paste0("ALx.", actuarial_method)]][[j.year]]) + 
+                                     sum(wf_retired[, , j.year] * liab_list[["ALx.r"]][[j.year]])
   # NC(j)
-  penSim[penSim$year == j, "NC"] <- sum(wf_active[, , j] * extract_slice(paste0("NCx.", actuarial_method),j))
-  
+   penSim[j.year, "NC"] <- sum(wf_active[, , j.year] * liab_list[[paste0("NCx.", actuarial_method)]][[j.year]]) 
+     
   # B(j)
-  penSim[penSim$year == j, "B"] <-  sum(wf_retired[, , j] * extract_slice("B",j))
+   penSim[j.year, "B"] <-  sum(wf_retired[, , j.year] * liab_list[["B"]][[j.year]])
+
+  # for testing purpose
+  # penSim[penSim$year == j.year, "B"] <-  sum(extract_slice("B",j.year))
+  # penSim[penSim$year == j.year, "B"] <-  sum(wf_retired[, , j.year])
+
   
   # AA(j)  
-  if(j == 1) penSim[penSim$year == j, "AA"] <- switch(init_AA,
-                                                      AA0 = AA_0,                            # Use preset value
-                                                      AL0 = penSim[penSim$year == j, "AL"]) # Assume inital fund equals inital liability. 
-  if(j > 1)  penSim[penSim$year == j, "AA"] <- with(penSim, AA[year == j - 1] + I[year == j - 1] + C[year == j - 1] - B[year == j- 1])
+  if(j.year == 1) penSim[j.year, "AA"] <- switch(init_AA,
+                                                      AA0 = AA_0,                           # Use preset value
+                                                      AL0 = penSim[j.year, "AL"]) # Assume inital fund equals inital liability. 
+  if(j.year > 1)  penSim[j.year, "AA"] <- with(penSim, AA[j.year - 1] + I.r[j.year - 1] + C[j.year - 1] - B[j.year - 1])
   
   # UAAL(j)
-  penSim$UAAL[penSim$year == j] <- with(penSim, AL[year == j] - AA[year == j]) 
+  penSim$UAAL[j.year] <- with(penSim, AL[j.year] - AA[j.year]) 
   
   # LG(j)
-  if (j == 1){
-    penSim$EUAAL[penSim$year == j] <- 0
-    penSim$LG[penSim$year == j] <- with(penSim,  UAAL[year == j])
+  if (j.year == 1){
+    penSim$EUAAL[j.year] <- 0
+    penSim$LG[j.year] <- with(penSim,  UAAL[j.year])
   }
-  if (j > 1){
-    penSim$EUAAL[penSim$year == j] <- with(penSim, (UAAL[year == j - 1] + NC[year == j - 1])*(1 + i[year == j-1]) - C[year == j - 1] - Ic[year == j - 1])
-    penSim$LG[penSim$year == j] <- with(penSim,  UAAL[year == j] - EUAAL[year == j])
+  if (j.year > 1){
+    penSim$EUAAL[j.year] <- with(penSim, (UAAL[j.year - 1] + NC[j.year - 1])*(1 + i[j.year - 1]) - C[j.year - 1] - Ic[j.year - 1])
+    penSim$LG[j.year] <- with(penSim,  UAAL[j.year] - EUAAL[j.year])
   }   
   
   # Amortize LG(j)
-  SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$LG[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
+   SC_amort[j.year, j.year:(j.year + m - 1)] <- amort_LG(penSim$LG[penSim$year == j.year], i, m, g, end = FALSE, method = amort_method)  
   
-  # Supplemental cost in j
-  penSim$SC[penSim$year == j] <- sum(SC_amort[, j])
+  # Supplemental cost in j.year
+   penSim$SC[j.year] <- sum(SC_amort[, j.year])
+
   
   # C(j)
-  penSim$C[penSim$year == j] <- with(penSim, NC[year == j] + SC[year == j]) 
+  penSim$C[j.year] <- with(penSim, NC[j.year] + SC[j.year]) 
   
   # Ia(j), Ib(j), Ic(j)
-  penSim$Ia[penSim$year == j] <- with(penSim, AA[year == j] * i[year == j])
-  penSim$Ib[penSim$year == j] <- with(penSim,  B[year == j] * i[year == j])
-  penSim$Ic[penSim$year == j] <- with(penSim,  C[year == j] * i[year == j])
+  penSim$Ia[j.year] <- with(penSim, AA[j.year] * i[j.year])
+  penSim$Ib[j.year] <- with(penSim,  B[j.year] * i[j.year])
+  penSim$Ic[j.year] <- with(penSim,  C[j.year] * i[j.year])
   
-  # I(j)
-  penSim$I[penSim$year == j] <- with(penSim, i.r[year == j] *( AA[year == j] + C[year == j] - B[year == j]))
+  # I.e(j)
+  penSim$I.e[j.year] <- with(penSim, Ia[j.year] + Ic[j.year] - Ib[j.year])
+  
+  # I.r(j)
+  penSim$I.r[j.year] <- with(penSim, i.r[j.year] *( AA[j.year] + C[j.year] - B[j.year]))
 
   # Funded Ratio
-  penSim$FR[penSim$year == j] <- with(penSim, AA[year == j] / AL[year == j])
-
+  penSim$FR[j.year] <- with(penSim, AA[j.year] / AL[j.year])
+ 
+  # External fund
+  penSim$ExF[j.year] <- with(penSim, B[j.year] - C[j.year])
 }
-
+  
+  
 #penSim_results[[k]] <- penSim
 penSim
 }
 
+end_time_loop <- proc.time()
+
 stopCluster(cl)
 
-end_time_loop <- proc.time()
+
 
 
 getOption("scipen")
 options(digits = 2, scipen = 3)
-View(penSim_results[[1]])
-kable(penSim_results[[1]], digits = 3)
-# SC_amort
+#View(penSim_results[[1]])
+kable(penSim_results[[2]], digits = 3)
+#kable(penSim_results[[2]], digits = 3)
+
+#SC_amort
 #penSim_results
 
 
 time_end <- proc.time()
+
 Time <- time_end - time_start 
 Time_loop <- end_time_loop - start_time_loop 
-Time
-Time_loop
 
+
+
+## Original Performance:
 
 # 5 simulations
 # sequential: 35.45 sec
 # 4 cores:    19.78 sec
 # 8 cores:    18.54 sec
 
-
 # 10 simulations
 # 4 cores:    26.75  21.19
 # 8 cores:    25.84  19.27 
-
 
 # 30 sims
 # 4 cores:    59.66/ 53.39
@@ -441,4 +494,32 @@ Time_loop
 # 8 cores:     130.93/120.36
 
 
-# change 
+## After optimization
+
+#           Total /  Loop
+#  100 sims
+#  4 cores: 16.74 / 3.29
+#  8 cores: 17.59 / 3.72   
+# 
+#  1000 sims
+#  4 cores: 34.8  / 21.56 
+#  8 cores: 33.07 / 18.91
+
+#  5000 sims
+#  4 cores: 118.30 / 105.11
+#  8 cores: 101.2  / 87.2
+
+#  10000 sims
+#  4 cores: 216.2  / 202.8
+#  8 cores: 186.1  / 171.6
+
+
+#save(penSim_results, Time, Time_loop, file = "penSim_results5k.Rdata")
+
+
+Time
+Time_loop
+
+
+
+

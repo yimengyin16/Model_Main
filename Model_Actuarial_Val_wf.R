@@ -1,9 +1,8 @@
-
 # Workforce Simulation by 3D array, for actuarial valuation model
 # Yimeng Yin
 # 2/3/2015
 
-# This program is adapted from flows 3Darray.R
+# This program is adapted from "flows 3Darray.R"
 
 
 
@@ -11,7 +10,7 @@
 
 library(zoo) # rollapply
 library(knitr)
-library(gdata) # read.xls
+#library(gdata) # read.xls
 library(dplyr)
 library(ggplot2)
 library(magrittr)
