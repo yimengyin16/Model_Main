@@ -19,7 +19,6 @@ get_tla <- function(px, i, sx = rep(1, length(px))){
   for(j in 1:n){
     v   <- 1/(1 + i)^(0:(n - j)) # dicount vector
     if(j < n) pxr <- cumprod(c(1, px[j:(n - 1)])) else pxr = 1      # survival probability to retirment at age x. Note that participant always survives at the beginning of age x
-    # pxr <- cumprod(c(1, px[j:(n - 1)]))
     SS  <- sx[j:n]/sx[j]                # salary scale
     tla[j] = sum(SS * v * pxr)          # computing annuity value at j
   } 
@@ -59,21 +58,21 @@ get_tla2 = function(px, i, sx = rep(1, length(px))){
   return(tla) 
 }
 
-microbenchmark(
-get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65)),  # test the function
-get_tla2a(rep(0.98, 65), 0.08, rep(1.1, 65))# test the function
-)
-
-# 2. function calculating temporary annuity values from a fixed entry age y to x 
-get_tla2a = function(px, i, sx = rep(1, length(px))){
+# 2a. function calculating temporary annuity values from a fixed entry age y to x 
+get_tla2a <- function(px, i, sx = rep(1, length(px))){
   
   n <- length(px)
   tla <- numeric(n)
+  v <- 1/(1 + i)
   
   tla[-1] <- cumsum(cumprod(c(1,px[1:(n-2)])* v * sx[1:(n - 1)]/sx[1])/v)
   
   return(tla)   
  }
+
+
+get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65))  # test the function
+get_tla2a(rep(0.98, 65), 0.08, rep(1.1, 65))# test the function
 
 
 # 2. Amortization Functions
