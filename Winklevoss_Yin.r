@@ -10,9 +10,9 @@
 ## Preamble ####
 
 # Defining data directory and data file
-wvd <- "E:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
+wvd <- "C:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
 wvxl <- "Winklevoss(6).xlsx"
-
+load(paste0(wvd, "winklevossdata.rdata"))
 
 library(zoo) # rollapply
 library(knitr)
@@ -99,7 +99,7 @@ save(gam1971, term, dbl, disb, er, merit, hire, file = paste0(wvd, "winklevossda
 #
 #****************************************************************************************************
 
-load(paste0(wvd, "winklevossdata.rdata"))
+
 
 # table 2-2 mortality - survival probabilities - p16 ####
 
@@ -994,10 +994,161 @@ kable(penSim, digits = 3)
   # Possible reason: There should be another component in Cont(n): the interest of the unfunded liability. 
   # This component plus the normal cost paid in full will make the unfunded liablity constant over time. 
 
-  # Follow up: above is actually not the reason.  Sticking to Winklevoss book solves the problem. 
+  # update: above is actually not the reason.  Sticking to Winklevoss book solves the problem. 
   # Note dUL(n) is the change in UL at the END of period n. 
 
 pmt(penSim[penSim$year == 2, "UL"], i, m)
+
+
+
+# Chapter 8 Ancillary benefits ####
+
+benfactor <- 0.015  # benefit factor, 1.5% per year of yos
+fasyears  <- 5      # number of years in the final average salary calculation
+infl <- 0.04        # inflation
+prod <- 0.01        # productivity
+i <- 0.08           # interest rate
+v <- 1/(1 + i)      # discount factor
+yos.v <- 5          # yos required for vesting
+age.d <- 40         # age required for eligibility for disability benefit
+yos.d <- 10         # yos required for eligibility for disability benefit
+yos.s <- 5
+M <- 0.85            # prob that the participant has a surviving spouse at death
+# Assuming no waiting period for disability benefit. w = 0
+# Assuming the spouse is at the same age as the dead participant. u = 0.
+
+desc <- rename(gam1971, qxm.p = qxm) %>% left_join(select(term, age, qxt.p = ea30)) %>% left_join(rename(disb, qxd.p = qxd)) %>% left_join(rename(dbl, qxmd.p = qxmd)) %>% # survival rates
+  left_join(merit) %>% # merit salary scale
+  mutate(scale = scale/scale[age == 30]) %>%
+  filter(age >= 30) %>%
+  # Calculate survival rates
+  mutate( 
+          pxm = 1 - qxm.p,
+          pxmd = 1 - qxmd.p,
+          pxT = (1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
+          px65m = order_by(-age, cumprod(ifelse(age >= 65, 1, pxm))), # prob of surviving up to 65, mortality only
+          px65T = order_by(-age, cumprod(ifelse(age >= 65, 1, pxT))), # prob of surviving up to 65, composite rate
+          p65xm = cumprod(ifelse(age <= 65, 1, lag(pxm))),            # prob of surviving to x from 65, mortality only
+          
+          qxt = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * 1,
+          qxd = (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
+          qxm = (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
+          
+          vrx = v^(65-age)) %>%
+  # Calculate salary and benefits
+  mutate(sx = scale * (1 + infl + prod)^(age - min(age)),   # Composite salary scale
+         Sx = ifelse(age == min(age), 0, lag(cumsum(sx))),  # Cumulative salary
+         yos= age - min(age),                               # years of service
+         n  = pmin(yos, fasyears),                          # years used to compute fas
+         fas= ifelse(yos < fasyears, Sx/n, (Sx - lag(Sx, 5))/n), # final average salary
+         fas= ifelse(age == min(age), 0, fas),
+         Bx = benfactor * yos * fas,                        # accrued benefits
+         bx = lead(Bx) - Bx, 
+         ax = get_tla(pxm, i), # Since retiree die at 110 for sure, the life annuity is equivalent to temporary annuity up to age 110. Mortality only
+         ax65 = c(get_tla(pxT[age<65],i), rep(0, 46)),             # aT..{x:65-x-|} discount value of 65 at age x, using composite decrement       
+         ax65s= c(get_tla(pxT[age<65],i, sx[age<65]), rep(0, 46)), # ^s_aT..{x:65-x-|}
+         axd = get_tla(pxmd, i),                             # Value of life time annuity calculated using mortality for disabled. Used in ancillary benefit. 
+         ayx = c(get_tla2(pxT[age<=65], i), rep(0, 45)),             # need to make up the length of the vector to 81
+         ayxs= c(get_tla2(pxT[age<=65], i, sx[age<=65]), rep(0, 45))  # need to make up the length of the vector to 81
+  )                              
+
+
+get_PVFB <- function(px, v, TC){
+  n <- length(px)
+  #PVFB <- numeric(n)
+  
+  PVFB <- sapply(1:n, function(j) sum(cumprod(px[j:n] * v) / v * TC[j:n]))
+  
+#   for(j in 1:n){
+#     PVFB[j] <- sum(cumprod(px[j:n] * v) / v * TC[j:n]) 
+#   }
+  return(PVFB)
+}
+get_PVFB(rep(0.98, 64), v, seq(1,1.5, len = 64)) # test the function
+
+
+
+tab8_1 <- desc %>% 
+  # vested benefits
+  mutate(PVFBx.r = Bx[age == 65] * ax[age == 65] * vrx * px65T,
+         gx.v  = ifelse(yos >= yos.v, 1, 0), # grading function equal to the proportion of accrued benefit vested at age x. For now, fully vested after a given number of yos.
+         TCx.v = gx.v * Bx * qxt * lead(px65m) * v^(65 - age) * ax[age == 65],  # term cost of vested termination benefits
+         TCx.v_pct = 100 * TCx.v / sx,
+         PVFBx.v = c(get_PVFB(pxT[age <= 64], v, TCx.v[age <= 64]), rep(0, 46)),
+         PVFBx.v_pct = 100 * PVFBx.v / PVFBx.r
+         ) %>%
+  # disabled benefits
+  mutate(gx.d = ifelse(yos >= yos.d & age >= age.d, 1, 0),
+         TCx.d = gx.d * Bx * qxd * v * lead(axd),
+         TCx.d_pct = 100 * TCx.d / sx,
+         PVFBx.d = c(get_PVFB(pxT[age <= 64], v, TCx.d[age <= 64]), rep(0, 46)),
+         PVFBx.d_pct = 100 * PVFBx.d / PVFBx.r
+         )%>%  
+  # surviving spouse benefits
+  mutate(gx.s = ifelse(yos >= yos.s, 0.5, 0),
+         TCx.s = M * gx.s * Bx * qxm * v * lead(ax),
+         TCx.s_pct = 100 * TCx.s / sx,
+         PVFBx.s = c(get_PVFB(pxT[age <= 64], v, TCx.s[age <= 64]), rep(0, 46)),
+         PVFBx.s_pct = 100 * PVFBx.s / PVFBx.r) %>% 
+  filter(age <=65) %>% select(age, TCx.v, TCx.d, TCx.s, 
+                                   PVFBx.v, PVFBx.d, PVFBx.s,
+                                   TCx.v_pct, PVFBx.v_pct,
+                                   TCx.d_pct, PVFBx.d_pct,
+                                   TCx.s_pct, PVFBx.s_pct)
+
+kable(tab8_1, digits = 2)
+
+# Numbers are similar but not identical to Winklevoss. 
+
+
+
+tab8_2 <- desc %>% 
+  # vested benefits
+  mutate(gx.v  = ifelse(yos >= yos.v, 1, 0), # grading function equal to the proportion of accrued benefit vested at age x. For now, fully vested after a given number of yos.
+         TCx.v = gx.v * Bx * qxt * lead(px65m) * v^(65 - age) * ax[age == 65],  # term cost of vested termination benefits
+         PVFBx.v = c(get_PVFB(pxT[age <= 64], v, TCx.v[age <= 64]), rep(0, 46)),
+         TCax.v = bx/Bx * TCx.v,                                                 # term cost accural of vested termination benefits
+         NCx.v = c(get_PVFB(pxT[age <= 64], v, TCax.v[age <= 64]), rep(0, 46))   # Normal cost component of vested benefit
+  ) %>%
+  # disabled benefits
+  mutate(gx.d = ifelse(yos >= yos.d & age >= age.d, 1, 0),
+         TCx.d = gx.d * Bx * qxd * v * lead(axd),
+         PVFBx.d = c(get_PVFB(pxT[age <= 64], v, TCx.d[age <= 64]), rep(0, 46)),
+         TCax.d = bx/Bx * TCx.d,                                                 # term cost accural of vested termination benefits
+         NCx.d = c(get_PVFB(pxT[age <= 64], v, TCax.d[age <= 64]), rep(0, 46))   # Normal cost component of vested benefit
+  )%>%  
+  # surviving spouse benefits
+  mutate(gx.s = ifelse(yos >= yos.s, 0.5, 0),
+         TCx.s = M * gx.s * Bx * qxm * v * lead(ax),
+         PVFBx.s = c(get_PVFB(pxT[age <= 64], v, TCx.s[age <= 64]), rep(0, 46)),
+         TCax.s = bx/Bx * TCx.s,                                                 # term cost accural of vested termination benefits
+         NCx.s = c(get_PVFB(pxT[age <= 64], v, TCax.s[age <= 64]), rep(0, 46))   # Normal cost component of vested benefit
+  ) %>% 
+  # retirement benefits
+  mutate(PVFBx.r = Bx[age == 65] * ax[age == 65] * vrx * px65T,
+         NCx.r   = bx/Bx[age == 65] * PVFBx.r,
+         ALx.r.PUC = Bx/Bx[age == 65] * PVFBx.r
+  ) %>% 
+  # Calculate Normal costs and ALs.
+  mutate(PVFBx.T = PVFBx.r[age == 30] + PVFBx.v[age == 30] + PVFBx.d[age == 30] + PVFBx.s[age == 30],
+         
+         NCx.PUC = NCx.r + NCx.v + NCx.d + NCx.s,
+         NCx.EAN.CD = PVFBx.T/ayx[age == 65],
+         NCx.EAN.CP = PVFBx.T/(sx[age == 30] * ayxs[age == 65]) * sx,
+         
+         ALx.PUC = ALx.r.PUC + PVFBx.v + PVFBx.d + PVFBx.s,
+         ALx.EAN.CD = PVFBx.r - NCx.EAN.CD * ax65,
+         ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * ax65s
+         ) %>%
+  filter(age %in% seq(30, 60, 5)) %>% 
+  select(age, TCx.v, TCx.d, TCx.s, 
+         PVFBx.v, PVFBx.d, PVFBx.s,
+         NCx.PUC, NCx.EAN.CD, NCx.EAN.CP,
+         ALx.PUC, ALx.EAN.CD, ALx.EAN.CP
+                              )
+                             
+
+kable(tab8_2, digits = 2)
 
 
 

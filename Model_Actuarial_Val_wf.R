@@ -144,7 +144,7 @@ dtab %<>%
 #          qxr.a   = ifelse(age == 64, 1 - qxm.a  - qxtnv.a - qxd.a, 0),
          # Correct the code abvoe:
            # Retirement is not a risk competing with other risks(death, terminatin, diability). Rather, it is
-           # an event that happens for sure for all participant who have survived all other risks at the beginning of age 65. 
+           # an event that happens for sure for all participants who have survived all other risks till the beginning of age 65. 
          qxtv.a  = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * 0,
          qxtnv.a = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * 1,
          qxd.a   = (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),

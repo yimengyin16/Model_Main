@@ -3,7 +3,7 @@
 # 1. function calculating temporary annuity values from age x to retirment age 65
 get_tla <- function(px, i, sx = rep(1, length(px))){
   # suppose the age corresponding to px runs from a1 to aN, and f = aN + 1 (eg. age 30:64, f = 65)
-  # The function computes a..{x, f - x} and s_a..{y, x - y}, x ruuning from a1 to aN. 
+  # The function computes a..{x, f - x} and s_a..{y, x - y}, x runing from a1 to aN. 
   # The length of px is f - a1 
   # Note that the last element is redundant, just used as a place holder. 
   
@@ -58,8 +58,22 @@ get_tla2 = function(px, i, sx = rep(1, length(px))){
   } 
   return(tla) 
 }
-get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65)) %>% length # test the function
 
+microbenchmark(
+get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65)),  # test the function
+get_tla2a(rep(0.98, 65), 0.08, rep(1.1, 65))# test the function
+)
+
+# 2. function calculating temporary annuity values from a fixed entry age y to x 
+get_tla2a = function(px, i, sx = rep(1, length(px))){
+  
+  n <- length(px)
+  tla <- numeric(n)
+  
+  tla[-1] <- cumsum(cumprod(c(1,px[1:(n-2)])* v * sx[1:(n - 1)]/sx[1])/v)
+  
+  return(tla)   
+ }
 
 
 # 2. Amortization Functions

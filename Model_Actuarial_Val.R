@@ -514,7 +514,7 @@ Time_loop <- end_time_loop - start_time_loop
 #  8 cores: 186.1  / 171.6
 
 
-#save(penSim_results, Time, Time_loop, file = "penSim_results5k.Rdata")
+#save(penSim_results, Time, Time_loop, file = "penSim_results.Rdata")
 
 
 Time
