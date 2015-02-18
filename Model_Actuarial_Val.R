@@ -66,7 +66,7 @@ source("Functions.R")
 # wvd <- "E:\\Dropbox (Personal)\\Pensions\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 # Use the path below when Yimeng is running the program
- wvd <- "C:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
+wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
 
 
  
@@ -129,7 +129,8 @@ init_AA <- "AL0"  # "AA0" for preset value; "AL0" for being equal to initial lia
 load(paste0(wvd, "winklevossdata.rdata"))
 
 # Reorganize termination table into long format
-term2 <- data.frame(age = range_age) %>% left_join(select(term, age, everything())) %>% gather(ea, qxt, -age) %>%
+term2 <- data.frame(age = range_age) %>% left_join(term) %>% 
+  gather(ea, qxt.p, -age) %>%
   mutate(ea = as.numeric(gsub("[^0-9]", "", ea)))
 
 # Create decrement table and calculate probability of survival
