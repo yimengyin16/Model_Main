@@ -1,10 +1,14 @@
 # Actuarial Valuation in a simple setting
 # Yimeng Yin
 # 2/1/2015
-# Note: This program consists of 3 files:
+
+# This program consists of following files:
   # Model_Actuarial_Val.R
   # Model_Actuarial_Val_wf.R
+  # Model_Actuarial_Var_Import_Data.R
   # Functions.R
+# Data files are contained in "your working directory"\Data\
+  
 
 # Goal: 
 # 1. Conduct an actuarial valuation at time 1 based on plan design, actuarial assumptions, and plan data.
@@ -62,15 +66,6 @@ library(doParallel)
 source("Functions.R")
 
 
-# Use the path below when Don is running the program
-# wvd <- "E:\\Dropbox (Personal)\\Pensions\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
-
-# Use the path below when Yimeng is running the program
-# wvd <- "E:\\Dropbox (FSHRP)\\Pension simulation project\\How to model pension funds\\Winklevoss\\"
-
-wd <- getwd()
-
- 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 time_start <- proc.time()
@@ -80,7 +75,7 @@ time_start <- proc.time()
 # Assumptions
 nyear <- 100          # The simulation only contains 2 years.
 nsim  <- 100         # # of sims
-ncore <- 4            # # of CPU cores used in parallelled loops
+ncore <- 7            # # of CPU cores used in parallelled loops
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
@@ -125,7 +120,7 @@ init_AA <- "AL0"  # "AA0" for preset value; "AL0" for being equal to initial lia
 # 1. Decrement table ####
 # For now, we assume all decrement rates do not change over time. 
 # Use decrement rates from winklevoss.  
-load(paste0(wd, "/Data/winklevossdata.RData"))
+load(paste0(getwd(), "/Data/winklevossdata.RData"))
 
 # Create decrement table and calculate probability of survival
 decrement <- expand.grid(age = range_age, ea = range_ea) %>% 
@@ -258,12 +253,27 @@ extract_slice <- function(Var, Year,  data = liab){
 # Extract variables in liab that will be used in the simulation, and put them in a list.
 # Storing the variables this way can significantly boost the speed of the loop. 
 
+
 var.names <- liab %>% select(B:ALx.r) %>% colnames()
+
+
+#cl <- makeCluster(ncore)
+#registerDoParallel(cl)
 liab_list <- alply(var.names, 1, function(var){
-  alply(1:nyear,1, function(n) extract_slice(var, n))
-}
-)
+  alply(1:100,1, function(n) extract_slice(var, n))
+ },
+ #.parallel = TRUE,
+ #.paropts = list(.packages = c("dplyr", "tidyr"))
+ # Parellel does not work here b/c it does not recognize objects outside the function. 
+ .progress = "text"
+ )
+# stopCluster(cl)
+
+
 names(liab_list) <- var.names
+
+ 
+
 
 #eg. extract "B" for year 1, a matrix is returned
 #liab_list[["B"]][[1]]
@@ -320,16 +330,7 @@ source("Model_Actuarial_Val_wf.R")
 
 
 
-
-
-# x <- liab %>% filter(start.year == -88) %>% as.data.frame
-# Todo:
-# vesting
-# retirement benefit for disabled. 
-
-
-
-# 6. Actuarial Valuation
+# 6. Actuarial Valuation ####
 
 # Now we do the actuarial valuation at period 1 and 2. 
 # In each period, following values will be caculated:
@@ -370,7 +371,6 @@ source("Model_Actuarial_Val_wf.R")
 # About gains and losses
   # In this program, the only source of gain or loss is the difference between assumed interest rate i and real rate of return i.r,
   # which will make I(t) != Ia(t) + Ic(t) - Ib(t)
-
 
 
 
@@ -550,7 +550,6 @@ Time_loop <- end_time_loop - start_time_loop
 
 
 #save(penSim_results, Time, Time_loop, file = "penSim_results.Rdata")
-
 
 Time
 Time_loop

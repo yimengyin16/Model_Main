@@ -18,10 +18,6 @@ library(tidyr) # gather, spread
 # library(corrplot)
 
 
-# load(paste0(wvd, "winklevossdata.rdata"))
-
-
-
 ## Inputs and Initialization ####
 # Currently only initial workforce is defined in this section. 
 # Need a complete list of initial inputs:
@@ -78,12 +74,44 @@ fill_cell <- function(Fill, year, wf){
   # wf  : the workforce array filled.  
   
   if(class(Fill) == c("numeric")){
-    wf[as.character(Fill[1]), as.character(Fill[2]) , year] = Fill[3]} else {
-      for (i in 1:nrow(Fill))
-        wf[as.character(Fill[i,1]), as.character(Fill[i,2]) , year] = Fill[i,3]
+    wf[as.character(Fill[1]), as.character(Fill[2]) , year] = Fill[3]
+  } else {
+     for (i in 1:nrow(Fill))
+       wf[as.character(Fill[i,1]), as.character(Fill[i,2]) , year] = Fill[i,3]
     }  
   return(wf)
 }
+
+fill_cell3 <- function(fill, wf){
+  # a more-general fill
+  idx <- fill[, 1:3]
+  mode(idx) <- "character"
+  wf[idx] <- fill[, 4] # fill all designated cells in a single operation
+  return(wf)
+}
+
+# # create empty workforce array with dimensions ea, age, year
+# ea.r <- seq(20, 65, 5)
+# age.r <- 20:65
+# year.r <- 1:7
+# wf_dim <- c(length(ea.r), length(age.r), length(year.r))
+# wfa <- array(0, wf_dim, dimnames=list(ea.r, age.r, year.r))
+# 
+# # define the fill matrix: ea, age, year, n
+# fmat <- rbind(c(20, 20, 1, 100),
+#               c(30, 40, 1, 120),
+#               c(35, 64, 1, 140),
+#               c(35, 64, 2, 150))
+# 
+# # fill the array and inspect results
+# wfa <- fill_cell3(fmat, wfa)
+# wfa[ , , 1]
+# wfa[ , , 2]
+# wfa[ , , 3]
+# wfa[, "64", ]
+# wfa["35", , ]
+
+
 
 # Test the function
 #fill_cell(c(50, 65, 30), 1, wf_active)
@@ -228,7 +256,6 @@ for (j in 1:(nyear - 1)){
   out_term <- term2dead
   in_term  <- active2term
   
-  
   out_disb <- disb2dead
   in_disb  <- active2disb
   
@@ -247,8 +274,6 @@ for (j in 1:(nyear - 1)){
 b <- proc.time()
 Time <- b-a 
 Time # seems pretty fast
-
-
 
 
 
@@ -301,8 +326,6 @@ Time # seems pretty fast
 # # Potential problem, values for age over 65 are not exact 0s, although may be computationally equivalent to 0s.
 # 
 #  
-
-
 
 # Deleted code ####
 
