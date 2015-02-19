@@ -4,20 +4,7 @@
 
 # This program is adapted from "flows 3Darray.R"
 
-
-
-## preamble ####
-
-library(zoo) # rollapply
-library(knitr)
-#library(gdata) # read.xls
-library(dplyr)
-library(ggplot2)
-library(magrittr)
-library(tidyr) # gather, spread
-# library(corrplot)
-
-
+start_time_wf <- proc.time()
 ## Inputs and Initialization ####
 # Currently only initial workforce is defined in this section. 
 # Need a complete list of initial inputs:
@@ -230,7 +217,7 @@ calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
 
 
 wf_growth <- 0.00
-a <- proc.time()
+
 for (j in 1:(nyear - 1)){
 #i <-  1  
   # compute the inflow to and outflow
@@ -271,10 +258,9 @@ for (j in 1:(nyear - 1)){
   wf_retired[, ,j + 1] <- (wf_retired[, , j] + in_retired - out_retired) %*% A
   wf_dead[, ,   j + 1]    <- (wf_dead[, , j] + in_dead) %*% A
 }
-b <- proc.time()
-Time <- b-a 
-Time # seems pretty fast
-
+ 
+end_time_wf <- proc.time()
+Time_wf <- end_time_wf - start_time_wf
 
 
 # ## Look at the results ####
