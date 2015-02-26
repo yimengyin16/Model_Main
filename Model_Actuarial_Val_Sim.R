@@ -70,6 +70,10 @@ SC_amort0 <- matrix(0, nyear + m, nyear + m)
 # data frame representation of amortization: much smaller size, can be used in real model later.
 #SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
+# select actuarial method for AL and NC
+ALx.method <- paste0("ALx.", actuarial_method)
+NCx.method <- paste0("NCx.", actuarial_method)
+
 
 cl <- makeCluster(ncore) 
 registerDoParallel(cl)
@@ -86,21 +90,27 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   SC_amort <- SC_amort0 
   penSim[,"i.r"] <- i.r[, k]
   
+
   for (j.year in 1:nyear){
     # j.year <- 1
     # AL(j)
     
-    penSim[j.year, "AL"] <- sum(wf_active[, , j.year] * liab_list[[paste0("ALx.", actuarial_method)]][[j.year]]) + 
-      sum(wf_retired[, , j.year] * liab_list[["ALx.r"]][[j.year]])
+#     penSim[j.year, "AL"] <- sum(wf_active[, , j.year] * liab_list[[paste0("ALx.", actuarial_method)]][[j.year]]) + 
+#       sum(wf_retired[, , j.year] * liab_list[["ALx.r"]][[j.year]])
+#     # NC(j)
+#     penSim[j.year, "NC"] <- sum(wf_active[, , j.year] * liab_list[[paste0("NCx.", actuarial_method)]][[j.year]]) 
+#     
+#     # B(j)
+#     penSim[j.year, "B"] <-  sum(wf_retired[, , j.year] * liab_list[["B"]][[j.year]])
+    
+    # AL(j)
+    penSim[j.year, "AL"] <- sum(wf_active[, , j.year] * ll2[[ALx.method]][[j.year]] + wf_retired[, , j.year] * ll2[["ALx.r"]][[j.year]])
+    
     # NC(j)
-    penSim[j.year, "NC"] <- sum(wf_active[, , j.year] * liab_list[[paste0("NCx.", actuarial_method)]][[j.year]]) 
+    penSim[j.year, "NC"] <- sum(wf_active[, , j.year] * ll2[[NCx.method]][[j.year]]) 
     
     # B(j)
-    penSim[j.year, "B"] <-  sum(wf_retired[, , j.year] * liab_list[["B"]][[j.year]])
-    
-    # for testing purpose
-    # penSim[penSim$year == j.year, "B"] <-  sum(extract_slice("B",j.year))
-    # penSim[penSim$year == j.year, "B"] <-  sum(wf_retired[, , j.year])
+    penSim[j.year, "B"] <-  sum(wf_retired[, , j.year] * ll2[["B"]][[j.year]])
     
     
     # AA(j)  
@@ -154,6 +164,8 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   #penSim_results[[k]] <- penSim
   penSim
 }
+
+
 
 end_time_loop <- proc.time()
 

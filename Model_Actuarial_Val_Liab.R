@@ -139,28 +139,59 @@ extract_slice <- function(Var, Year,  data = liab){
 # Extract variables in liab that will be used in the simulation, and put them in a list.
 # Storing the variables this way can significantly boost the speed of the loop. 
 
-
 var.names <- liab %>% select(B:ALx.r) %>% colnames()
 
+# 
+# #cl <- makeCluster(ncore)
+# #registerDoParallel(cl)
+# liab_list <- alply(var.names, 1, function(var){
+#   alply(1:100,1, function(n) extract_slice(var, n))
+# },
+# #.parallel = TRUE,
+# #.paropts = list(.packages = c("dplyr", "tidyr"))
+# # Parellel does not work here b/c it does not recognize objects outside the function. 
+# .progress = "text"
+# )
+# # stopCluster(cl)
+# 
+# names(liab_list) <- var.names
 
-#cl <- makeCluster(ncore)
-#registerDoParallel(cl)
-liab_list <- alply(var.names, 1, function(var){
-  alply(1:100,1, function(n) extract_slice(var, n))
-},
-#.parallel = TRUE,
-#.paropts = list(.packages = c("dplyr", "tidyr"))
-# Parellel does not work here b/c it does not recognize objects outside the function. 
-.progress = "text"
-)
-# stopCluster(cl)
 
-names(liab_list) <- var.names
 
+# a faster way to create liab_list instead of extract_slice and using aply twice
+# the speed comes from processing the entire df first and setting the data frame up in matrix format before extracting the matrices into the list
+var.names <- liab %>% select(B:ALx.r) %>% colnames()
+a <- proc.time()
+lldf <- liab %>% ungroup %>% # I don't think liab is grouped, but just in case...
+  filter(year %in% 1:100) %>%
+  select(year, ea, age, one_of(var.names)) %>% 
+  right_join(expand.grid(year=1:100, ea=range_ea, age=range_age)) %>% # make sure we have all possible combos
+  gather(variable, value, -year, -ea, -age) %>%
+  spread(age, value, fill=0) %>%
+  select(variable, year, ea, everything()) %>%
+  arrange(variable, year, ea) # this df is in the same form and order, within each var, as the liab_list of matrices (vars may be in a different order)
+
+
+# microbenchmark(
+# ll2[["NCx.PUC"]]$`3` + ll2[["NCx.PUC"]]$`3`,
+# ll2$NCx.PUC$`3` + ll2$NCx.PUC$`3`,
+# )
+  
+# might be possible to stop here, but continue and create an equivalent list
+f.inner <- function(df.inner) as.matrix(df.inner[-c(1:3)])
+f.outer <- function(df.outer) lapply(split(df.outer, df.outer$year), f.inner) # process each year
+ll2 <- lapply(split(lldf, lldf$variable), f.outer) # process each variable
+proc.time() - a
+
+# compare year 3 for variable NCx.PUC
+# ll2$NCx.PUC$`3`
+# liab_list$NCx.PUC$`3`
 
 end_time_liab <- proc.time()
 
 Time_liab <- end_time_liab - start_time_liab
+
+
 
 
 #eg. extract "B" for year 1, a matrix is returned

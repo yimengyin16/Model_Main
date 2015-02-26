@@ -1,3 +1,4 @@
+
 # Yimeng Yin
 # 12/13/2013
 
@@ -10,7 +11,7 @@
 ## Preamble ####
 
 # Defining data directory and data file
-wvd <- "C:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
+wvd <- "E:/Dropbox (Personal)/Proj-PenSim/Winklevoss/"
 wvxl <- "Winklevoss(6).xlsx"
 load(paste0(wvd, "winklevossdata.rdata"))
 
@@ -1116,7 +1117,7 @@ tab8_2 <- desc %>%
          PVFBx.d = c(get_PVFB(pxT[age <= 64], v, TCx.d[age <= 64]), rep(0, 46)),
          TCax.d = bx/Bx * TCx.d,                                                 # term cost accural of vested termination benefits
          NCx.d = c(get_PVFB(pxT[age <= 64], v, TCax.d[age <= 64]), rep(0, 46))   # Normal cost component of vested benefit
-  )%>%  
+  ) %>%  
   # surviving spouse benefits
   mutate(gx.s = ifelse(yos >= yos.s, 0.5, 0),
          TCx.s = M * gx.s * Bx * qxm * v * lead(ax),
@@ -1144,8 +1145,7 @@ tab8_2 <- desc %>%
   select(age, TCx.v, TCx.d, TCx.s, 
          PVFBx.v, PVFBx.d, PVFBx.s,
          NCx.PUC, NCx.EAN.CD, NCx.EAN.CP,
-         ALx.PUC, ALx.EAN.CD, ALx.EAN.CP
-                              )
+         ALx.PUC, ALx.EAN.CD, ALx.EAN.CP)
                              
 
 kable(tab8_2, digits = 2)

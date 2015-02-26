@@ -47,7 +47,6 @@ wf_retired <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_dead    <- array(0, wf_dim, dimnames = wf_dimnames)
 
 
-
 ## Setting workforce at time 1
 # For convenience, first define a function that can fill cells in a 3D arrary. 
 
@@ -119,7 +118,7 @@ wf_retired <- fill_cell(init_retired, 1, wf_retired)
 # Assume the actual decrement rates are the same as that in the decrement table.
 # Later we may allow the actual decrement rates to differ from the assumed rates. 
 
-decrement_wf <- decrement_wf <- sapply(decrement, function(x){x[is.na(x)] <- 0; return(x)}) %>% data.frame
+decrement_wf <- sapply(decrement, function(x){x[is.na(x)] <- 0; return(x)}) %>% data.frame
 
 
 # Define a function that produce transition matrices from decrement table. 

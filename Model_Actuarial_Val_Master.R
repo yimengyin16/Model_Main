@@ -7,8 +7,9 @@
   # Model_Actuarial_Val_wf.R
   # Model_Actuarial_Var_Import_Data.R
   # Functions.R
-# Data files are contained in "your working directory"\Data\
-  
+# Data files are contained in "your project directory"\Data\:
+ # GAM-1971-Male.xls
+ # Winklevoss(6).xlsx
 
 # Goal: 
 # 1. Conduct an actuarial valuation at time 1 based on plan design, actuarial assumptions, and plan data.
@@ -61,20 +62,23 @@ library(magrittr)
 library(tidyr) # gather, spread
 library(foreach)
 library(doParallel)
+library(microbenchmark)
 #library(corrplot)
 
 source("Functions.R")
 
 # source("Model_Actuarial_Val_Import_Data.R")
 
-
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 0. Parameters ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # Assumptions
 nyear <- 100          # The simulation only contains 2 years.
-ncore <- 7            # # of CPU cores used in parallelled loops
+ncore <- 8            # # of CPU cores used in parallelled loops
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
@@ -112,11 +116,22 @@ AA_0 <- 200
 init_AA <- "AL0"  # "AA0" for preset value; "AL0" for being equal to initial liability 
 
 
+
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 1. Actuarial liabilities, normal costs and benenfits ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 source("Model_Actuarial_Val_Liab.R")
 
 
+
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 2. Workforce ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # Simulation of the workforce is done in the file below: 
 source("Model_Actuarial_Val_wf.R")
@@ -127,8 +142,12 @@ source("Model_Actuarial_Val_wf.R")
  #       decrement
 
 
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 3. Simulation ####
-nsim  <- 1000         # No. of sims
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+nsim  <- 100    # No. of sims
 
 set.seed(1234)
 #i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
@@ -137,12 +156,19 @@ i.r <- matrix(0.08, nrow = nyear, ncol = nsim)
 source("Model_Actuarial_Val_Sim.R")
 
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # 4. Results ####
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 options(digits = 2, scipen = 3)
 
 #View(penSim_results[[1]])
 kable(penSim_results[[2]], digits = 5)
+
+
+df <- bind_rows(penSim_results) %>% 
+  mutate(sim=rep(1:nsim, each=nyear)) %>%
+  select(sim, year, everything())
 
 
 
