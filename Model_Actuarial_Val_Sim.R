@@ -114,10 +114,13 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     
     
     # AA(j)  
-    if(j.year == 1) penSim[j.year, "AA"] <- switch(init_AA,
+    if(j.year == 1) {penSim[j.year, "AA"] <- switch(init_AA,
                                                    AA0 = AA_0,                           # Use preset value
-                                                   AL0 = penSim[j.year, "AL"]) # Assume inital fund equals inital liability. 
-    if(j.year > 1)  penSim[j.year, "AA"] <- with(penSim, AA[j.year - 1] + I.r[j.year - 1] + C[j.year - 1] - B[j.year - 1])
+                                                   AL0 = penSim[j.year, "AL"]) # Assume inital fund equals inital liability.
+    } else {
+      penSim[j.year, "AA"] <- with(penSim, AA[j.year - 1] + I.r[j.year - 1] + C[j.year - 1] - B[j.year - 1])
+    }
+    
     
     # UAAL(j)
     penSim$UAAL[j.year] <- with(penSim, AL[j.year] - AA[j.year]) 
@@ -126,8 +129,8 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     if (j.year == 1){
       penSim$EUAAL[j.year] <- 0
       penSim$LG[j.year] <- with(penSim,  UAAL[j.year])
-    }
-    if (j.year > 1){
+    
+    } else {
       penSim$EUAAL[j.year] <- with(penSim, (UAAL[j.year - 1] + NC[j.year - 1])*(1 + i[j.year - 1]) - C[j.year - 1] - Ic[j.year - 1])
       penSim$LG[j.year] <- with(penSim,  UAAL[j.year] - EUAAL[j.year])
     }   
