@@ -78,7 +78,7 @@ source("Functions.R")
 
 # Assumptions
 nyear <- 100          # The simulation only contains 2 years.
-
+ncore <- 8            # # of CPU cores used in parallelled loops
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
@@ -147,15 +147,13 @@ source("Model_Actuarial_Val_wf.R")
 # 3. Simulation ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-nsim  <- 2000    # No. of sims
-ncore <- 8            # # of CPU cores used in parallelled loops
+nsim  <- 100    # No. of sims
 
 set.seed(1234)
 #i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
 i.r <- matrix(0.08, nrow = nyear, ncol = nsim)
 
 source("Model_Actuarial_Val_Sim.R")
-
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
