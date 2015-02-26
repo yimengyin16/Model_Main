@@ -64,6 +64,10 @@ penSim0 <- data.frame(year = 1:nyear) %>%
          i    = i,
          i.r  = 0)
 
+
+
+
+
 # matrix representation of amortization: better visualization but large size, used in this excercise
 SC_amort0 <- matrix(0, nyear + m, nyear + m)
 #SC_amort0
@@ -90,19 +94,65 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   SC_amort <- SC_amort0 
   penSim[,"i.r"] <- i.r[, k]
   
+  ## For year 1 
+  {  
+  # AL(j)
+  penSim[1, "AL"] <- sum(wf_active[, , 1] * ll2[[ALx.method]][[1]] + wf_retired[, , 1] * ll2[["ALx.r"]][[1]])
+  
+  # NC(j)
+  penSim[1, "NC"] <- sum(wf_active[, , 1] * ll2[[NCx.method]][[1]]) 
+  
+  # B(j)
+  penSim[1, "B"] <-  sum(wf_retired[, , 1] * ll2[["B"]][[1]])
+  
+  
+  # AA(j)  
+   penSim[1, "AA"] <- switch(init_AA,
+                             AA0 = AA_0,                     # Use preset value
+                             AL0 = penSim[1, "AL"])     # Assume inital fund equals inital liability. 
 
-  for (j.year in 1:nyear){
+  
+  # UAAL(j)
+  penSim$UAAL[1] <- with(penSim, AL[1] - AA[1]) 
+  
+  
+  # LG(j)
+    penSim$EUAAL[1] <- 0
+    penSim$LG[1] <- with(penSim,  UAAL[1])
+
+  # Amortize LG(j)
+  SC_amort[1, 1:(1 + m - 1)] <- amort_LG(penSim$LG[penSim$year == 1], i, m, g, end = FALSE, method = amort_method)  
+  
+  
+  # Supplemental cost in 1
+  penSim$SC[1] <- sum(SC_amort[, 1])
+  
+  
+  # C(j)
+  penSim$C[1] <- with(penSim, NC[1] + SC[1]) 
+  
+  # Ia(j), Ib(j), Ic(j)
+  penSim$Ia[1] <- with(penSim, AA[1] * i[1])
+  penSim$Ib[1] <- with(penSim,  B[1] * i[1])
+  penSim$Ic[1] <- with(penSim,  C[1] * i[1])
+  
+  
+  # I.e(j)
+  penSim$I.e[1] <- with(penSim, Ia[1] + Ic[1] - Ib[1])
+  
+  # I.r(j)
+  penSim$I.r[1] <- with(penSim, i.r[1] *( AA[1] + C[1] - B[1]))
+  
+  # Funded Ratio
+  penSim$FR[1] <- with(penSim, AA[1] / AL[1])
+  
+  # External fund
+  penSim$ExF[1] <- with(penSim, B[1] - C[1])
+  }
+
+  for (j.year in 2:nyear) {
     # j.year <- 1
-    # AL(j)
-    
-#     penSim[j.year, "AL"] <- sum(wf_active[, , j.year] * liab_list[[paste0("ALx.", actuarial_method)]][[j.year]]) + 
-#       sum(wf_retired[, , j.year] * liab_list[["ALx.r"]][[j.year]])
-#     # NC(j)
-#     penSim[j.year, "NC"] <- sum(wf_active[, , j.year] * liab_list[[paste0("NCx.", actuarial_method)]][[j.year]]) 
-#     
-#     # B(j)
-#     penSim[j.year, "B"] <-  sum(wf_retired[, , j.year] * liab_list[["B"]][[j.year]])
-    
+  
     # AL(j)
     penSim[j.year, "AL"] <- sum(wf_active[, , j.year] * ll2[[ALx.method]][[j.year]] + wf_retired[, , j.year] * ll2[["ALx.r"]][[j.year]])
     
@@ -114,26 +164,20 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     
     
     # AA(j)  
-    if(j.year == 1) penSim[j.year, "AA"] <- switch(init_AA,
-                                                   AA0 = AA_0,                           # Use preset value
-                                                   AL0 = penSim[j.year, "AL"]) # Assume inital fund equals inital liability. 
-    if(j.year > 1)  penSim[j.year, "AA"] <- with(penSim, AA[j.year - 1] + I.r[j.year - 1] + C[j.year - 1] - B[j.year - 1])
+    penSim[j.year, "AA"] <- with(penSim, AA[j.year - 1] + I.r[j.year - 1] + C[j.year - 1] - B[j.year - 1])
     
     # UAAL(j)
     penSim$UAAL[j.year] <- with(penSim, AL[j.year] - AA[j.year]) 
     
+    
     # LG(j)
-    if (j.year == 1){
-      penSim$EUAAL[j.year] <- 0
-      penSim$LG[j.year] <- with(penSim,  UAAL[j.year])
-    }
-    if (j.year > 1){
-      penSim$EUAAL[j.year] <- with(penSim, (UAAL[j.year - 1] + NC[j.year - 1])*(1 + i[j.year - 1]) - C[j.year - 1] - Ic[j.year - 1])
-      penSim$LG[j.year] <- with(penSim,  UAAL[j.year] - EUAAL[j.year])
-    }   
+    penSim$EUAAL[j.year] <- with(penSim, (UAAL[j.year - 1] + NC[j.year - 1])*(1 + i[j.year - 1]) - C[j.year - 1] - Ic[j.year - 1])
+    penSim$LG[j.year] <- with(penSim,  UAAL[j.year] - EUAAL[j.year])
+    
     
     # Amortize LG(j)
     SC_amort[j.year, j.year:(j.year + m - 1)] <- amort_LG(penSim$LG[penSim$year == j.year], i, m, g, end = FALSE, method = amort_method)  
+    
     
     # Supplemental cost in j.year
     penSim$SC[j.year] <- sum(SC_amort[, j.year])
@@ -146,6 +190,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$Ia[j.year] <- with(penSim, AA[j.year] * i[j.year])
     penSim$Ib[j.year] <- with(penSim,  B[j.year] * i[j.year])
     penSim$Ic[j.year] <- with(penSim,  C[j.year] * i[j.year])
+    
     
     # I.e(j)
     penSim$I.e[j.year] <- with(penSim, Ia[j.year] + Ic[j.year] - Ib[j.year])
@@ -164,6 +209,18 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   #penSim_results[[k]] <- penSim
   penSim
 }
+
+# We may want to write the j.year loop into a function. The inputs are
+ #　PenSim
+ #  ll2  # liability list
+ #  wf_active, wf_retired
+ #  ALx.method; NCx.method
+ #  SC_amort
+ #  amort_LG # function
+ #  amort_method
+ #  i, m, g
+ #  init_AA
+
 
 
 
