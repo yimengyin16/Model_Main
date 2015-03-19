@@ -147,7 +147,7 @@ source("Model_Actuarial_Val_wf.R")
 # 3. Simulation ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-nsim  <- 2000    # No. of sims
+nsim  <- 100    # No. of sims
 
 set.seed(1234)
 #i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 

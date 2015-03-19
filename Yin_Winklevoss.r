@@ -22,7 +22,7 @@ library(dplyr)
 library(ggplot2)
 library(tidyr) # gather, spread
 library(xlsx)
-library("magrittr")
+library(magrittr)
 
 source("Functions.R")
 
@@ -1053,19 +1053,19 @@ desc <- rename(gam1971, qxm.p = qxm) %>% left_join(select(term, age, qxt.p = ea3
          ayxs= c(get_tla2(pxT[age<=65], i, sx[age<=65]), rep(0, 45))  # need to make up the length of the vector to 81
   )                              
 
-
-get_PVFB <- function(px, v, TC){
-  n <- length(px)
-  #PVFB <- numeric(n)
-  
-  PVFB <- sapply(1:n, function(j) sum(cumprod(px[j:n] * v) / v * TC[j:n]))
-  
-#   for(j in 1:n){
-#     PVFB[j] <- sum(cumprod(px[j:n] * v) / v * TC[j:n]) 
-#   }
-  return(PVFB)
-}
-get_PVFB(rep(0.98, 64), v, seq(1,1.5, len = 64)) # test the function
+# 
+# get_PVFB <- function(px, v, TC){
+#   n <- length(px)
+#   #PVFB <- numeric(n)
+#   
+#   PVFB <- sapply(1:n, function(j) sum(cumprod(px[j:n] * v) / v * TC[j:n]))
+#   
+# #   for(j in 1:n){
+# #     PVFB[j] <- sum(cumprod(px[j:n] * v) / v * TC[j:n]) 
+# #   }
+#   return(PVFB)
+# }
+# get_PVFB(rep(0.98, 64), v, seq(1,1.5, len = 64)) # test the function
 
 
 
@@ -1073,7 +1073,7 @@ tab8_1 <- desc %>%
   # vested benefits
   mutate(PVFBx.r = Bx[age == 65] * ax[age == 65] * vrx * px65T,
          gx.v  = ifelse(yos >= yos.v, 1, 0), # grading function equal to the proportion of accrued benefit vested at age x. For now, fully vested after a given number of yos.
-         TCx.v = gx.v * Bx * qxt * lead(px65m) * v^(65 - age) * ax[age == 65],  # term cost of vested termination benefits
+         TCx.v = gx.v * Bx * qxt.p * lead(px65m) * v^(65 - age) * ax[age == 65],  # term cost of vested termination benefits
          TCx.v_pct = 100 * TCx.v / sx,
          PVFBx.v = c(get_PVFB(pxT[age <= 64], v, TCx.v[age <= 64]), rep(0, 46)),
          PVFBx.v_pct = 100 * PVFBx.v / PVFBx.r
@@ -1149,6 +1149,98 @@ tab8_2 <- desc %>%
                              
 
 kable(tab8_2, digits = 2)
+
+
+
+
+
+# Chapter 9 Multiple Retirement Ages ####
+
+benfactor <- 0.015  # benefit factor, 1.5% per year of yos
+fasyears  <- 5      # number of years in the final average salary calculation
+infl <- 0.04        # inflation
+prod <- 0.01        # productivity
+i <- 0.08           # interest rate
+v <- 1/(1 + i)      # discount factor
+yos.v <- 5          # yos required for vesting
+age.d <- 40         # age required for eligibility for disability benefit
+yos.d <- 10         # yos required for eligibility for disability benefit
+yos.s <- 5
+M <- 0.85            # prob that the participant has a surviving spouse at death
+# Assuming no waiting period for disability benefit. w = 0
+# Assuming the spouse is at the same age as the dead participant. u = 0.
+
+desc <- rename(gam1971, qxm.p = qxm) %>% 
+        left_join(select(term, age, qxt.p = ea30)) %>% 
+        left_join(rename(disb, qxd.p = qxd)) %>% 
+        left_join(rename(dbl, qxmd.p = qxmd)) %>% 
+        left_join(rename(er, qxe.p = qxe)) %>% mutate(qxe.p = ifelse(is.na(qxe.p), 0, qxe.p)) %>%      
+  # survival rates
+  left_join(merit) %>% # merit salary scale
+  mutate(scale = scale/scale[age == 30]) %>%
+  filter(age >= 30) %>%
+  # Calculate survival rates
+  mutate( 
+    pxm = 1 - qxm.p,
+    pxmd = 1 - qxmd.p,
+    pxT = (1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p) * (1 - qxe.p),
+    px65m = order_by(-age, cumprod(ifelse(age >= 65, 1, pxm))), # prob of surviving up to 65, mortality only
+    px65T = order_by(-age, cumprod(ifelse(age >= 65, 1, pxT))), # prob of surviving up to 65, composite rate
+    p65xm = cumprod(ifelse(age <= 65, 1, lag(pxm))),            # prob of surviving to x from 65, mortality only
+    # Assume retirement always happens at the beginning of the period and does not compete with other decrements. 
+    qxt = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * (1 - qxe.p),
+    qxd = (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2) * (1 - qxe.p),
+    qxm = (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p * (1 - qxe.p), 
+    qxe = qxe.p) %>%
+  # Calculate salary and benefits
+  mutate(sx = scale * (1 + infl + prod)^(age - min(age)),   # Composite salary scale
+         Sx = ifelse(age == min(age), 0, lag(cumsum(sx))),  # Cumulative salary
+         yos= age - min(age),                               # years of service
+         n  = pmin(yos, fasyears),                          # years used to compute fas
+         fas= ifelse(yos < fasyears, Sx/n, (Sx - lag(Sx, fasyears))/n), # final average salary
+         fas= ifelse(age == min(age), 0, fas),
+         Bx = benfactor * yos * fas,                        # accrued benefits
+         bx = lead(Bx) - Bx, 
+         ax = get_tla(pxm, i), # Since retiree die at 110 for sure, the life annuity is equivalent to temporary annuity up to age 110. Mortality only
+         ax65 = c(get_tla(pxT[age<65],i), rep(0, 46)),             # aT..{x:65-x-|} discount value of 65 at age x, using composite decrement       
+         ax65s= c(get_tla(pxT[age<65],i, sx[age<65]), rep(0, 46)), # ^s_aT..{x:65-x-|}
+         axd = get_tla(pxmd, i),                             # Value of life time annuity calculated using mortality for disabled. Used in ancillary benefit. 
+         ayx = c(get_tla2(pxT[age<=65], i), rep(0, 45)),             # need to make up the length of the vector to 81
+         ayxs= c(get_tla2(pxT[age<=65], i, sx[age<=65]), rep(0, 45))  # need to make up the length of the vector to 81
+  )                              
+
+
+
+
+tab_er <- desc %>% 
+  # vested benefits
+  mutate(gx.r  = ifelse(age %in% 55:65, 1 - 12 * (65 - age) * 0.0025 , 0) , # grading function equal to the proportion of accrued benefit vested at age x. For now, fully vested after a given number of yos.
+         TCx.r = gx.r * Bx * qxe * ax,  # term cost of retirement
+         PVFBx.r = c(get_PVFB(pxT[age <= 65], v, TCx.r[age <= 65]), rep(0, 45)),
+         # NC and AL of PUC
+         TCx.r1 = gx.r * qxe * ax,  # term cost of $1's benefit
+         NCx.PUC = bx * c(get_NC.PUC(pxT[age <= 65], v, TCx.r1[age <= 65]), rep(0, 45)),
+         ALx.PUC = Bx * c(get_PVFB(pxT[age <= 65], v, TCx.r1[age <= 65]), rep(0, 45)),
+         # NC and AL of EAN.CD
+         NCx.EAN.CD = ifelse(age < 65, PVFBx.r[age == min(age)]/ayx[age == 65], 0),
+         ALx.EAN.CD = PVFBx.r - NCx.EAN.CD * ax65,
+         # NC and AL of EAN.CP
+         NCx.EAN.CP = ifelse(age < 65, sx * PVFBx.r[age == min(age)]/(sx[age == min(age)] * ayxs[age == 65]), 0),
+         ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * ax65s
+         
+         )
+
+plot(tab_er$PVFBx.r[1:36], type = "b")
+         
+# get_PVFB.r(tab_er$pxT[tab_er$age <= 65], v, tab_er$TCx.r[tab_er$age <= 65])
+
+    
+kable(tab_er, digits = 2)
+
+
+
+
+
 
 
 
