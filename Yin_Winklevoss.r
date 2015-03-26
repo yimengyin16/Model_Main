@@ -1227,7 +1227,6 @@ tab_er <- desc %>%
          # NC and AL of EAN.CP
          NCx.EAN.CP = ifelse(age < 65, sx * PVFBx.r[age == min(age)]/(sx[age == min(age)] * ayxs[age == 65]), 0),
          ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * ax65s
-         
          )
 
 plot(tab_er$PVFBx.r[1:36], type = "b")

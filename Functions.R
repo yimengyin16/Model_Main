@@ -3,7 +3,7 @@
 # 1. function calculating temporary annuity values from age x to retirment age 65 (fixed end)
 get_tla <- function(px, i, sx = rep(1, length(px))){
   # suppose the age corresponding to px runs from a1 to aN, and f = aN + 1 (eg. age 30:64, f = 65)
-  # The function computes a..{x, f - x} and s_a..{y, x - y}, x runing from a1 to aN. 
+  # The function computes a..{x, f - x} and s_a..{x, f - x}, x runing from a1 to aN. 
   # The length of px is f - a1 
   # Note that the last element is redundant, just used as a place holder. 
   
