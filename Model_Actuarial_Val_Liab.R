@@ -28,7 +28,7 @@ decrement$qxe.p <- na2zero(decrement$qxe.p)
   
 decrement %<>% 
   # For active(".a")
-  mutate(qxt.a   = qxt.p,   # qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * (1 - ) ,
+  mutate(qxt.a   = qxt.p,   # qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2),
          qxd.a   = qxd.p,   # (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
          qxm.a   = qxm.p,   # (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
          qxr.a   = qxe.p    # ifelse(age == 64, (1 - qxt.p)*(1 - qxd.p)*(1 - qxm.p), 0)
@@ -48,7 +48,7 @@ decrement %<>%
   
   # Calculate various survival probabilities
   mutate( pxm = 1 - qxm.p,
-          pxT = (1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p) * (1 - qxe.p) ,
+          pxT = 1 - qxt.p - qxd.p - qxm.p - qxe.p, #(1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
           px65m = order_by(-age, cumprod(ifelse(age >= 65, 1, pxm))), # prob of surviving up to 65, mortality only
           px65T = order_by(-age, cumprod(ifelse(age >= 65, 1, pxT))), # prob of surviving up to 65, composite rate
           p65xm = cumprod(ifelse(age <= 65, 1, lag(pxm))))            # prob of surviving to x from 65, mortality only
@@ -86,7 +86,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
   # Calculate salary and benefits
   mutate(# sx = scale * (1 + infl + prod)^(age - min(age)),   # Composite salary scale
     year = start.year + age - ea,                      # year index in the simulation
-    vrx = v^(65-age),                                  # discount factor
+    # vrx = v^(65-age),                                  # discount factor
     Sx = ifelse(age == min(age), 0, lag(cumsum(sx))),  # Cumulative salary
     yos= age - min(age),                               # years of service
     n  = pmin(yos, fasyears),                          # years used to compute fas
@@ -96,6 +96,8 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     #ax = ifelse(age < 65, NA, get_tla(pxm, i)),        
     ax = get_tla(pxm, i),                              # Since retiree die at 110 for sure, the life annuity is equivalent to temporary annuity up to age 110. 
+    ax65 = c(get_tla(pxT[age<65],i), rep(0, 46)),               # aT..{x:65-x-|} discount value of 65 at age x, using composite decrement       
+    ax65s= c(get_tla(pxT[age<65],i, sx[age<65]), rep(0, 46)),   # ^s_aT..{x:65-x-|}
     ayx = c(get_tla2(pxT[age <= 65], i), rep(0, 45)),                # need to make up the length of the vector up to age 110
     ayxs= c(get_tla2(pxT[age <= 65], i,  sx[age <= 65]), rep(0, 45)),  # need to make up the length of the vector up to age 110
     B   = ifelse(age>=65, Bx[age == 65], 0)            # annual benefit 
@@ -105,20 +107,30 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
   #(liab %>% filter(start.year == -89, ea == 20, age <= 65) %>% select(pxT))$pxT %>% get_tla2a(i)
   
   
-  # Calculate normal costs (following Winklevoss, normal costs are calculated as a multiple of PVFB)
-  mutate(
-    PVFBx = Bx[age == 65] * ax[age == 65] * vrx * px65T,
-    NCx.PUC = bx * ax[age == 65] * px65T * vrx,                                         # Normal cost of PUC
-    NCx.EAN.CD = PVFBx[age == min(age)] / ayx[age == 65],                               # Normal cost of EAN, constant dollar
-    NCx.EAN.CP = PVFBx[age == min(age)] / (sx[age == min(age)] * ayxs[age == 65]) * sx  # Normal cost of EAN, constant percent
+  # Calculate normal costs with multiple retirement ages
+  mutate(gx.r  = ifelse(age %in% 55:65, 1 - 12 * (65 - age) * 0.0025 , 0), # reduction factor for early retirement benefits
+         TCx.r = gx.r * Bx * qxr.a * ax,  # term cost of retirement
+         PVFBx.r = c(get_PVFB(pxT[age <= 65], v, TCx.r[age <= 65]), rep(0, 45)),
+         
+         ## NC and AL of UC
+         # TCx.r1 = gx.r * qxe * ax,  # term cost of $1's benefit
+         # NCx.UC = bx * c(get_NC.UC(pxT[age <= 65], v, TCx.r1[age <= 65]), rep(0, 45)),
+         # ALx.UC = Bx * c(get_PVFB(pxT[age <= 65], v, TCx.r1[age <= 65]), rep(0, 45)),
+         
+         # NC and AL of PUC
+         TCx.rPUC = ifelse(age == min(age), 0, (Bx / (age - min(age)) * gx.r * qxr.a * ax)), # Note that this is not really term cost 
+         NCx.PUC = c(get_NC.UC(pxT[age <= 65], v, TCx.rPUC[age <= 65]), rep(0, 45)),
+         ALx.PUC = c(get_AL.PUC(pxT[age <= 65], v, TCx.rPUC[age <= 65]), rep(0, 45)),
+         
+         # NC and AL of EAN.CD
+         NCx.EAN.CD = ifelse(age < 65, PVFBx.r[age == min(age)]/ayx[age == 65], 0),
+         ALx.EAN.CD = PVFBx.r - NCx.EAN.CD * ax65,
+         # NC and AL of EAN.CP
+         NCx.EAN.CP = ifelse(age < 65, sx * PVFBx.r[age == min(age)]/(sx[age == min(age)] * ayxs[age == 65]), 0),
+         ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * ax65s
   ) %>% 
-  # Calculate actuarial liablity
-  mutate(
-    ALx.PUC = Bx/Bx[age == 65] * PVFBx,
-    ALx.EAN.CD = ayx/ayx[age == 65] * PVFBx,
-    ALx.EAN.CP = ayxs/ayxs[age == 65] * PVFBx,
-    ALx.r      = ax * Bx[age == 65]             # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods
-  ) %>% 
+  
+  
   ungroup %>% 
   select(start.year, year, ea, age, everything()) 
 
@@ -143,7 +155,7 @@ extract_slice <- function(Var, Year,  data = liab){
 # Extract variables in liab that will be used in the simulation, and put them in a list.
 # Storing the variables this way can significantly boost the speed of the loop. 
 
-var.names <- liab %>% select(B:ALx.r) %>% colnames()
+# var.names <- liab %>% select(B:ALx.EAN.CP) %>% colnames()
 
 # 
 # #cl <- makeCluster(ncore)
@@ -164,7 +176,7 @@ var.names <- liab %>% select(B:ALx.r) %>% colnames()
 
 # a faster way to create liab_list instead of extract_slice and using aply twice
 # the speed comes from processing the entire df first and setting the data frame up in matrix format before extracting the matrices into the list
-var.names <- liab %>% select(B:ALx.r) %>% colnames()
+var.names <- colnames(liab)[grep("^B$|^ALx|^NCx", colnames(liab))]
 a <- proc.time()
 lldf <- liab %>% ungroup %>% # I don't think liab is grouped, but just in case...
   filter(year %in% 1:100) %>%
@@ -194,6 +206,7 @@ proc.time() - a
 end_time_liab <- proc.time()
 
 Time_liab <- end_time_liab - start_time_liab
+
 
 
 

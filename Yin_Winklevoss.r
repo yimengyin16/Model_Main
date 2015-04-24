@@ -1202,11 +1202,11 @@ desc <- rename(gam1971, qxm.p = qxm) %>%
          Bx = benfactor * yos * fas,                        # accrued benefits
          bx = lead(Bx) - Bx, 
          ax = get_tla(pxm, i), # Since retiree die at 110 for sure, the life annuity is equivalent to temporary annuity up to age 110. Mortality only
-         ax65 = c(get_tla(pxT[age<65],i), rep(0, 46)),             # aT..{x:65-x-|} discount value of 65 at age x, using composite decrement       
-         ax65s= c(get_tla(pxT[age<65],i, sx[age<65]), rep(0, 46)), # ^s_aT..{x:65-x-|}
-         axd = get_tla(pxmd, i),                             # Value of life time annuity calculated using mortality for disabled. Used in ancillary benefit. 
+         ax65 = c(get_tla(pxT[age<65],i), rep(0, 46)),               # aT..{x:65-x-|} discount value of 65 at age x, using composite decrement       
+         ax65s= c(get_tla(pxT[age<65],i, sx[age<65]), rep(0, 46)),   # ^s_aT..{x:65-x-|}
+         axd = get_tla(pxmd, i),                                     # Value of life time annuity calculated using mortality for disabled. Used in ancillary benefit. 
          ayx = c(get_tla2(pxT[age<=65], i), rep(0, 45)),             # need to make up the length of the vector to 81
-         ayxs= c(get_tla2(pxT[age<=65], i, sx[age<=65]), rep(0, 45))  # need to make up the length of the vector to 81
+         ayxs= c(get_tla2(pxT[age<=65], i, sx[age<=65]), rep(0, 45)) # need to make up the length of the vector to 81
   )                              
 
 
