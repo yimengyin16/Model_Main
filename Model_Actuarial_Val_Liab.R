@@ -18,18 +18,20 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
   select(ea, age, everything()) %>%          
   arrange(ea, age)  %>% 
   filter(age >= ea) %>%
-  group_by(ea)
+  group_by(ea) 
+
+decrement$qxe.p <- na2zero(decrement$qxe.p)
   
 # Now assume the decrement tables contain multiple decrement rates(probabilities) rather than single decrement rates.
 # If the decrement tables provide single decrement rates, we need to convert them to multiple decrement rates in a consistent way.   
 # At least for TPAF, the multiple decrement rates (probabilities) are provided in AV.  
   
+decrement %<>% 
   # For active(".a")
-  mutate(qxt.a   = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2),
-         qxd.a   = (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
-         qxm.a   = (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
-         # qxr.a   = ifelse(age == 64, 1 - qxm.a  - qxtnv.a - qxd.a, 0), 
-         qxr.a   = ifelse(age == 64, (1 - qxt.p)*(1 - qxd.p)*(1 - qxm.p), 0) # This formula yields more accurate values than the one above, which uses approximate probabilities. 
+  mutate(qxt.a   = qxt.p,   # qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * (1 - ) ,
+         qxd.a   = qxd.p,   # (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
+         qxm.a   = qxm.p,   # (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
+         qxr.a   = qxe.p    # ifelse(age == 64, (1 - qxt.p)*(1 - qxd.p)*(1 - qxm.p), 0)
   ) %>%
   
   # For terminated(".t"), target status are dead and retired.
@@ -46,7 +48,7 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
   
   # Calculate various survival probabilities
   mutate( pxm = 1 - qxm.p,
-          pxT = (1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
+          pxT = (1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p) * (1 - qxe.p) ,
           px65m = order_by(-age, cumprod(ifelse(age >= 65, 1, pxm))), # prob of surviving up to 65, mortality only
           px65T = order_by(-age, cumprod(ifelse(age >= 65, 1, pxT))), # prob of surviving up to 65, composite rate
           p65xm = cumprod(ifelse(age <= 65, 1, lag(pxm))))            # prob of surviving to x from 65, mortality only

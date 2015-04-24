@@ -154,8 +154,10 @@ source("Model_Actuarial_Val_wf.R")
 nsim  <- 30    # No. of sims
 
 set.seed(1234)
+
+# setting actual investment return.
 #i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
-i.r <- matrix(0.08, nrow = nyear, ncol = nsim)
+i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
 
 source("Model_Actuarial_Val_Sim.R")
 
