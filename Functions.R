@@ -1,4 +1,7 @@
 
+#**************************************
+#    1. PV of Annuities           #####
+#**************************************
 
 # 1.1 function calculating temporary annuity values from age x to retirment age 65 (fixed end)
 get_tla <- function(px, i, sx = rep(1, length(px))){
@@ -139,7 +142,9 @@ get_AL.PUC <- function(px, v, TC){
 
 
 
-# 2. Amortization Functions
+#**************************************
+# 2. Amortization Functions       #####
+#**************************************
 
 pmt <- function(p, i, n, end = FALSE){
   # amortization function with constant payment at each period 
@@ -205,9 +210,9 @@ amort_LG <- function(p, i, m, g, end = FALSE, method = "cd"){
   }
 
 
-
-# Utility functions
-
+#********************************
+# 3.Utility functions        ####
+#********************************
 cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric, eliminating "," "$" "%". chars will become NA
 
 ht <- function (df, nrecs=6) {print(head(df, nrecs)); print(tail(df, nrecs))} # head tail
@@ -230,24 +235,7 @@ memory<-function(maxnobjs=5){
 
 na2zero <- function(x){x[is.na(x)] <- 0 ;return(x)}
 
-
-# pmt <- function(p, i, n){
-#   # amortization function, with payment at the end of period. 
-#   # p = principle, i = interest rate, n = periods. 
-#   pmt <- p * (1 + i)^n * i/((1 + i)^n - 1)
-#   return(pmt)  
-# }
-
-# gaip2 <- function(p, i, n, g){
-#   # p=principal, i=interest rate, n=periods, g=growth rate in payments
-#   # calculating gaip directly
-#   # end: , if TRUE, payment at the end of period. 
-#   #if(end) p <- p*(1 + i) 
-#   k <- (1 + i)/(1 + g)
-#   gaf <- (1 + i) * (1 - k)/(k * (k^(-n) - 1))
-#   return(gaf*p)
-# }
-
+f2n <- function(x) as.numeric(levels(x)[x])
 
 
 ## spline smoothing 
@@ -268,6 +256,26 @@ splong<-function(df,fillvar,fitrange=NULL, method = "natural"){
   return(dfl2)
 }
 
+
+
+
+
+# pmt <- function(p, i, n){
+#   # amortization function, with payment at the end of period. 
+#   # p = principle, i = interest rate, n = periods. 
+#   pmt <- p * (1 + i)^n * i/((1 + i)^n - 1)
+#   return(pmt)  
+# }
+
+# gaip2 <- function(p, i, n, g){
+#   # p=principal, i=interest rate, n=periods, g=growth rate in payments
+#   # calculating gaip directly
+#   # end: , if TRUE, payment at the end of period. 
+#   #if(end) p <- p*(1 + i) 
+#   k <- (1 + i)/(1 + g)
+#   gaf <- (1 + i) * (1 - k)/(k * (k^(-n) - 1))
+#   return(gaf*p)
+# }
 
 
 

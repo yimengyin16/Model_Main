@@ -6,21 +6,23 @@ start_time_liab <- proc.time()
 # 1. Decrement table ####
 # For now, we assume all decrement rates do not change over time. 
 # Use decrement rates from winklevoss.  
-load(paste0(getwd(), "/Data/winklevossdata.RData"))
+load("Data/winklevossdata.RData")
 
 # Create decrement table and calculate probability of survival
 decrement <- expand.grid(age = range_age, ea = range_ea) %>% 
-  left_join(filter(gam1971, age>=20)) %>% left_join(term2) %>% left_join(disb) %>% left_join(dbl) %>% # survival rates
-  select(ea, age, everything()) %>% 
+  left_join(filter(gam1971, age>=20)) %>%    # mortality 
+  left_join(term2) %>%                       # termination
+  left_join(disb)  %>%                       # disability
+  left_join(dbl)   %>%                       # mortality for disabled
+  left_join(er)    %>%                       # early retirement
+  select(ea, age, everything()) %>%          
   arrange(ea, age)  %>% 
   filter(age >= ea) %>%
-  group_by(ea) %>%
+  group_by(ea)
   
-  # Calculate decrement probabilities for each group
-  # Note 1: Retirement is not a risk competing with other risks(death, terminatin, diability). Rather, it is
-  #         an event that happens for sure for all participants who have survived all other risks till the beginning of age 65. 
-  # Note 2: We no longer put vested and non-vested terminated workers in separate groups, now they are in a unified "terminated" group. 
-  #         But we are still able to distinguish them, because the non-vested will have zero liabilities and benefits. 
+# Now assume the decrement tables contain multiple decrement rates(probabilities) rather than single decrement rates.
+# If the decrement tables provide single decrement rates, we need to convert them to multiple decrement rates in a consistent way.   
+# At least for TPAF, the multiple decrement rates (probabilities) are provided in AV.  
   
   # For active(".a")
   mutate(qxt.a   = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2),
