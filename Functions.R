@@ -1,6 +1,6 @@
 
 
-# 1. function calculating temporary annuity values from age x to retirment age 65 (fixed end)
+# 1.1 function calculating temporary annuity values from age x to retirment age 65 (fixed end)
 get_tla <- function(px, i, sx = rep(1, length(px))){
   # suppose the age corresponding to px runs from a1 to aN, and f = aN + 1 (eg. age 30:64, f = 65)
   # The function computes a..{x, f - x} and s_a..{x, f - x}, x runing from a1 to aN. 
@@ -26,7 +26,7 @@ get_tla <- function(px, i, sx = rep(1, length(px))){
 }
 get_tla(rep(0.98, 65), 0.08) # test the function
 
-# 2. function calculating temporary annuity values from a fixed entry age y to x (fixed start)
+# 1.2 function calculating temporary annuity values from a fixed entry age y to x (fixed start)
 get_tla2 = function(px, i, sx = rep(1, length(px))){
   # Suppose the age corresponding to px runs from a1 to aN, y = a1 (eg. age 30:65, y = 30)
   # This function conputes a..{y, x - y} and s_a..{y, x - y}, x ruuning from a1 to aN. 
@@ -58,7 +58,7 @@ get_tla2 = function(px, i, sx = rep(1, length(px))){
   return(tla) 
 }
 
-# 2a. function calculating temporary annuity values from a fixed entry age y to x 
+# 1.2a A simpler implementation of 1.2
 get_tla2a <- function(px, i, sx = rep(1, length(px))){
   
   n <- length(px)
@@ -74,17 +74,18 @@ get_tla2a <- function(px, i, sx = rep(1, length(px))){
 get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65))  # test the function
 get_tla2a(rep(0.98, 65), 0.08, rep(1.1, 65))# test the function
 
-# 3. PVFB of term costs
+# 1.3 PVFB of term costs
 get_PVFB <- function(px, v, TC){ # present values of subsets of TC (fixed end)
   # This function compute the total present value of TC[j:n] at the beginning of time j, with j running from 1 to n. 
   # The function can be used to calculate PVFB of term costs of ancillary benefits or retirement benefits with multiple
   # retirement ages. 
+  
   # Inputs
-  # px: numeric vector of length n. Probability of survival at time 1 through n
-  # v : numeric. discount factor 1/(1 + i)
-  # TC: numeric vector of length n. A series of term costs. Term costs are valued at the begninning of period. 
+    # px: numeric vector of length n. Probability of survival at time 1 through n
+    # v : numeric. discount factor 1/(1 + i)
+    # TC: numeric vector of length n. A series of term costs. Term costs are valued at the begninning of period. 
   # Returns
-  # PVFBs of fixed end contracting windows of TC. 
+    # PVFBs of fixed end contracting windows of TC. 
   
   n <- length(px)
   
@@ -93,10 +94,20 @@ get_PVFB <- function(px, v, TC){ # present values of subsets of TC (fixed end)
   return(PVFB)
 }
 
-# 4. NC of PUC
-get_NC.PUC <- function(px, v, TC){
-  # The last elements of result is NA by definition. 
-  
+# 1.4 NC of UC and PUC
+get_NC.UC <- function(px, v, TC){
+  # This function is a variation of get_PVFB. It is used to calculate NC under UC and PUC methods.
+  # Below we explain the major difference between get_NC.UC and get_PVFB:
+    # 1. Why TC[(j + 1):n]?  Remember NC is the discounted value of benefit accrual. During age x, the individual can 
+    #    accrue benefit for age x + 1 to r'', so the corresponding elements in TC are TC[(j + 1):n]. Note that 
+    #    TC[j+1] is gx.r(j+1)*qxr(j+1)*ax(j+1) in PUC. 
+    # 2. Why start discounting from the 1st element? Since at j the individual starts accruing benefit from j + 1, 
+    #    we need to discount the value in j + 1.  
+  # Note The last elements (at age r'') of the result is NA by construction. 
+  # px must be survival probability from min(age) to r''.
+  # TC must be defined as  
+    #  gx.r(x) * qxr(x) * ax(x), x running from y (entry age) to r'' (eg. 20 to 65 in Winklevoss book)
+    #  Bx(x)/(x - y) * gx.r(x) * qxr(x) * ax(x), x running from entry age (y) to r'' (0 when x = y)      
   n <- length(px) # n is r''
   
   Fun_NC <- function(j) ifelse(j == n, NA, sum(cumprod(px[j:(n - 1)]) * v^(1:(n-j)) * TC[(j + 1):n]))
@@ -106,10 +117,25 @@ get_NC.PUC <- function(px, v, TC){
   return(NC)
 }
 
-
-
-
-
+# 1.5 AL of PUC
+get_AL.PUC <- function(px, v, TC){
+  # This function is a variation of get_PVFB. It is used to calculate AL under PUC methods.
+  
+  # Note that the only difference between get_AL.PUC and get_PVFB is that TC[j] is multiplied by (j - 1)
+  
+  # Note that y(entry age) corresponds to index 1 and age x corresponds to index j, so at age x the individual
+  # has been accruing benefits for x - y years, which is equal to j - 1 years. (eg. Assuming y = 20, then when x = 21 and j = 2 the 
+  # individual have accrued benefits for 1 year (x - y = 21 - 1 and j - 1 =  2 - 1).
+  
+  # TC must be defined the same way as in get_NC.UC. 
+  # the first element (age y) should be zero, the last element should be the same as the last element in TC.
+  
+  n <- length(px) # n is r'' - y + 1
+  AL <- sapply(seq_len(n), 
+                 function(j) ifelse(j == n, TC[j]*(j-1), sum(cumprod(c(1, (px[j:(n - 1)] * v))) * TC[j:n] * (j - 1)))
+                 )
+  return(AL)
+}
 
 
 
@@ -180,7 +206,7 @@ amort_LG <- function(p, i, m, g, end = FALSE, method = "cd"){
 
 
 
-# functions created by Don
+# Utility functions
 
 cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric, eliminating "," "$" "%". chars will become NA
 
@@ -202,6 +228,7 @@ memory<-function(maxnobjs=5){
   print(paste("Memory in use after: ",memory.size(),sep=""))
 }
 
+na2zero <- function(x){x[is.na(x)] <- 0 ;return(x)}
 
 
 # pmt <- function(p, i, n){
@@ -220,5 +247,28 @@ memory<-function(maxnobjs=5){
 #   gaf <- (1 + i) * (1 - k)/(k * (k^(-n) - 1))
 #   return(gaf*p)
 # }
+
+
+
+## spline smoothing 
+splong<-function(df,fillvar,fitrange=NULL, method = "natural"){
+  # df should have only 3 columns: fillvar, nonfillvar [in either order], and value
+  # or just 2 columns, with no nonfillvar
+  # last column ALWAYS must be the value var
+  valvar<-names(df)[length(names(df))]
+  nonfillvar<-setdiff(names(df),c(fillvar,valvar))
+  f<-function(x) {
+    if(is.null(fitrange)) fitrange<-min(x[,fillvar]):max(x[,fillvar])
+    spl<-spline(x[,fillvar], x[,valvar], xout=fitrange, method = method)
+    dfout<-data.frame(x=spl$x, y=spl$y)
+    names(dfout)<-c(fillvar,valvar)
+    return(dfout)
+  }
+  if(length(nonfillvar)>0) dfl2<-ddply(df,c(nonfillvar),f) else dfl2<-f(df)
+  return(dfl2)
+}
+
+
+
 
 
