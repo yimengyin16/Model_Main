@@ -1,6 +1,12 @@
 # Actuarial Valuation in a simple setting
 # Yimeng Yin
 # 2/1/2015
+# archived: 4/24/2015
+
+# Note for this archived brunch ("Archived 4/24/2015")
+# The model in this version does not include early retirement, ancillary benefits, asset smoothing and COLA.
+# It is used to test the general modeling approach.  
+
 
 # This program consists of following files:
   # Model_Actuarial_Val.R
