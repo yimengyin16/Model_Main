@@ -1217,10 +1217,16 @@ tab_er <- desc %>%
   mutate(gx.r  = ifelse(age %in% 55:65, 1 - 12 * (65 - age) * 0.0025 , 0) , # grading function equal to the proportion of accrued benefit vested at age x. For now, fully vested after a given number of yos.
          TCx.r = gx.r * Bx * qxe * ax,  # term cost of retirement
          PVFBx.r = c(get_PVFB(pxT[age <= 65], v, TCx.r[age <= 65]), rep(0, 45)),
-         # NC and AL of PUC
+         # NC and AL of UC
          TCx.r1 = gx.r * qxe * ax,  # term cost of $1's benefit
-         NCx.PUC = bx * c(get_NC.PUC(pxT[age <= 65], v, TCx.r1[age <= 65]), rep(0, 45)),
-         ALx.PUC = Bx * c(get_PVFB(pxT[age <= 65], v, TCx.r1[age <= 65]), rep(0, 45)),
+         NCx.UC = bx * c(get_NC.UC(pxT[age <= 65], v, TCx.r1[age <= 65]), rep(0, 45)),
+         ALx.UC = Bx * c(get_PVFB(pxT[age <= 65], v, TCx.r1[age <= 65]), rep(0, 45)),
+         
+         # NC and AL of PUC
+         TCx.rPUC = ifelse(age == min(age), 0, (Bx / (age - min(age)) * gx.r * qxe * ax)) , 
+         NCx.PUC = c(get_NC.UC(pxT[age <= 65], v, TCx.rPUC[age <= 65]), rep(0, 45)),
+         ALx.PUC = c(get_AL.PUC(pxT[age <= 65], v, TCx.rPUC[age <= 65]), rep(0, 45)),
+         
          # NC and AL of EAN.CD
          NCx.EAN.CD = ifelse(age < 65, PVFBx.r[age == min(age)]/ayx[age == 65], 0),
          ALx.EAN.CD = PVFBx.r - NCx.EAN.CD * ax65,
@@ -1235,6 +1241,69 @@ plot(tab_er$PVFBx.r[1:36], type = "b")
 
     
 kable(tab_er, digits = 2)
+
+
+
+
+
+# How the differences between expected investment income and actuarial investment income are 
+# recognzied using the asset smoothing method in TPAF AV2013
+
+# function generating geometric sequence
+geomSeq <- function(q, n, a1 = 1) a1*q^seq(0, n-1)
+
+# The percent of the difference realized in actuarial assets from year 1 to year 20.
+# inital realization is 20%, as described in AV2013
+(a <- geomSeq(0.8, 20, 0.2) %>% cumsum)
+plot(a, type = "b", ylim = c(0,1))
+
+# Only 2/3 of the difference will be realized by year 5, and 89% realized by year 10,
+# over 99% realized after year 20. 
+
+
+
+nyear <- 50
+A0 <- 100
+q <- 0.2
+
+i.e <- 0.079
+
+# (1) deterministic return
+# i.r <- rep(0.079, nyear)
+# i.r[5:7] <- -0.05 # deviations from expected return
+
+# (2) sd normal return
+#i.r <- rnorm(nyear, mean = 0.079, sd = 0.13)
+
+# (3) return with mean reversion described by a AR process
+i.r <- arima.sim(n = nyear, list(ar = 0.3), sd = 0.13) + 0#.079
+
+
+
+Assets <- data.frame(year = seq_len(nyear),
+                     AA = numeric(nyear), EAA = numeric(nyear), MA = numeric(nyear),
+                     I.e = numeric(nyear), I.r = numeric(nyear), 
+                     i.e = i.e, i.r = i.r)
+
+Assets[c("AA", "EAA", "MA")][1,] <- A0
+
+
+for(j in 2:nyear){
+  Assets$I.e[j]  <- with(Assets, MA[j - 1]*i.e[j]) # expected investment income
+  Assets$I.r[j]  <- with(Assets, MA[j - 1]*i.r[j]) # actual investment income
+  
+  Assets$EAA[j] <- with(Assets, AA[j - 1] + I.e[j]) # expected actuarial assets
+  Assets$MA[j]  <- with(Assets, MA[j - 1] + I.r[j]) # market value of assets
+  
+  Assets$AA[j]  <- with(Assets, (1-q) * EAA[j] + q * MA[j]) # actuarial assets
+  }
+
+Assets %>% select(year, MA, AA) %>% gather(type, value, -year) %>% 
+  ggplot(aes(x = year, y = value, color = factor(type))) + geom_line() + geom_point()
+
+
+
+
 
 
 
