@@ -4,8 +4,28 @@
 start_time_liab <- proc.time()
 
 # 1. Decrement table ####
-# For now, we assume all decrement rates do not change over time. 
-# Use decrement rates from winklevoss.  
+
+# Notes
+ # 1) For now, we assume all decrement rates do not change over time.  
+ # 2) Use decrement rates from winklevoss.  
+ # 3) Now assume the decrement tables contain multiple decrement rates(probabilities) rather than single decrement rates.
+      # If the decrement tables provide single decrement rates, we need to convert them to multiple decrement rates in a consistent way.   
+      # At least for TPAF, the multiple decrement rates (probabilities) are provided in AV.  
+
+# Timing of decrement
+ # Time period t is defined as the time interval [t, t+1), closed at the beginning and open at the end. 
+ # Assume retirement is independent of all other risks and occurs at the beginning of time period t, with the probability qxr(t).
+   # Individual's status at t becomes "retired" immediately after the risk of retirement is realized at the beginning of t.    
+ # The occurence of death, disability and termination follow UUD over period t. 
+ # payment of retirement benefit occurs at the beginning of t. Hence all retirees will recieve benefit at least once, at the very moment when
+   # they become retirees. 
+ # Given the assumptions above, it follows that (' indicates single decrement rates)
+   # qe = qe'
+   # qt = qt'(1 - 0.5qm')(1 - 0.5 qd')(1 - qe'), (qd, qm are similar), note that qd=qm=qt=0 at max retirement age, when qe' = 1
+   # p  = 1 - qe - qt - qm - qd
+ # We assume qe, qt, qd, qm are directly available from data.     
+
+
 load("Data/winklevossdata.RData")
 
 # Create decrement table and calculate probability of survival
@@ -21,17 +41,16 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
   group_by(ea) 
 
 decrement$qxe.p <- na2zero(decrement$qxe.p)
-  
-# Now assume the decrement tables contain multiple decrement rates(probabilities) rather than single decrement rates.
-# If the decrement tables provide single decrement rates, we need to convert them to multiple decrement rates in a consistent way.   
-# At least for TPAF, the multiple decrement rates (probabilities) are provided in AV.  
+decrement$qxe.p <- 0
+
+# Timing of decrements
   
 decrement %<>% 
-  # For active(".a")
-  mutate(qxt.a   = qxt.p,   # qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2),
-         qxd.a   = qxd.p,   # (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
-         qxm.a   = qxm.p,   # (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
-         qxr.a   = qxe.p    # ifelse(age == 64, (1 - qxt.p)*(1 - qxd.p)*(1 - qxm.p), 0)
+  # For active(".a"). 
+  mutate(qxt.a   = ifelse(age == r.max, 0, qxt.p),   # qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2),
+         qxd.a   = ifelse(age == r.max, 0, qxd.p),   # (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
+         qxm.a   = ifelse(age == r.max, 0, qxm.p),   # (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
+         qxr.a   = qxe.p                             # ifelse(age == 64, (1 - qxt.p)*(1 - qxd.p)*(1 - qxm.p), 0)
   ) %>%
   
   # For terminated(".t"), target status are dead and retired.

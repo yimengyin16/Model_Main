@@ -88,6 +88,8 @@ ncore <- 8            # # of CPU cores used in parallelled loops
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
+r.max     <- 65     # maximum retirement age, at which all actives retire with probability 1. 
+
 
 infl <- 0.04        # Assumed inflation
 prod <- 0.01        # Assumed productivity
@@ -151,7 +153,7 @@ source("Model_Actuarial_Val_wf.R")
 # 3. Simulation ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-nsim  <- 30    # No. of sims
+nsim  <- 1    # No. of sims
 
 set.seed(1234)
 
