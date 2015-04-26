@@ -41,7 +41,7 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
   group_by(ea) 
 
 decrement$qxe.p <- na2zero(decrement$qxe.p)
-decrement$qxe.p <- 0
+decrement$qxe.p[decrement$age != 65] <- 0
 
 # Timing of decrements
   
@@ -146,7 +146,8 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
          ALx.EAN.CD = PVFBx.r - NCx.EAN.CD * ax65,
          # NC and AL of EAN.CP
          NCx.EAN.CP = ifelse(age < 65, sx * PVFBx.r[age == min(age)]/(sx[age == min(age)] * ayxs[age == 65]), 0),
-         ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * ax65s
+         ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * ax65s,
+         ALx.r      = ax * Bx[age == 65]  # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods
   ) %>% 
   
   

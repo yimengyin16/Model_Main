@@ -120,6 +120,22 @@ wf_retired <- fill_cell(init_retired, 1, wf_retired)
 
 decrement_wf <- sapply(decrement, function(x){x[is.na(x)] <- 0; return(x)}) %>% data.frame
 
+# Adjustment to retirement rates.
+# The time line used in this model assume retirement occurs at the beginning of every period. In other words the 
+# switch of retirement status happens at the beginning of each period. However, the transition process here requires that
+# any switch of status between t - 1(beginning) and t(beginning) must be defined in period t - 1. Hence we need to make following 
+# adjustment to the decrement table:
+  # Move qxr.a backward by 1 period.(qxr at t is now assigned to t - 1)
+  # For the age right before the max retirement age (r.max - 1), probability of retirement is 1 - qxm.a - qxd.a - qxt.a,
+    # which means all active members who survive all other risks at (r.max - 1) will enter the status "retired" for sure at age r.max (and collect the benefit regardless 
+    # whether they will die at r.max)      
+
+decrement_wf %<>% group_by(ea) %>%  
+  mutate(qxr.a = ifelse(age == r.max - 1,
+                        1 - qxt.a - qxm.a - qxd.a, 
+                        lead(qxr.a)*(1 - qxt.a - qxm.a - qxd.a)))
+
+# decrement_wf %>% filter(age == 64)
 
 # Define a function that produce transition matrices from decrement table. 
 make_dmat <- function(qx, df = decrement_wf) {

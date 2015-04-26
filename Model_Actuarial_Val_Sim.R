@@ -157,7 +157,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$I.r[j.year] <- with(penSim, i.r[j.year] *( AA[j.year] + C[j.year] - B[j.year]))
     
     # Funded Ratio
-    penSim$FR[j.year] <- with(penSim, AA[j.year] / AL[j.year])
+    penSim$FR[j.year] <- with(penSim, 100*AA[j.year] / exp(log(AL[j.year]))) # produces NaN when AL is 0.
     
     # External fund
     penSim$ExF[j.year] <- with(penSim, B[j.year] - C[j.year])

@@ -84,7 +84,7 @@ source("Functions.R")
 
 # Assumptions
 nyear <- 100          # The simulation only contains 2 years.
-ncore <- 8            # # of CPU cores used in parallelled loops
+ncore <- 1            # # of CPU cores used in parallelled loops
 
 benfactor <- 0.01   # benefit factor, 1% per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
@@ -153,13 +153,13 @@ source("Model_Actuarial_Val_wf.R")
 # 3. Simulation ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-nsim  <- 1    # No. of sims
+nsim  <- 2    # No. of sims
 
 set.seed(1234)
 
 # setting actual investment return.
-#i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
-i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
+i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
+#i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
 
 source("Model_Actuarial_Val_Sim.R")
 
@@ -168,10 +168,11 @@ source("Model_Actuarial_Val_Sim.R")
 # 4. Results ####
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-options(digits = 2, scipen = 3)
+options(digits = 3, scipen = 3)
 
 #View(penSim_results[[1]])
-kable(penSim_results[[2]], digits = 5)
+kable(penSim_results[[1]], digits = 3)
+
 
 
 df <- bind_rows(penSim_results) %>% 
