@@ -1,7 +1,7 @@
 ## Actuarial Valuation
 
 
-# Now we do the actuarial valuation at period 1 and 2. 
+# Now we do the actuarial valuations 
 # In each period, following values will be caculated:
 # AL: Total Actuarial liability, which includes liabilities for active workers and pensioners.
 # NC: Normal Cost  
@@ -12,15 +12,17 @@
 # EUAAL:Expected UAAL.
 # PR: payroll 
 # LG: Loss/Gain, total loss(positive) or gain(negative), Caculated as LG(t+1) = (UAAL(t) + NC(t))(1+i) - C - Ic - UAAL(t+1), 
+# AM: Amount to be amortized at period t. 
 # i is assumed interest rate. ELs of each period will be amortized seperately.  
 # SC: Supplement cost 
-# C : Actual contribution, assume that C(t) = NC(t) + SC(t)
+# ADC
+# C : Actual contribution
+# C_ADC: shortfall in paying ADC
 # B : Total beneift Payment   
 # Ic: Assumed interest from contribution, equal to i*C if C is made at the beginning of time period. i.r is real rate of return. 
 # Ia: Assumed interest from AA, equal to i*AA if the entire asset is investible. 
 # Ib: Assumed interest loss due to benefit payment, equal to i*B if the payment is made at the beginning of period
 # I.r : Total ACTUAL interet gain, I = i.r*(AA + C - B), if AA is all investible, C and B are made at the beginning of period.
-# S : Total payrol
 # Funded Ratio: AA / AL
 
 # Formulas
@@ -59,10 +61,12 @@ penSim0 <- data.frame(year = 1:nyear) %>%
          UAAL = 0, #
          EUAAL= 0, #
          LG   = 0, #
+         AM   = 0, # amount to be amortized: AM(t) = LG(t) + [ADC(t - 1) - C(t-1)]*[1 + i(t-1)], i.e. actuarial loss/gain plus shortfall in paying NC+SC in last period(plus interests) 
          NC   = 0, #
          SC   = 0, #
          ADC  = 0, #
          C    = 0, #
+         C_ADC= 0, #
          B    = 0, #                        
          I.r  = 0, #                        
          I.e  = 0, #
@@ -138,17 +142,21 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$UAAL[j] <- with(penSim, AL[j] - AA[j]) 
     
     # LG(j)
+    # Note that what is amortized at time t is the sum of 1) actuarial loss/gain(LG) during t -1, and 2) shortfall in paying ADC(C_ADC) at (t-1)
     if (j == 1){
       penSim$EUAAL[j] <- 0
-      penSim$LG[j] <- with(penSim,  UAAL[j])
-    
+      penSim$LG[j] <- with(penSim,  UAAL[j])  # This is the intial underfunding, rather than actuarial loss/gain if the plan is established at period 1. 
+      penSim$AM[j] <- with(penSim, LG[j])
+      
     } else {
       penSim$EUAAL[j] <- with(penSim, (UAAL[j - 1] + NC[j - 1])*(1 + i[j - 1]) - C[j - 1] - Ic[j - 1])
       penSim$LG[j] <- with(penSim,  UAAL[j] - EUAAL[j])
+      penSim$AM[j] <- with(penSim, (LG[j] - C_ADC[j - 1]) * (1 + i[j - 1]))
     }   
     
+    
     # Amortize LG(j)
-    SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$LG[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
+    SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$AM[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
     
     # Supplemental cost in j
     penSim$SC[j] <- sum(SC_amort[, j])
@@ -157,13 +165,18 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     # ADC(j)
     penSim$ADC[j] <- with(penSim, NC[j] + SC[j])
     
-  
+ 
     # C(j)
-    penSim$C[j] <- switch(ConPolicy,
+    penSim$C[j] <- ifelse(j %in% c(10:12), 0,  
+                   switch(ConPolicy,
                           ADC     = with(penSim, ADC[j]),                          # Full ADC
                           ADC_cap = with(penSim, min(ADC[j], PR_pct_cap * PR[j])), # ADC with cap. Cap is a percent of payroll 
                           Fixed   = with(penSim, PR_pct_fixed * PR[j])             # Fixed percent of payroll
       ) 
+    )
+    
+    # C(j) - ADC(j)
+    penSim$C_ADC[j] <- with(penSim, C[j] - ADC[j])
     
     # Ia(j), Ib(j), Ic(j)
     penSim$Ia[j] <- with(penSim, AA[j] * i[j])

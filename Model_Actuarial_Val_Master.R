@@ -82,7 +82,7 @@ source("Functions.R")
 
 ## Model parameters
 nyear <- 100        # The simulation only contains 2 years.
-ncore <- 4          # # of CPU cores used in parallelled loops
+ncore <- 2          # # of CPU cores used in parallelled loops
 
 ## Benefit structure
 benfactor <- 0.01   # benefit factor, 1% per year of yos
@@ -117,13 +117,13 @@ PR_pct_fixed <- 0.145
 
 
 # Set inital asset values
-MA_0 <- 200
-EAA_0 <- 200
+MA_0 <- 200   # market value at 0
+EAA_0 <- MA_0 # expected market value at 0
 init_MA  <- "AL"  # "MA" for preset value; "AL" for being equal to initial liability 
 init_EAA <- "MA"  # "MA" for the same value as MA; "EAA" for preset value of inital EAA.
 
 # weight on market value in asset smoothing
-w <- 0.2
+w <- 1  # No asset smoothing when set to 1. 
 
 
 
@@ -179,7 +179,7 @@ source("Model_Actuarial_Val_wf.R")
 # 3. Simulation ####
 #*********************************************************************************************************
 
-nsim  <- 50    # No. of sims
+nsim  <- 2    # No. of sims
 set.seed(1234)
 
 # setting actual investment return.
@@ -198,7 +198,7 @@ options(digits = 3, scipen = 3)
 var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",    "ExF",   
                  "UAAL",  "EUAAL", "LG",    "NC",    "SC",    "ADC",   "C", "B",     
                  "I.r" ,   "I.e",  "i",    "i.r",
-                 "PR", "ADC_PR", "C_PR")
+                 "PR", "ADC_PR", "C_PR", "AM", "C_ADC")
 
 #View(penSim_results[[1]])
 kable(penSim_results[[1]][,var.display], digits = 2)
@@ -208,7 +208,7 @@ df <- bind_rows(penSim_results) %>%
       mutate(sim=rep(1:nsim, each=nyear)) %>%
       select(sim, year, everything())
 
-plot(penSim_results[[1]]$PR, type = "b")
+#plot(penSim_results[[1]]$PR, type = "b")
 
 ## After optimization
 
