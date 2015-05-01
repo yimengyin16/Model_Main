@@ -125,7 +125,7 @@ decrement_wf <- sapply(decrement, function(x){x[is.na(x)] <- 0; return(x)}) %>% 
 # switch of retirement status happens at the beginning of each period. However, the transition process here requires that
 # any switch of status between t - 1(beginning) and t(beginning) must be defined in period t - 1. Hence we need to make following 
 # adjustment to the decrement table:
-  # Move qxr.a backward by 1 period.(qxr at t is now assigned to t - 1)
+  # Move qxr.a backward by 1 period.(qxr at t is now assigned to t - 1), the probability of retirement at t - 1 is lead(qxr.a(t))*(1 - qxt.a(t-1) - qxm.a(t-1) - qxd.a(t-1))
   # For the age right before the max retirement age (r.max - 1), probability of retirement is 1 - qxm.a - qxd.a - qxt.a,
     # which means all active members who survive all other risks at (r.max - 1) will enter the status "retired" for sure at age r.max (and collect the benefit regardless 
     # whether they will die at r.max)      
@@ -195,7 +195,7 @@ calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
   # and 0 in all other cells. 
   
   # working age
-  working_age <- 20:64
+  working_age <- min(range_age):(r.max - 1)
   # age distribution of new entrants
   dist <- rep(1/nrow(wf0), nrow(wf0)) # equally distributed for now. 
   
@@ -231,7 +231,7 @@ calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
 # i runs from 2 to nyear. 
 
 
-wf_growth <- 0.00
+
 
 for (j in 1:(nyear - 1)){
 #i <-  1  
@@ -253,7 +253,7 @@ for (j in 1:(nyear - 1)){
   
   # Total inflow and outflow for each status
   out_active   <- active2term + active2disb + active2retired + active2dead 
-  new_entrants <- calc_entrants(wf_active[, , j], wf_active[, , j] - out_active, wf_growth, no.entrants = TRUE) # new entrants
+  new_entrants <- calc_entrants(wf_active[, , j], wf_active[, , j] - out_active, wf_growth, no.entrants = no_entrance) # new entrants
   
   out_term <- term2dead
   in_term  <- active2term

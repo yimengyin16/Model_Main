@@ -5,9 +5,12 @@
 # In each period, following values will be caculated:
 # AL: Total Actuarial liability, which includes liabilities for active workers and pensioners.
 # NC: Normal Cost  
-# AA: Value of assets.
+# MA: Market value of assets.
+# AA: Actuarial value of assets.
+# EAA:Expected actuarial value of assets.
 # UAAL: Unfunded accrued actuarial liability, defined as AL - NC
-# EUAAL:Expected UAAL. 
+# EUAAL:Expected UAAL.
+# PR: payroll 
 # LG: Loss/Gain, total loss(positive) or gain(negative), Caculated as LG(t+1) = (UAAL(t) + NC(t))(1+i) - C - Ic - UAAL(t+1), 
 # i is assumed interest rate. ELs of each period will be amortized seperately.  
 # SC: Supplement cost 
@@ -22,7 +25,9 @@
 
 # Formulas
 # AL(t), NC(t), B(t) at each period are calculated using the workforce matrix and the liability matrix.
-# AA(t+1) = AA(t) + I(t) + C(t) - B(t), AA(1) is given
+# MA(t+1) = AA(t) + I(t) + C(t) - B(t), AA(1) is given
+# EAA(t+1)= AA(t) + EI(t)
+# AA(t+1) = (1-w)*EAA(t+1) + w*MA(t+1)
 # I.r(t) = i.r(t)*[AA(t) + C(t) - B(t)]
 # Ia(t) = i * AA(t)
 # Ib(t) = i * B(t)
@@ -46,7 +51,9 @@
 # Set up data frame
 penSim0 <- data.frame(year = 1:nyear) %>%
   mutate(AL   = 0, #
+         MA   = 0, #
          AA   = 0, #
+         EAA  = 0, #
          FR   = 0, #
          ExF  = 0, # 
          UAAL = 0, #
@@ -54,6 +61,7 @@ penSim0 <- data.frame(year = 1:nyear) %>%
          LG   = 0, #
          NC   = 0, #
          SC   = 0, #
+         ADC  = 0, #
          C    = 0, #
          B    = 0, #                        
          I.r  = 0, #                        
@@ -62,7 +70,10 @@ penSim0 <- data.frame(year = 1:nyear) %>%
          Ib   = 0, #                         
          Ic   = 0, #  
          i    = i,
-         i.r  = 0)
+         i.r  = 0,
+         PR   = 0,
+         ADC_PR = 0,
+         C_PR = 0)
 
 # matrix representation of amortization: better visualization but large size, used in this excercise
 SC_amort0 <- matrix(0, nyear + m, nyear + m)
@@ -91,78 +102,91 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   penSim[,"i.r"] <- i.r[, k]
   
 
-  for (j.year in 1:nyear){
-    # j.year <- 1
+  for (j in 1:nyear){
+    # j <- 1
     # AL(j)
     
-#     penSim[j.year, "AL"] <- sum(wf_active[, , j.year] * liab_list[[paste0("ALx.", actuarial_method)]][[j.year]]) + 
-#       sum(wf_retired[, , j.year] * liab_list[["ALx.r"]][[j.year]])
-#     # NC(j)
-#     penSim[j.year, "NC"] <- sum(wf_active[, , j.year] * liab_list[[paste0("NCx.", actuarial_method)]][[j.year]]) 
-#     
-#     # B(j)
-#     penSim[j.year, "B"] <-  sum(wf_retired[, , j.year] * liab_list[["B"]][[j.year]])
-    
     # AL(j)
-    penSim[j.year, "AL"] <- sum(wf_active[, , j.year] * ll2[[ALx.method]][[j.year]] + wf_retired[, , j.year] * ll2[["ALx.r"]][[j.year]])
+    penSim[j, "AL"] <- sum(wf_active[, , j] * ll2[[ALx.method]][[j]] + wf_retired[, , j] * ll2[["ALx.r"]][[j]])
     
     # NC(j)
-    penSim[j.year, "NC"] <- sum(wf_active[, , j.year] * ll2[[NCx.method]][[j.year]]) 
+    penSim[j, "NC"] <- sum(wf_active[, , j] * ll2[[NCx.method]][[j]]) 
     
     # B(j)
-    penSim[j.year, "B"] <-  sum(wf_retired[, , j.year] * ll2[["B"]][[j.year]])
+    penSim[j, "B"] <-  sum(wf_retired[, , j] * ll2[["B"]][[j]])
     
+    # PR(j)
+    penSim[j, "PR"] <-  sum(wf_active[, , j] * ll2[["sx"]][[j]])
     
-    # AA(j)  
-    if(j.year == 1) {penSim[j.year, "AA"] <- switch(init_AA,
-                                                   AA0 = AA_0,                           # Use preset value
-                                                   AL0 = penSim[j.year, "AL"]) # Assume inital fund equals inital liability.
+    # MA(j) and EAA(j) 
+    if(j == 1) {penSim[j, "MA"] <- switch(init_MA,
+                                          MA = MA_0,                 # Use preset value
+                                          AL = penSim[j, "AL"]) # Assume inital fund equals inital liability.
+                penSim[j, "EAA"] <- switch(init_EAA,
+                                           AL = EAA_0,                # Use preset value 
+                                           MA = penSim[j, "MA"]) # Assume inital EAA equals inital market value.                      
     } else {
-      penSim[j.year, "AA"] <- with(penSim, AA[j.year - 1] + I.r[j.year - 1] + C[j.year - 1] - B[j.year - 1])
+      penSim[j, "MA"]  <- with(penSim, MA[j - 1] + I.r[j - 1] + C[j - 1] - B[j - 1])
+      penSim[j, "EAA"] <- with(penSim, AA[j - 1] + I.e[j - 1] + C[j - 1] - B[j - 1])
     }
+    
+    # AA(j)
+    penSim[j, "AA"] <- with(penSim, (1 - w) * EAA[j] + w * MA[j]  )
     
     
     # UAAL(j)
-    penSim$UAAL[j.year] <- with(penSim, AL[j.year] - AA[j.year]) 
+    penSim$UAAL[j] <- with(penSim, AL[j] - AA[j]) 
     
     # LG(j)
-    if (j.year == 1){
-      penSim$EUAAL[j.year] <- 0
-      penSim$LG[j.year] <- with(penSim,  UAAL[j.year])
+    if (j == 1){
+      penSim$EUAAL[j] <- 0
+      penSim$LG[j] <- with(penSim,  UAAL[j])
     
     } else {
-      penSim$EUAAL[j.year] <- with(penSim, (UAAL[j.year - 1] + NC[j.year - 1])*(1 + i[j.year - 1]) - C[j.year - 1] - Ic[j.year - 1])
-      penSim$LG[j.year] <- with(penSim,  UAAL[j.year] - EUAAL[j.year])
+      penSim$EUAAL[j] <- with(penSim, (UAAL[j - 1] + NC[j - 1])*(1 + i[j - 1]) - C[j - 1] - Ic[j - 1])
+      penSim$LG[j] <- with(penSim,  UAAL[j] - EUAAL[j])
     }   
     
     # Amortize LG(j)
-    SC_amort[j.year, j.year:(j.year + m - 1)] <- amort_LG(penSim$LG[penSim$year == j.year], i, m, g, end = FALSE, method = amort_method)  
+    SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$LG[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
     
-    # Supplemental cost in j.year
-    penSim$SC[j.year] <- sum(SC_amort[, j.year])
+    # Supplemental cost in j
+    penSim$SC[j] <- sum(SC_amort[, j])
     
     
+    # ADC(j)
+    penSim$ADC[j] <- with(penSim, NC[j] + SC[j])
+    
+  
     # C(j)
-    penSim$C[j.year] <- with(penSim, NC[j.year] + SC[j.year]) 
+    penSim$C[j] <- switch(ConPolicy,
+                          ADC     = with(penSim, ADC[j]),                          # Full ADC
+                          ADC_cap = with(penSim, min(ADC[j], PR_pct_cap * PR[j])), # ADC with cap. Cap is a percent of payroll 
+                          Fixed   = with(penSim, PR_pct_fixed * PR[j])             # Fixed percent of payroll
+      ) 
     
     # Ia(j), Ib(j), Ic(j)
-    penSim$Ia[j.year] <- with(penSim, AA[j.year] * i[j.year])
-    penSim$Ib[j.year] <- with(penSim,  B[j.year] * i[j.year])
-    penSim$Ic[j.year] <- with(penSim,  C[j.year] * i[j.year])
+    penSim$Ia[j] <- with(penSim, AA[j] * i[j])
+    penSim$Ib[j] <- with(penSim,  B[j] * i[j])
+    penSim$Ic[j] <- with(penSim,  C[j] * i[j])
     
     # I.e(j)
-    penSim$I.e[j.year] <- with(penSim, Ia[j.year] + Ic[j.year] - Ib[j.year])
+    penSim$I.e[j] <- with(penSim, Ia[j] + Ic[j] - Ib[j])
     
     # I.r(j)
-    penSim$I.r[j.year] <- with(penSim, i.r[j.year] *( AA[j.year] + C[j.year] - B[j.year]))
+    penSim$I.r[j] <- with(penSim, i.r[j] *( AA[j] + C[j] - B[j]))
     
     # Funded Ratio
-    penSim$FR[j.year] <- with(penSim, 100*AA[j.year] / exp(log(AL[j.year]))) # produces NaN when AL is 0.
+    penSim$FR[j] <- with(penSim, 100*AA[j] / exp(log(AL[j]))) # produces NaN when AL is 0.
     
     # External fund
-    penSim$ExF[j.year] <- with(penSim, B[j.year] - C[j.year])
+    penSim$ExF[j] <- with(penSim, B[j] - C[j])
+    
+    # ADC and contribution as percentage of payroll
+    penSim$ADC_PR[j] <- with(penSim, ADC[j]/PR[j])
+    penSim$C_PR[j]   <- with(penSim, C[j]/PR[j])
+    
   }
-  
   
   #penSim_results[[k]] <- penSim
   penSim

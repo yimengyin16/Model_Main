@@ -196,7 +196,7 @@ extract_slice <- function(Var, Year,  data = liab){
 
 # a faster way to create liab_list instead of extract_slice and using aply twice
 # the speed comes from processing the entire df first and setting the data frame up in matrix format before extracting the matrices into the list
-var.names <- colnames(liab)[grep("^B$|^ALx|^NCx", colnames(liab))]
+var.names <- colnames(liab)[grep("^sx$|^B$|^ALx|^NCx", colnames(liab))]
 a <- proc.time()
 lldf <- liab %>% ungroup %>% # I don't think liab is grouped, but just in case...
   filter(year %in% 1:100) %>%
