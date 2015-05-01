@@ -1,11 +1,6 @@
 # Actuarial Valuation in a simple setting
 # Yimeng Yin
-# 2/1/2015
-# archived: 4/24/2015
-
-# Note for this archived brunch ("Archived 4/24/2015")
-# The model in this version does not include early retirement, ancillary benefits, asset smoothing and COLA.
-# It is used to test the general modeling approach.  
+# 4/30/2015
 
 
 # This program consists of following files:
@@ -17,7 +12,7 @@
  # GAM-1971-Male.xls
  # Winklevoss(6).xlsx
 
-# Goal: 
+# Goals: 
 # 1. Conduct an actuarial valuation at time 1 based on plan design, actuarial assumptions, and plan data.
 # 2. Conduct an actuarial valuation at time 2 based on the plan experience during the period [1, 2), and calculate
 #    supplemental costs at time 2 based on the experience gain/loss or assumption changes. 
@@ -43,14 +38,16 @@
   # Inflation
   # Productivity
  
- # Other Assumption
-  # Contribution rule: Sponsor contributes the amount of plan cost(Normal cost + supplemental cost) in all periods.
+ # Contribution rules: 
+    # 1. Sponsor contributes full ADC, which equals the amount of plan cost(Normal cost + supplemental cost) in all periods.
+    # 2. Sponsor contributes ADC with a cap, which equals a percentage of total payroll.    
+    # 3. Sponsor contributes a fixed percentage of payroll. 
 
 # Outputs
-  # Actuarial liability at time 1 and time 2
-  # Normal cost between 1 and 2
-  # Assets at 1 and 2
-  # UAAL at 1 and 2
+  # Actuarial liability
+  # Normal costs
+  # Assets
+  # UAAL
   # Funded Ratio
 
 
@@ -85,7 +82,7 @@ source("Functions.R")
 
 ## Model parameters
 nyear <- 100        # The simulation only contains 2 years.
-ncore <- 1          # # of CPU cores used in parallelled loops
+ncore <- 4          # # of CPU cores used in parallelled loops
 
 ## Benefit structure
 benfactor <- 0.01   # benefit factor, 1% per year of yos
@@ -182,8 +179,7 @@ source("Model_Actuarial_Val_wf.R")
 # 3. Simulation ####
 #*********************************************************************************************************
 
-nsim  <- 2    # No. of sims
-
+nsim  <- 50    # No. of sims
 set.seed(1234)
 
 # setting actual investment return.
@@ -207,11 +203,10 @@ var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",    "ExF",
 #View(penSim_results[[1]])
 kable(penSim_results[[1]][,var.display], digits = 2)
 
-penSim_results[[1]] %>% names
 
 df <- bind_rows(penSim_results) %>% 
-  mutate(sim=rep(1:nsim, each=nyear)) %>%
-  select(sim, year, everything())
+      mutate(sim=rep(1:nsim, each=nyear)) %>%
+      select(sim, year, everything())
 
 plot(penSim_results[[1]]$PR, type = "b")
 
