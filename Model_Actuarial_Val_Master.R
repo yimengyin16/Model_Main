@@ -81,14 +81,17 @@ source("Functions.R")
 #*********************************************************************************************************
 
 ## Model parameters
-nyear <- 100        # The simulation only contains 2 years.
-ncore <- 2          # # of CPU cores used in parallelled loops
+nyear <- 100        # # of years in simulation 
+ncore <- 6          # # of CPU cores used in parallelled loops
 
 ## Benefit structure
-benfactor <- 0.01   # benefit factor, 1% per year of yos
+benfactor <- 0.01   # benefit factor, % of final average salary per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
-r.max     <- 65     # maximum retirement age, at which all actives retire with probability 1. 
 
+# WARNING: In curret version, please do not set a r.max greater than 65. 
+r.max     <- 54     # maximum retirement age, at which all actives retire with probability 1. 
+r.min     <- r.max  # minimum retirement age. (for multi-retirement ages, will not be used in current version) 
+cola      <- 0.03   # annual growth of retirement benefits in a simple COLA 
 
 ## Actuarial assumptions
 
@@ -129,34 +132,32 @@ w <- 1  # No asset smoothing when set to 1.
 
 ## Population 
 # Age and entry age combinations  
-range_ea  <- seq(20, 60, 5) # For now, assume new entrants only enter the workforce with interval of 5 years. 
+range_ea  <- seq(20, r.max - 1, 5) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
 range_age <- 20:110 
 
 # Initial Active
-init_active <- rbind(c(20, 20, 100),
+# WARNING: Ages and entry ages of active members must be less than retirement age. (max retirement age when multiple retirement ages is implemented) 
+init_active <- rbind(c(20, 20, 100), # (entry age,  age, number)
                      c(20, 40, 100),
-                     c(20, 64, 100)
-                     #c(40, 40, 200),
-                     #c(40, 50, 200),
-                     #c(40, 64, 100)
+                     c(20, r.max - 1, 100),
+                     c(40, 40, 100),
+                     c(40, r.max - 1, 100)
                      )
 
 # Initial Retired 
+# WARNING: Ages and entry ages of retirees must be no less than retirement age. (min retirement age when multiple retirement ages is implemented)
 init_retired <- rbind(c(20, 65, 100),
                       c(20, 85, 100))
 
 # Growth rate of workforce
-wf_growth <- 0.00    # growth rate of the size of workforce
+wf_growth <- 0.00    # growth rate of the size of workforce. For now, new entrants are equally distributed across all entry ages. 
 no_entrance <- TRUE  # No new entrants into the workforce if set "TRUE". Overrides "wf_growth"
-
-
 
 
 
 #*********************************************************************************************************
 # 1. Actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-
 source("Model_Actuarial_Val_Liab.R")
 
 
@@ -179,7 +180,7 @@ source("Model_Actuarial_Val_wf.R")
 # 3. Simulation ####
 #*********************************************************************************************************
 
-nsim  <- 2    # No. of sims
+nsim  <- 5    # No. of sims
 set.seed(1234)
 
 # setting actual investment return.
@@ -195,43 +196,49 @@ source("Model_Actuarial_Val_Sim.R")
 
 options(digits = 3, scipen = 3)
 
+# select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",    "ExF",   
                  "UAAL",  "EUAAL", "LG",    "NC",    "SC",    "ADC",   "C", "B",     
                  "I.r" ,   "I.e",  "i",    "i.r",
                  "PR", "ADC_PR", "C_PR", "AM", "C_ADC")
-
-#View(penSim_results[[1]])
 kable(penSim_results[[1]][,var.display], digits = 2)
 
 
+# Conbine results into a data frame. 
 df <- bind_rows(penSim_results) %>% 
       mutate(sim=rep(1:nsim, each=nyear)) %>%
       select(sim, year, everything())
 
-#plot(penSim_results[[1]]$PR, type = "b")
+# Running time of major modules
+Time_liab # liability
+Time_wf   # workforce
+Time_loop # the big loop
 
-## After optimization
 
-#           Total /  Loop
-#  100 sims
-#  4 cores: 16.74 / 3.29
-#  8 cores: 17.59 / 3.72   
-# 
-#  1000 sims
-#  4 cores: 34.8  / 21.56 
-#  8 cores: 33.07 / 18.91
 
-#  5000 sims
-#  4 cores: 118.30 / 105.11
-#  8 cores: 101.2  / 87.2
+# AL: Total Actuarial liability, which includes liabilities for active workers and pensioners.
+# NC: Normal Cost  
+# MA: Market value of assets.
+# AA: Actuarial value of assets.
+# EAA:Expected actuarial value of assets.(used with asset smoothing method in TPAF)
+# UAAL: Unfunded accrued actuarial liability, defined as AL - NC
+# EUAAL:Expected UAAL.
+# PR: payroll 
+# LG: Loss/Gain, total loss(positive) or gain(negative), Caculated as LG(t+1) = (UAAL(t) + NC(t))(1+i) - C - Ic - UAAL(t+1), 
+# AM: Amount to be amortized at period t, it is the sum of loss/gain and shortfall in ADC payment. 
+# i is assumed interest rate. AMs of each period will be amortized seperately.  
+# SC: Supplement cost 
+# ADC: ADC
+# C : Actual contribution
+# C_ADC: shortfall in paying ADC (C - ADC). Note that negative number means shortall. 
+# B : Total benefit payment(currently all to retirees)   
+# Ic: Assumed interest from contribution, equal to i*C if C is made at the beginning of time period. i.r is real rate of return. 
+# Ia: Assumed interest from AA, equal to i*AA if the entire asset is investible. 
+# Ib: Assumed interest loss due to benefit payment, equal to i*B if the payment is made at the beginning of period
+# I.r : Total ACTUAL interet gain, I = i.r*(AA + C - B), if AA is all investible, C and B are made at the beginning of period.
+# Funded Ratio: AA / AL
+# C_PR: contribution as % of payroll
 
-#  10000 sims
-#  4 cores: 216.2  / 202.8
-#  8 cores: 186.1  / 171.6
-
-Time_liab
-Time_wf
-Time_loop
 
 
 

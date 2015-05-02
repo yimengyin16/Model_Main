@@ -15,7 +15,7 @@
 # AM: Amount to be amortized at period t. 
 # i is assumed interest rate. ELs of each period will be amortized seperately.  
 # SC: Supplement cost 
-# ADC
+# ADC: ADC
 # C : Actual contribution
 # C_ADC: shortfall in paying ADC
 # B : Total beneift Payment   
@@ -24,6 +24,7 @@
 # Ib: Assumed interest loss due to benefit payment, equal to i*B if the payment is made at the beginning of period
 # I.r : Total ACTUAL interet gain, I = i.r*(AA + C - B), if AA is all investible, C and B are made at the beginning of period.
 # Funded Ratio: AA / AL
+# C_PR: contribution as % of payroll
 
 # Formulas
 # AL(t), NC(t), B(t) at each period are calculated using the workforce matrix and the liability matrix.
@@ -167,7 +168,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     
  
     # C(j)
-    penSim$C[j] <- ifelse(j %in% c(10:12), 0,  
+    penSim$C[j] <- ifelse(j %in% c(0), 0,  
                    switch(ConPolicy,
                           ADC     = with(penSim, ADC[j]),                          # Full ADC
                           ADC_cap = with(penSim, min(ADC[j], PR_pct_cap * PR[j])), # ADC with cap. Cap is a percent of payroll 

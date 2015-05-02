@@ -7,8 +7,7 @@ library(gdata) # read.xls
 library(xlsx)
 cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric, eliminating "," "$" "%". chars will become NA
 
-wd <- getwd()
-file_path <- paste0(wd, "/Data/")
+file_path <- paste0("Data/")
 wvxl <- "Winklevoss(6).xlsx"
 
 
