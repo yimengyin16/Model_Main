@@ -30,7 +30,7 @@ get_tla <- function(px, i, scale = rep(1, length(px)), cashflow = rep(1, length(
   } 
   return(tla)
 }
-get_tla(rep(0.98, 65), 0.08) # test the function
+get_tla(rep(0.98, 55), 0.08) # test the function
 
 # 1.2 function calculating temporary annuity values from a fixed entry age y to x (fixed start)
 get_tla2 = function(px, i, sx = rep(1, length(px))){

@@ -87,11 +87,13 @@ ncore <- 6          # # of CPU cores used in parallelled loops
 ## Benefit structure
 benfactor <- 0.01   # benefit factor, % of final average salary per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
+# WARNING: In curret version, please do not set a r.max greater than 65 and less than 55 
+r.max     <- 65     # maximum retirement age, at which all actives retire with probability 1. 
+r.min     <- 55     # minimum retirement age. (for multi-retirement ages, will not be used in current version) 
+cola      <- 0.00   # annual growth of retirement benefits in a simple COLA 
 
-# WARNING: In curret version, please do not set a r.max greater than 65. 
-r.max     <- 54     # maximum retirement age, at which all actives retire with probability 1. 
-r.min     <- r.max  # minimum retirement age. (for multi-retirement ages, will not be used in current version) 
-cola      <- 0.03   # annual growth of retirement benefits in a simple COLA 
+v.yos     <- 5      # yos required to be vested.  
+
 
 ## Actuarial assumptions
 
@@ -180,12 +182,12 @@ source("Model_Actuarial_Val_wf.R")
 # 3. Simulation ####
 #*********************************************************************************************************
 
-nsim  <- 5    # No. of sims
+nsim  <- 100000    # No. of sims
 set.seed(1234)
 
 # setting actual investment return.
-#i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
-i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
+i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
+#i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
 
 source("Model_Actuarial_Val_Sim.R")
 

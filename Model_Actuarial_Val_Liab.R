@@ -67,11 +67,11 @@ decrement %<>%
   
   # Calculate various survival probabilities
   mutate( pxm = 1 - qxm.p,
-          pxT = 1 - qxt.p - qxd.p - qxm.p - qxe.p) #(1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
-          # px65m = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxm))), # prob of surviving up to r.max, mortality only
+          pxT = 1 - qxt.p - qxd.p - qxm.p - qxe.p, #(1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
+          pxRm = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxm))) # prob of surviving up to r.max, mortality only
           # px65T = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxT))), # prob of surviving up to r.max, composite rate
           # p65xm = cumprod(ifelse(age <= r.max, 1, lag(pxm))))            # prob of surviving to x from r.max, mortality only
-
+          )
 # 2. Salary scale #### 
 # We start out with the case where 
 # (1) the starting salary at each entry age increases at the rate of productivity growth plus inflation.
@@ -120,17 +120,20 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at 110 for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age 110. 
     axR = c(get_tla(pxT[age<r.max],i), rep(0, 110 - r.max + 1)),                      # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
-    axRs= c(get_tla(pxT[age<r.max],i, sx[age<r.max]), rep(0, 110 - r.max + 1)),          # ^s_aT..{x:r.max-x-|}
-    ayx = c(get_tla2(pxT[age <= r.max], i), rep(0, 110 - r.max)),                  # need to make up the length of the vector up to age 110
+    axRs= c(get_tla(pxT[age<r.max],i, sx[age<r.max]), rep(0, 110 - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
+    
+    axr = ifelse(ea >= r.min, 0, c(get_tla(pxT[age<r.min],i), rep(0, 110 - r.min + 1))),                          
+    axrs= ifelse(ea >= r.min, 0, c(get_tla(pxT[age<r.min],i, sx[age<r.min]), rep(0, 110 - r.min + 1))),      
+    
+    ayx = c(get_tla2(pxT[age <= r.max], i), rep(0, 110 - r.max)),                     # need to make up the length of the vector up to age 110
     ayxs= c(get_tla2(pxT[age <= r.max], i,  sx[age <= r.max]), rep(0, 110 - r.max))   # need to make up the length of the vector up to age 110
-   
-  ) %>%
+  )
   
   #(liab %>% filter(start.year == -89, ea == 20, age >= r.max) %>% select(pxm))$pxm %>% get_tla(i)
   #(liab %>% filter(start.year == -89, ea == 20, age <= r.max) %>% select(pxT))$pxT %>% get_tla2a(i)
-  
-  
-  # Calculate normal costs with multiple retirement ages
+
+# Calculate normal costs and liabilities of retirement benefits with multiple retirement ages  
+liab %<>%   
   mutate(gx.r  = ifelse(age %in% r.min:r.max, 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits
          TCx.r = gx.r * Bx * qxr.a * ax,  # term cost of retirement
          PVFBx.r = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, 110 - r.max)),
@@ -152,11 +155,26 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
          NCx.EAN.CP = ifelse(age < r.max, sx * PVFBx.r[age == min(age)]/(sx[age == min(age)] * ayxs[age == r.max]), 0),
          ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * axRs,
          ALx.r      = ifelse(age < r.max, 0, ax * B)  # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods  # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
-  ) %>% 
+  ) 
+
+# Calculate normal costs and liabilities of deferred retirement benefits
+# Vested terms begins to receive deferred retirement benefit at r.max.
+liab %<>% 
+  mutate(gx.v = ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
+         TCx.v = gx.v * Bx * qxt.a * lead(pxRm) * v^(r.max - age) * ax[age == r.max],  # term cost of vested termination benefits
+         PVFBx.v = c(get_PVFB(pxT[age < r.max], v, TCx.v[age < r.max]), rep(0, 110 - r.max + 1)),  # To be compatible with the cases where workers enter after age r.min, r.max is used instead of r.min, which is used in textbook formula(winklevoss p115).         
+         
+         # NC and AL of EAN.CD
+         NCx.EAN.CD.v = ifelse(age < r.min, PVFBx.v[age == min(age)]/ayx[age == r.min], 0), # Note that NC is 0 after age r.min - 1
+         ALx.EAN.CD.v = PVFBx.v - NCx.EAN.CD.v * axr,
+         
+         # NC and AL of EAN.CP
+         NCx.EAN.CP.v = ifelse(age < r.min, PVFBx.v[age == min(age)]/(sx[age == min(age)] * ayxs[age == r.min]) * sx, 0),  # Note that NC is 0 after age r.min - 1
+         ALx.EAN.CP.v = PVFBx.v - NCx.EAN.CP.v * axrs
+         )
   
   
-  ungroup %>% 
-  select(start.year, year, ea, age, everything()) 
+liab %<>% ungroup %>% select(start.year, year, ea, age, everything()) 
 
 # 4. Calculate Total Actuarial liabilities and Normal costs 
 
