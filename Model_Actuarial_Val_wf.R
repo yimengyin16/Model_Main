@@ -40,11 +40,17 @@ start_time_wf <- proc.time()
 wf_dim <- c(length(range_ea), length(range_age), nyear)
 wf_dimnames <- list(range_ea, range_age, 1:nyear)
 
+# The array of terminated has 4 dimensions: ea x age x year x year of termination
+wf_dim.term      <- c(length(range_ea), length(range_age), nyear, nyear)
+wf_dimnames.term <- list(range_ea, range_age, 1:nyear, 1:nyear)
+
+
 wf_active  <- array(0, wf_dim, dimnames = wf_dimnames)
-wf_term  <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_disb    <- array(0, wf_dim, dimnames = wf_dimnames) 
 wf_retired <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_dead    <- array(0, wf_dim, dimnames = wf_dimnames)
+
+wf_term    <- array(0, wf_dim.term, dimnames = wf_dimnames.term)
 
 
 ## Setting workforce at time 1
@@ -236,13 +242,13 @@ calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
 for (j in 1:(nyear - 1)){
 #i <-  1  
   # compute the inflow to and outflow
-  active2term  <- wf_active[, , j] * p_active2term
+  active2term  <- wf_active[, , j] * p_active2term  # This will join wf_term[, , j + 1, j], note that workers who terminate in year j won't join the terminated group until j+1. 
   active2disb  <- wf_active[, , j] * p_active2disb
   active2dead  <- wf_active[, , j] * p_active2dead
   active2retired <- wf_active[, , j]*p_active2retired
   
   # Where do the terminated_vested go
-  term2dead    <- wf_term[, , j] * p_term2dead
+  term2dead    <- wf_term[, , j, ] * as.vector(p_term2dead)    # a 3D array, each slice(3rd dim) contains the # of death in a termination age group
 
   # Where do the disabled go
   disb2dead      <- wf_disb[, , j] * p_disb2dead
@@ -255,8 +261,8 @@ for (j in 1:(nyear - 1)){
   out_active   <- active2term + active2disb + active2retired + active2dead 
   new_entrants <- calc_entrants(wf_active[, , j], wf_active[, , j] - out_active, wf_growth, no.entrants = no_entrance) # new entrants
   
-  out_term <- term2dead
-  in_term  <- active2term
+  out_term <- term2dead    # This is a 3D array 
+  in_term  <- active2term  # This is a matrix
   
   out_disb <- disb2dead
   in_disb  <- active2disb
@@ -264,11 +270,14 @@ for (j in 1:(nyear - 1)){
   out_retired <- retired2dead
   in_retired  <- active2retired
   
-  in_dead <- active2dead + term2dead + disb2dead + retired2dead
+  in_dead <- active2dead + apply(term2dead, c(1,2), sum) + disb2dead + retired2dead
   
   # Calculate workforce for next year. 
   wf_active[, , j + 1]  <- (wf_active[, , j] - out_active) %*% A + new_entrants
-  wf_term[, , j + 1]  <- (wf_term[, , j] + in_term - out_term) %*% A
+  
+  wf_term[, , j + 1, ]  <- apply((wf_term[, , j, ] - out_term), 3, function(x) x %*% A) %>% array(wf_dim.term[-3])
+  wf_term[, , j + 1, j] <- in_term %*% A
+  
   wf_disb[, ,   j + 1]    <- (wf_disb[, , j] + in_disb - out_disb) %*% A
   wf_retired[, ,j + 1] <- (wf_retired[, , j] + in_retired - out_retired) %*% A
   wf_dead[, ,   j + 1]    <- (wf_dead[, , j] + in_dead) %*% A
@@ -390,10 +399,29 @@ Time_wf <- end_time_wf - start_time_wf
 # dimnames(df)
 
 
+# x <- array(0, c(3,3,3,3))
+# for(i in 1:3) x[,,,i] <- i
+# x[,,1,]
+# x[,,1,] * as.vector(matrix(1:9, 3, 3))
+#   
+# matrix(1, 3,3) *   as.vector(matrix(1:9, 3, 3))
+# 
+
+#  x <- array(0, c(2,2,2,2))
+#  for(i in 1:2) x[,,,i] <- i
+# microbenchmark(
+# alply(x[,,1,], 3, function(x) (x %*% matrix(1:4, 2))) %>% unlist %>% array(c(2,2,2)),
+# apply(x[,,1,], 3, function(x) (x %*% matrix(1:4, 2))) %>% array(c(2,2,2))
+# )
+# 
+# 
+# x[,,1,]
+# 
+# 
+# x[,,1,] %>% apply(c(1,2), sum)
 
 
-
-
+# wf_term[,,,2]
 
 
 
