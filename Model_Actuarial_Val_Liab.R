@@ -159,6 +159,13 @@ liab %<>%
 
 # Calculate normal costs and liabilities of deferred retirement benefits
 # Vested terms begins to receive deferred retirement benefit at r.max.
+# Notes on deferred retirement benefits for vested terms. 
+  # 1. Note that the PVFB and AL are different at age r.min - 1. This is very different from the case for retirement benefits with single retirement age, where PVFB = AL for EAN actuarial methods
+  #    at age r.manx
+  # 2. During each year with a positive probability of termination, a proportion of the active member liability will be shifted to vested term liabilities as active members quit their jobs. Note that
+  #    at least for EAN method. 
+  #    
+
 liab %<>% 
   mutate(gx.v = ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
          TCx.v = gx.v * Bx * qxt.a * lead(pxRm) * v^(r.max - age) * ax[age == r.max],  # term cost of vested termination benefits
@@ -172,7 +179,25 @@ liab %<>%
          NCx.EAN.CP.v = ifelse(age < r.min, PVFBx.v[age == min(age)]/(sx[age == min(age)] * ayxs[age == r.min]) * sx, 0),  # Note that NC is 0 after age r.min - 1
          ALx.EAN.CP.v = PVFBx.v - NCx.EAN.CP.v * axrs
          )
-  
+
+# Calculate AL and benefit payment for vested terms terminating at different ages.   
+liab.term <- expand.grid(start.year = -89:nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.min]) %>%
+  filter(start.year + 110 - ea >= 1, age >= ea) %>% # drop redundant combinations of start.year and ea. 
+  arrange(start.year, ea, age.term, age) %>%
+  group_by(start.year, ea, age.term) %>% 
+  left_join(liab %>% select(start.year, year, ea, age, Bx, gx.v, ax, COLA.scale, pxRm)) %>% 
+  mutate(Bx.v  = gx.v * Bx,
+         B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
+         ALx.v = ifelse(age < 65, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
+                                  B.v * ax)  
+         ) %>% 
+  select(-Bx, -Bx.v, -gx.v, -ax, -COLA.scale, -pxRm) %>% 
+  ungroup
+
+ 
+# x <- liab.term %>% filter(year == 1, age == age.term) %>% ungroup %>% arrange(ea, age)
+
+ 
   
 liab %<>% ungroup %>% select(start.year, year, ea, age, everything()) 
 
