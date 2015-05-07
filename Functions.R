@@ -46,7 +46,7 @@ get_tla2 = function(px, i, sx = rep(1, length(px))){
   # because the last annuity payment is paid at the begining of 64. )
   
   # inputs:
-  # px: an vector of composite survivial probs from age x to x + n - 1. Length = n
+  # px: an vector of composite survivial probs from age x to x + n - 1. Length = n. The minimum length of px allowed is 2. 
   # i:  discount rate, scalar
   # sx: salary scale. default is an n vector of 1, meaning no salary scale. 
   # output:

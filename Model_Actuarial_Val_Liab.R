@@ -182,24 +182,26 @@ liab %<>%
 
 # Calculate AL and benefit payment for vested terms terminating at different ages.   
 liab.term <- expand.grid(start.year = -89:nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.min]) %>%
-  filter(start.year + 110 - ea >= 1, age >= ea) %>% # drop redundant combinations of start.year and ea. 
+  filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
   arrange(start.year, ea, age.term, age) %>%
   group_by(start.year, ea, age.term) %>% 
   left_join(liab %>% select(start.year, year, ea, age, Bx, gx.v, ax, COLA.scale, pxRm)) %>% 
-  mutate(Bx.v  = gx.v * Bx,
+  mutate(year.term = year[age == age.term],
+         #year.term = year - (age - age.term),
+         Bx.v  = gx.v * Bx,
          B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
          ALx.v = ifelse(age < 65, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
                                   B.v * ax)  
-         ) %>% 
-  select(-Bx, -Bx.v, -gx.v, -ax, -COLA.scale, -pxRm) %>% 
-  ungroup
-
+         )
+  
+liab.term %<>% ungroup %>% select(-start.year, -age.term, -Bx, -Bx.v, -gx.v, -ax, -COLA.scale, -pxRm) 
  
 # x <- liab.term %>% filter(year == 1, age == age.term) %>% ungroup %>% arrange(ea, age)
 
  
-  
 liab %<>% ungroup %>% select(start.year, year, ea, age, everything()) 
+
+
 
 # 4. Calculate Total Actuarial liabilities and Normal costs 
 
@@ -241,11 +243,15 @@ extract_slice <- function(Var, Year,  data = liab){
 
 
 
+
+
+
+
 # a faster way to create liab_list instead of extract_slice and using aply twice
 # the speed comes from processing the entire df first and setting the data frame up in matrix format before extracting the matrices into the list
+
 var.names <- colnames(liab)[grep("^sx$|^B$|^ALx|^NCx", colnames(liab))]
-a <- proc.time()
-lldf <- liab %>% ungroup %>% # I don't think liab is grouped, but just in case...
+lldf <- liab %>% 
   filter(year %in% 1:100) %>%
   select(year, ea, age, one_of(var.names)) %>% 
   right_join(expand.grid(year=1:100, ea=range_ea, age=range_age)) %>% # make sure we have all possible combos
@@ -255,16 +261,42 @@ lldf <- liab %>% ungroup %>% # I don't think liab is grouped, but just in case..
   arrange(variable, year, ea) # this df is in the same form and order, within each var, as the liab_list of matrices (vars may be in a different order)
 
 
-# microbenchmark(
-# ll2[["NCx.PUC"]]$`3` + ll2[["NCx.PUC"]]$`3`,
-# ll2$NCx.PUC$`3` + ll2$NCx.PUC$`3`,
-# )
+lldf.term <- liab.term %>% 
+  filter(year %in% 1:100) %>% 
+  right_join(expand.grid(year = 1:100, ea = range_ea, age = range_age, year.term = 1:100) %>% filter(year >= year.term)) %>%  # make sure we have all possible combos
+  gather(variable, value, -year, -ea, -age, -year.term) %>% 
+  spread(age, value, fill = 0) %>% 
+  arrange(variable, year.term, year, ea)
+  
+
+
   
 # might be possible to stop here, but continue and create an equivalent list
-f.inner <- function(df.inner) as.matrix(df.inner[-c(1:3)])
-f.outer <- function(df.outer) lapply(split(df.outer, df.outer$year), f.inner) # process each year
-ll2 <- lapply(split(lldf, lldf$variable), f.outer) # process each variable
-proc.time() - a
+f.inner <- function(df.inner, n) as.matrix(df.inner[-c(1:n)])
+f.outer <- function(df.outer, n) lapply(split(df.outer, df.outer$year), f.inner, n = n) # process each year
+
+ll2 <- llply(split(lldf, lldf$variable), f.outer, n = 3) # process each variable
+ll2.term <- llply(split(lldf.term, lldf.term$variable), function(x) llply(split(x, x$year.term), f.outer, n = 4))
+
+
+lldf.term %>% filter(variable == "ALx.v")
+
+
+# ll2.term$ALx.v$`1`$`1`
+
+  
+# Some comparisons
+  
+# microbenchmark(
+# ll2[["NCx.PUC"]]$`3` + ll2[["NCx.PUC"]]$`3`,
+# ll2$NCx.PUC$`3` + ll2$NCx.PUC$`3`, times = 1000
+# )      
+# Result: appox. the same
+  
+# microbenchmark( lldf %>% filter(variable == "sx", year == 1),
+#                 ll2[["sx"]][[1]] # this is much f
+#                 , times = 100)  
+# Result: latter is much faster. 
 
 # compare year 3 for variable NCx.PUC
 # ll2$NCx.PUC$`3`
