@@ -125,18 +125,24 @@ liab_tot_active <- lldf %>% left_join(df_wf_active) %>%
                    group_by(year) %>% 
                    summarise(ALx.tot = sum(ALx.tot, na.rm = TRUE), 
                              NCx.tot = sum(NCx.tot, na.rm = TRUE),
-                             PR.tot  = sum(PR.tot,  na.rm = TRUE))
-#liab_tot_active$ALx.tot[1] 
+                             PR.tot  = sum(PR.tot,  na.rm = TRUE)) %>% 
+                   as.matrix # extracting elements from matrices is much faster than from data.frame
+
+# x <- as.matrix(liab_tot_active)
+# microbenchmark(
+# x[1, "ALx.tot"],
+# x[1, 2],
+# liab_tot_active$ALx.tot[1] , times = 10000)
 
                  
                     
-  
 liab_tot_retired <- lldf %>% left_join(df_wf_retired) %>% 
                     mutate(B.tot = B * number,
                            ALx.tot.r = ALx.r * number) %>% 
                     group_by(year) %>% 
                     summarise(B.tot     = sum(B.tot, na.rm = TRUE),
-                              ALx.tot.r = sum(ALx.tot.r, na.rm = TRUE))
+                              ALx.tot.r = sum(ALx.tot.r, na.rm = TRUE)) %>% 
+                    as.matrix
 # liab_tot_retired$ALx.tot.r[1]
 # 
 # liab_tot_term <- lldf.term %>% left_join(df_wf_term) %>% 
@@ -174,16 +180,16 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     
     # AL(j)
     #penSim[j, "AL"] <- sum(wf_active[, , j] * ll2[[ALx.method]][[j]] + wf_retired[, , j] * ll2[["ALx.r"]][[j]])
-    penSim[j, "AL"] <- liab_tot_active$ALx.tot[j] + liab_tot_retired$ALx.tot.r[j]
+    penSim[j, "AL"] <- liab_tot_active[j, "ALx.tot"] + liab_tot_retired[j, "ALx.tot.r"]
     # NC(j)
     #penSim[j, "NC"] <- sum(wf_active[, , j] * ll2[[NCx.method]][[j]]) 
-    penSim[j, "NC"]  <- liab_tot_active$NCx.tot[j] 
+    penSim[j, "NC"]  <- liab_tot_active[j, "NCx.tot"] 
     # B(j)
     #penSim[j, "B"] <-  sum(wf_retired[, , j] * ll2[["B"]][[j]])
-    penSim[j, "B"]  <-  liab_tot_retired$B.tot[j]
+    penSim[j, "B"]  <-  liab_tot_retired[j, "B.tot"]
     # PR(j)
     #penSim[j, "PR"] <-  sum(wf_active[, , j] * ll2[["sx"]][[j]])
-    penSim[j, "PR"]  <-  liab_tot_active$PR.tot[j]
+    penSim[j, "PR"]  <-  liab_tot_active[j, "PR.tot"]
     
     # MA(j) and EAA(j) 
     if(j == 1) {penSim[j, "MA"] <- switch(init_MA,
@@ -275,3 +281,20 @@ end_time_loop <- proc.time()
 stopCluster(cl)
 
 Time_loop <- end_time_loop - start_time_loop 
+
+
+
+# x <- matrix(rep(1,10000),1000); colnames(x) = 1:10
+# xdf <- as.data.frame(x)
+# xdf %>% head
+# y = 10
+# 
+# microbenchmark(
+# x[400, "10"],
+# x[400, 10],
+# x[400, y],
+# xdf$V4[400],
+# xdf[400, "V4"], times = 50000
+# )
+# head(x)
+

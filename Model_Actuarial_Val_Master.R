@@ -82,7 +82,7 @@ source("Functions.R")
 
 ## Model parameters
 nyear <- 100        # # of years in simulation 
-ncore <- 8          # # of CPU cores used in parallelled loops
+ncore <- 4          # # of CPU cores used in parallelled loops
 
 ## Benefit structure
 benfactor <- 0.01   # benefit factor, % of final average salary per year of yos
@@ -182,7 +182,7 @@ source("Model_Actuarial_Val_wf.R")
 # 3. Simulation ####
 #*********************************************************************************************************
 
-nsim  <- 10000    # No. of sims
+nsim  <- 10    # No. of sims
 set.seed(1234)
 
 # setting actual investment return.
