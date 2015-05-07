@@ -181,20 +181,20 @@ liab %<>%
          )
 
 # Calculate AL and benefit payment for vested terms terminating at different ages.   
-liab.term <- expand.grid(start.year = -89:nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.min]) %>%
-  filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
-  arrange(start.year, ea, age.term, age) %>%
-  group_by(start.year, ea, age.term) %>% 
-  left_join(liab %>% select(start.year, year, ea, age, Bx, gx.v, ax, COLA.scale, pxRm)) %>% 
-  mutate(year.term = year[age == age.term],
-         #year.term = year - (age - age.term),
-         Bx.v  = gx.v * Bx,
-         B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
-         ALx.v = ifelse(age < 65, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
-                                  B.v * ax)  
-         )
-  
-liab.term %<>% ungroup %>% select(-start.year, -age.term, -Bx, -Bx.v, -gx.v, -ax, -COLA.scale, -pxRm) 
+# liab.term <- expand.grid(start.year = -89:nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.min]) %>%
+#   filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
+#   arrange(start.year, ea, age.term, age) %>%
+#   group_by(start.year, ea, age.term) %>% 
+#   left_join(liab %>% select(start.year, year, ea, age, Bx, gx.v, ax, COLA.scale, pxRm)) %>% 
+#   mutate(year.term = year[age == age.term],
+#          #year.term = year - (age - age.term),
+#          Bx.v  = gx.v * Bx,
+#          B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
+#          ALx.v = ifelse(age < 65, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
+#                                   B.v * ax)  
+#          )
+#   
+# liab.term %<>% ungroup %>% select(-start.year, -age.term, -Bx, -Bx.v, -gx.v, -ax, -COLA.scale, -pxRm) 
  
 # x <- liab.term %>% filter(year == 1, age == age.term) %>% ungroup %>% arrange(ea, age)
 
@@ -254,33 +254,37 @@ var.names <- colnames(liab)[grep("^sx$|^B$|^ALx|^NCx", colnames(liab))]
 lldf <- liab %>% 
   filter(year %in% 1:100) %>%
   select(year, ea, age, one_of(var.names)) %>% 
-  right_join(expand.grid(year=1:100, ea=range_ea, age=range_age)) %>% # make sure we have all possible combos
-  gather(variable, value, -year, -ea, -age) %>%
-  spread(age, value, fill=0) %>%
-  select(variable, year, ea, everything()) %>%
-  arrange(variable, year, ea) # this df is in the same form and order, within each var, as the liab_list of matrices (vars may be in a different order)
+  right_join(expand.grid(year=1:100, ea=range_ea, age=range_age))
 
+#   %>% # make sure we have all possible combos
+#   gather(variable, value, -year, -ea, -age) %>%
+#   spread(age, value, fill=0) %>%
+#   select(variable, year, ea, everything()) %>%
+#   arrange(variable, year, ea) # this df is in the same form and order, within each var, as the liab_list of matrices (vars may be in a different order)
+# 
 
-lldf.term <- liab.term %>% 
-  filter(year %in% 1:100) %>% 
-  right_join(expand.grid(year = 1:100, ea = range_ea, age = range_age, year.term = 1:100) %>% filter(year >= year.term)) %>%  # make sure we have all possible combos
-  gather(variable, value, -year, -ea, -age, -year.term) %>% 
-  spread(age, value, fill = 0) %>% 
-  arrange(variable, year.term, year, ea)
-  
-
-
-  
+# lldf.term <- liab.term %>% 
+#   filter(year %in% 1:100) %>% 
+#   right_join(expand.grid(year = 1:100, ea = range_ea, age = range_age, year.term = 1:100))
+             
+#   %>% filter(year >= year.term))%>%  # make sure we have all possible combos
+#   gather(variable, value, -year, -ea, -age, -year.term) %>% 
+#   spread(age, value, fill = 0) %>% 
+#   arrange(variable, year.term, year, ea)
+#   
+# 
+# 
+#   
 # might be possible to stop here, but continue and create an equivalent list
 f.inner <- function(df.inner, n) as.matrix(df.inner[-c(1:n)])
 f.outer <- function(df.outer, n) lapply(split(df.outer, df.outer$year), f.inner, n = n) # process each year
 
-ll2 <- llply(split(lldf, lldf$variable), f.outer, n = 3) # process each variable
-ll2.term <- llply(split(lldf.term, lldf.term$variable), function(x) llply(split(x, x$year.term), f.outer, n = 4))
-
-
-lldf.term %>% filter(variable == "ALx.v")
-
+#ll2 <- llply(split(lldf, lldf$variable), f.outer, n = 3) # process each variable
+#ll2.term <- llply(split(lldf.term, lldf.term$variable), function(x) llply(split(x, x$year.term), f.outer, n = 4))
+# 
+# 
+# lldf.term %>% filter(variable == "ALx.v")
+# 
 
 # ll2.term$ALx.v$`1`$`1`
 

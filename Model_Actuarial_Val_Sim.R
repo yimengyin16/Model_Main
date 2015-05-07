@@ -91,6 +91,67 @@ ALx.method <- paste0("ALx.", actuarial_method)
 NCx.method <- paste0("NCx.", actuarial_method)
 
 
+## Calculate total liabilities, NCs and benefits
+
+# Convert 3D arrays of actives, retired and terms to data frame, to be joined by liability data frames
+
+df_wf_active <- adply(wf_active, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
+                rename(year = X1) %>%
+                gather(age, number, -ea, -year) %>% 
+                mutate(year = f2n(year), age = f2n(age))
+
+df_wf_retired <- adply(wf_retired, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
+                 rename(year = X1) %>% 
+                 gather(age, number, -ea, -year) %>% 
+                 mutate(year = f2n(year), age = f2n(age))
+
+
+# cl <- makeCluster(ncore);registerDoParallel(cl)
+
+# t1 <- proc.time()
+# df_wf_term <- adply(wf_term, c(3,4), .fun = function(x){df = as.data.frame(x); df$ea = as.numeric(rownames(x)); df}, .parallel = F) %>% 
+#               rename(year = X1, year.term = X2) %>% 
+#               gather(age, number, -ea, -year, - year.term) %>% 
+#               mutate(year = f2n(year), year.term = f2n(year.term), age = f2n(age))
+# proc.time() - t1
+#stopCluster(cl)  
+
+# Join population data frames and liability data frames. 
+
+liab_tot_active <- lldf %>% left_join(df_wf_active) %>% 
+                   mutate(ALx.tot = (ALx.EAN.CP) * number,
+                          NCx.tot = NCx.EAN.CP * number,
+                          PR.tot  = sx * number) %>% 
+                   group_by(year) %>% 
+                   summarise(ALx.tot = sum(ALx.tot, na.rm = TRUE), 
+                             NCx.tot = sum(NCx.tot, na.rm = TRUE),
+                             PR.tot  = sum(PR.tot,  na.rm = TRUE))
+#liab_tot_active$ALx.tot[1] 
+
+                 
+                    
+  
+liab_tot_retired <- lldf %>% left_join(df_wf_retired) %>% 
+                    mutate(B.tot = B * number,
+                           ALx.tot.r = ALx.r * number) %>% 
+                    group_by(year) %>% 
+                    summarise(B.tot     = sum(B.tot, na.rm = TRUE),
+                              ALx.tot.r = sum(ALx.tot.r, na.rm = TRUE))
+# liab_tot_retired$ALx.tot.r[1]
+# 
+# liab_tot_term <- lldf.term %>% left_join(df_wf_term) %>% 
+#                   mutate(ALx.tot.v = ALx.v * number,
+#                          B.tot.v   = B.v   * number) %>% 
+#                   group_by(year) %>% 
+#                   summarise(ALx.tot.v = sum(ALx.tot.v, na.rm = TRUE),
+#                             B.tot.v   = sum(B.tot.v  , na.rm = TRUE))
+# 
+
+
+
+
+
+
 cl <- makeCluster(ncore) 
 registerDoParallel(cl)
 
@@ -109,19 +170,20 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
 
   for (j in 1:nyear){
     # j <- 1
-    # AL(j)
+    # AL(j) 
     
     # AL(j)
-    penSim[j, "AL"] <- sum(wf_active[, , j] * ll2[[ALx.method]][[j]] + wf_retired[, , j] * ll2[["ALx.r"]][[j]])
-    
+    #penSim[j, "AL"] <- sum(wf_active[, , j] * ll2[[ALx.method]][[j]] + wf_retired[, , j] * ll2[["ALx.r"]][[j]])
+    penSim[j, "AL"] <- liab_tot_active$ALx.tot[j] + liab_tot_retired$ALx.tot.r[j]
     # NC(j)
-    penSim[j, "NC"] <- sum(wf_active[, , j] * ll2[[NCx.method]][[j]]) 
-    
+    #penSim[j, "NC"] <- sum(wf_active[, , j] * ll2[[NCx.method]][[j]]) 
+    penSim[j, "NC"]  <- liab_tot_active$NCx.tot[j] 
     # B(j)
-    penSim[j, "B"] <-  sum(wf_retired[, , j] * ll2[["B"]][[j]])
-    
+    #penSim[j, "B"] <-  sum(wf_retired[, , j] * ll2[["B"]][[j]])
+    penSim[j, "B"]  <-  liab_tot_retired$B.tot[j]
     # PR(j)
-    penSim[j, "PR"] <-  sum(wf_active[, , j] * ll2[["sx"]][[j]])
+    #penSim[j, "PR"] <-  sum(wf_active[, , j] * ll2[["sx"]][[j]])
+    penSim[j, "PR"]  <-  liab_tot_active$PR.tot[j]
     
     # MA(j) and EAA(j) 
     if(j == 1) {penSim[j, "MA"] <- switch(init_MA,

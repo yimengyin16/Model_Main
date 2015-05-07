@@ -420,8 +420,7 @@ Time_wf <- end_time_wf - start_time_wf
 # 
 # x[,,1,] %>% apply(c(1,2), sum)
 
-
-wf_term[,,2,1]
+# wf_term[,,2,1]
 
 
 
