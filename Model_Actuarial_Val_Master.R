@@ -80,6 +80,12 @@ source("Functions.R")
 #*********************************************************************************************************
 # 0. Parameters ####
 #*********************************************************************************************************
+# Rstrictions on current version
+# 1. r.max must be in the range [55, 65]
+# 2. r.min must be fixed at 55
+# 3. v.yos <= r.max - r.min
+# 4. Only EAN.CP and EAN.CD are ready for vested terms. 
+
 
 ## Model parameters
 nyear <- 100        # # of years in simulation 
@@ -136,9 +142,9 @@ w <- 1  # No asset smoothing when set to 1.
 
 ## Population 
 # Age and entry age combinations  
-# range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-# range_ea <- c(20, 25, 30, 35, 40:(r.max - 1))
-range_ea <- 20:(r.max - 1)
+  range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+# range_ea <- c(20, 25, 30, 35, 40, 45, 50, 55:(r.max - 1))
+# range_ea <- 20:(r.max - 1)
 range_age <- 20:110 
 
 # Initial Active
@@ -146,8 +152,8 @@ range_age <- 20:110
 init_active <- rbind(c(20, 20, 100), # (entry age,  age, number)
                      c(20, 40, 100),
                      c(20, r.max - 1, 100),
-                     c(40, 40, 100),
-                     c(40, r.max - 1, 100),
+                     c(45, 45, 100),
+                     c(45, r.max - 1, 100),
                      c(50, 50, 100),
                      c(55, 55, 100),
                      c(r.max - 1, r.max - 1, 100)
