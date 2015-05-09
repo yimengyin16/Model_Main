@@ -27,11 +27,13 @@ start_time_liab <- proc.time()
 
 
 load("Data/winklevossdata.RData")
+term3 %<>% mutate(qxt.p = ifelse(age >= r.min & yos >= r.yos, 0, qxt.p)) # coerce termination rates to 0 when eligible for early retirement. 
+# select(term3, -yos) %>% spread(ea, qxt.p)
 
 # Create decrement table and calculate probability of survival
 decrement <- expand.grid(age = range_age, ea = range_ea) %>% 
   left_join(filter(gam1971, age>=20)) %>%    # mortality 
-  left_join(term2) %>%                       # termination
+  left_join(term3) %>%                       # termination
   left_join(disb)  %>%                       # disability
   left_join(dbl)   %>%                       # mortality for disabled
   left_join(er)    %>%                       # early retirement
@@ -165,6 +167,8 @@ liab %<>%
   # 2. During each year with a positive probability of termination, a proportion of the active member liability will be shifted to vested term liabilities as active members quit their jobs. Note that
   #    at least for EAN method. 
   #    
+  # WARNING: There will be a problem of actives entering after r.min can get vested, when PVFB is only amortized up to age r.min   
+
 
 liab %<>% 
   mutate(gx.v = ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
@@ -181,79 +185,36 @@ liab %<>%
          )
 
 # Calculate AL and benefit payment for vested terms terminating at different ages.   
-# liab.term <- expand.grid(start.year = -89:nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.min]) %>%
-#   filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
-#   arrange(start.year, ea, age.term, age) %>%
-#   group_by(start.year, ea, age.term) %>% 
-#   left_join(liab %>% select(start.year, year, ea, age, Bx, gx.v, ax, COLA.scale, pxRm)) %>% 
-#   mutate(year.term = year[age == age.term],
-#          #year.term = year - (age - age.term),
-#          Bx.v  = gx.v * Bx,
-#          B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
-#          ALx.v = ifelse(age < 65, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
-#                                   B.v * ax)  
-#          )
-#   
-# liab.term %<>% ungroup %>% select(-start.year, -age.term, -Bx, -Bx.v, -gx.v, -ax, -COLA.scale, -pxRm) 
- 
-# x <- liab.term %>% filter(year == 1, age == age.term) %>% ungroup %>% arrange(ea, age)
-
- 
+liab.term <- expand.grid(start.year = -89:nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>%
+  filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
+  arrange(start.year, ea, age.term, age) %>%
+  group_by(start.year, ea, age.term) %>% 
+  left_join(liab %>% select(start.year, year, ea, age, Bx, gx.v, ax, COLA.scale, pxRm)) %>% 
+  mutate(year.term = year[age == age.term],
+         #year.term = year - (age - age.term),
+         Bx.v  = gx.v * Bx,
+         B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
+         ALx.v = ifelse(age < r.max, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
+                                  B.v * ax)  
+         )
+  
 liab %<>% ungroup %>% select(start.year, year, ea, age, everything()) 
+liab.term %<>% ungroup %>% select(-start.year, -age.term, -Bx, -Bx.v, -gx.v, -ax, -COLA.scale, -pxRm) 
 
 
+# 4. Prepare data frames that are ready to be used with workforce data
 
-# 4. Calculate Total Actuarial liabilities and Normal costs 
+# Choosing AL and NC variables corresponding to the chosen acturial methed
+ALx.method <- paste0("ALx.", actuarial_method)
+NCx.method <- paste0("NCx.", actuarial_method)
+ALx.v.method <- paste0("ALx.", actuarial_method, ".v")
+NCx.v.method <- paste0("NCx.", actuarial_method, ".v")
 
-# Define a function to extract the variables in a single time period
-extract_slice <- function(Var, Year,  data = liab){
-  # This function extract information for a specific year.
-  # inputs:
-  # Year: numeric
-  # Var : character, variable name 
-  # data: name of the data frame
-  # outputs:
-  # Slice: data frame. A data frame with the same structure as the workforce data.
-  Slice <- data %>% ungroup %>% filter(year == Year) %>% 
-    select_("ea", "age", Var) %>% arrange(ea, age) %>% spread_("age", Var, fill = 0)
-  rownames(Slice) = Slice$ea
-  Slice %<>% select(-ea) %>% as.matrix
-  return(Slice)
-}
-
-# Extract variables in liab that will be used in the simulation, and put them in a list.
-# Storing the variables this way can significantly boost the speed of the loop. 
-
-# var.names <- liab %>% select(B:ALx.EAN.CP) %>% colnames()
-
-# 
-# #cl <- makeCluster(ncore)
-# #registerDoParallel(cl)
-# liab_list <- alply(var.names, 1, function(var){
-#   alply(1:100,1, function(n) extract_slice(var, n))
-# },
-# #.parallel = TRUE,
-# #.paropts = list(.packages = c("dplyr", "tidyr"))
-# # Parellel does not work here b/c it does not recognize objects outside the function. 
-# .progress = "text"
-# )
-# # stopCluster(cl)
-# 
-# names(liab_list) <- var.names
-
-
-
-
-
-
-
-# a faster way to create liab_list instead of extract_slice and using aply twice
-# the speed comes from processing the entire df first and setting the data frame up in matrix format before extracting the matrices into the list
-
-var.names <- colnames(liab)[grep("^sx$|^B$|^ALx|^NCx", colnames(liab))]
-lldf <- liab %>% 
+var.names <- c("sx", "B", "ALx.r", ALx.method, NCx.method, ALx.v.method, NCx.v.method)
+liab %<>% 
   filter(year %in% 1:100) %>%
-  select(year, ea, age, one_of(var.names)) %>% 
+  select(year, ea, age, one_of(var.names)) %>%
+  rename_("ALx" = ALx.method, "NCx" = NCx.method, "ALx.v" = ALx.v.method, "NCx.v" = NCx.v.method) %>% # Note that the positions of old names and new names are reversed when using dplyr::rename_
   right_join(expand.grid(year=1:100, ea=range_ea, age=range_age))
 
 #   %>% # make sure we have all possible combos
@@ -261,42 +222,45 @@ lldf <- liab %>%
 #   spread(age, value, fill=0) %>%
 #   select(variable, year, ea, everything()) %>%
 #   arrange(variable, year, ea) # this df is in the same form and order, within each var, as the liab_list of matrices (vars may be in a different order)
-# 
 
-# lldf.term <- liab.term %>% 
-#   filter(year %in% 1:100) %>% 
-#   right_join(expand.grid(year = 1:100, ea = range_ea, age = range_age, year.term = 1:100))
-             
+
+liab.term %<>% 
+  filter(year %in% 1:100) %>% 
+  right_join(expand.grid(year = 1:100, ea = range_ea, age = range_age, year.term = 1:100))
+  
+
+
 #   %>% filter(year >= year.term))%>%  # make sure we have all possible combos
 #   gather(variable, value, -year, -ea, -age, -year.term) %>% 
 #   spread(age, value, fill = 0) %>% 
 #   arrange(variable, year.term, year, ea)
 #   
-# 
-# 
-#   
-# might be possible to stop here, but continue and create an equivalent list
-f.inner <- function(df.inner, n) as.matrix(df.inner[-c(1:n)])
-f.outer <- function(df.outer, n) lapply(split(df.outer, df.outer$year), f.inner, n = n) # process each year
-
-#ll2 <- llply(split(lldf, lldf$variable), f.outer, n = 3) # process each variable
-#ll2.term <- llply(split(lldf.term, lldf.term$variable), function(x) llply(split(x, x$year.term), f.outer, n = 4))
-# 
-# 
-# lldf.term %>% filter(variable == "ALx.v")
-# 
-
-# ll2.term$ALx.v$`1`$`1`
 
   
+# # might be possible to stop here, but continue and create an equivalent list
+# f.inner <- function(df.inner, n) as.matrix(df.inner[-c(1:n)])
+# f.outer <- function(df.outer, n) lapply(split(df.outer, df.outer$year), f.inner, n = n) # process each year
+# 
+# #ll2 <- llply(split(lldf, lldf$variable), f.outer, n = 3) # process each variable
+# #ll2.term <- llply(split(lldf.term, lldf.term$variable), function(x) llply(split(x, x$year.term), f.outer, n = 4))
+
+
+
+  
+
+
+end_time_liab <- proc.time()
+Time_liab <- end_time_liab - start_time_liab
+Time_liab
+
 # Some comparisons
-  
+
 # microbenchmark(
 # ll2[["NCx.PUC"]]$`3` + ll2[["NCx.PUC"]]$`3`,
 # ll2$NCx.PUC$`3` + ll2$NCx.PUC$`3`, times = 1000
 # )      
 # Result: appox. the same
-  
+
 # microbenchmark( lldf %>% filter(variable == "sx", year == 1),
 #                 ll2[["sx"]][[1]] # this is much f
 #                 , times = 100)  
@@ -304,53 +268,11 @@ f.outer <- function(df.outer, n) lapply(split(df.outer, df.outer$year), f.inner,
 
 # compare year 3 for variable NCx.PUC
 # ll2$NCx.PUC$`3`
-# liab_list$NCx.PUC$`3`
-
-end_time_liab <- proc.time()
-
-Time_liab <- end_time_liab - start_time_liab
 
 
+# x <- data.frame(a = 1:2, b = 3:4)
+# y <- "a"
+# rename_(x, "A" = y )
 
 
-
-#eg. extract "B" for year 1, a matrix is returned
-#liab_list[["B"]][[1]]
-
-
-# a <- proc.time()
-# extract_slice("NCx.EAN.CP",1)
-# extract_slice("NCx.EAN.CD",1)
-# extract_slice("NCx.PUC", 1)
-# b <- proc.time()
-# b-a
-# 
-# 
-# extract_slice("ALx.EAN.CP",1)
-# extract_slice("ALx.EAN.CD",1)
-# extract_slice("ALx.PUC", 1)
-# extract_slice("ALx.r", 1)
-# 
-# 
-# extract_slice("B", 1) # note that in the absence of COLA, within a time period older retirees receive less benefit than younger retirees do.
-# b <- proc.time()
-# b-a
-# 
-# 
-# # Total AL for Active participants
-# sum(wf_active[, , 1] * extract_slice("ALx.EAN.CP",1))
-# sum(wf_active[, , 1] * extract_slice("ALx.EAN.CD",1))
-# sum(wf_active[, , 1] * extract_slice("ALx.PUC",1))
-# 
-# 
-# # Total Normal Costs
-# sum(wf_active[, , 1] * extract_slice("NCx.EAN.CP",1))
-# sum(wf_active[, , 1] * extract_slice("NCx.EAN.CD",1))
-# sum(wf_active[, , 1] * extract_slice("NCx.PUC",1))
-# 
-# # Total AL for retirees
-# sum(wf_retired[, , 1] * extract_slice("ALx.r",1))
-# 
-# # Total benefit payment
-# sum(wf_retired[, , 1] * extract_slice("B",1))
 

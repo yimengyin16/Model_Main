@@ -26,12 +26,30 @@ names(term) <- c("age", paste0("ea", seq(20, 60, 5)))
 term <- term %>% mutate_each(funs(cton)) %>%
   filter(!is.na(age))
 
+# expand the termination rates to all entry ages, assuming the rates are the same within each 5-year interval
+
+term2 <- term
+term2[36:40,2:7] <- term2[36:40,8]
+term2[41:45,2:8] <- term2[41:45,9]
+
+
 
 # Reorganize termination table into long format
-term2 <- term %>% 
+term2 %<>% 
   gather(ea, qxt.p, -age) %>%
   mutate(ea = as.numeric(gsub("[^0-9]", "", ea)),
          qxt.p=ifelse(is.na(qxt.p), 0, qxt.p))
+
+
+term3 <-  expand.grid(age = 20:64, ea = 20:64) %>% 
+          mutate(ea.match = floor(ea*2/10)/2*10,  
+                 yos = age - ea) %>% 
+          left_join(term2 %>% rename(ea.match = ea)) %>%
+          filter(yos >= 0) %>% 
+          select(-ea.match)
+
+
+
 
 
 # data table 2-5 disability life rates ####
@@ -69,4 +87,4 @@ names(hire) <- c("eage", "dist", "salscale")
 hire <- hire %>%
   mutate_each(funs(cton))
 
-save(gam1971, term, term2, dbl, disb, er, merit, hire, file = paste0(file_path, "winklevossdata.RData"))
+save(gam1971, term, term2,term3, dbl, disb, er, merit, hire, file = paste0(file_path, "winklevossdata.RData"))

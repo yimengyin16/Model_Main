@@ -16,11 +16,10 @@ start_time_wf <- proc.time()
 
 ## A 3D array is created for each of the 6 status:
 #  (1)Active
-#  (2)Terminated, vested
-#  (3)Terminated, non-vested
-#  (4)Disabled
-#  (5)Retired
-#  (6)Dead
+#  (2)Terminated
+#  (3)Disabled
+#  (4)Retired
+#  (5)Dead
 
 # Retired can be further divided into 3 types by source this feature will be add in future versions
 #  (5)-1 Retired from active 
@@ -104,15 +103,13 @@ fill_cell3 <- function(fill, wf){
 # wfa["35", , ]
 
 
-
 # Test the function
 #fill_cell(c(50, 65, 30), 1, wf_active)
 #fill_cell(matrix(c(20, 25, 100, 30, 64, 80), 2,3, byrow = T), 2, wf_active)
 #fill_cell(data.frame(c(20, 30), c(25, 64), c(100, 80)), 2, wf_active)
 
+
 # Setting an inital distribution of workforce and retirees.
-
-
 wf_active <- fill_cell(init_active, 1, wf_active)
 
 wf_retired <- fill_cell(init_retired, 1, wf_retired)
@@ -279,7 +276,7 @@ for (j in 1:(nyear - 1)){
   wf_term[, , j + 1, j] <- in_term %*% A
   
   wf_disb[, ,   j + 1]    <- (wf_disb[, , j] + in_disb - out_disb) %*% A
-  wf_retired[, ,j + 1] <- (wf_retired[, , j] + in_retired - out_retired) %*% A
+  wf_retired[, ,j + 1]    <- (wf_retired[, , j] + in_retired - out_retired) %*% A
   wf_dead[, ,   j + 1]    <- (wf_dead[, , j] + in_dead) %*% A
 }
  

@@ -49,7 +49,7 @@
 # In this program, the only source of gain or loss is the difference between assumed interest rate i and real rate of return i.r,
 # which will make I(t) != Ia(t) + Ic(t) - Ib(t)
 
-
+start_time_prep_loop <-  proc.time()
 
 # Set up data frame
 penSim0 <- data.frame(year = 1:nyear) %>%
@@ -97,36 +97,51 @@ NCx.method <- paste0("NCx.", actuarial_method)
 
 df_wf_active <- adply(wf_active, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
                 rename(year = X1) %>%
-                gather(age, number, -ea, -year) %>% 
+                gather(age, number.a, -ea, -year) %>% 
                 mutate(year = f2n(year), age = f2n(age))
 
 df_wf_retired <- adply(wf_retired, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
                  rename(year = X1) %>% 
-                 gather(age, number, -ea, -year) %>% 
+                 gather(age, number.r, -ea, -year) %>% 
                  mutate(year = f2n(year), age = f2n(age))
 
 
 # cl <- makeCluster(ncore);registerDoParallel(cl)
 
 # t1 <- proc.time()
-# df_wf_term <- adply(wf_term, c(3,4), .fun = function(x){df = as.data.frame(x); df$ea = as.numeric(rownames(x)); df}, .parallel = F) %>% 
-#               rename(year = X1, year.term = X2) %>% 
-#               gather(age, number, -ea, -year, - year.term) %>% 
-#               mutate(year = f2n(year), year.term = f2n(year.term), age = f2n(age))
+df_wf_term <- adply(wf_term, c(3,4), .fun = function(x){df = as.data.frame(x); df$ea = as.numeric(rownames(x)); df}, .parallel = F) %>% 
+              rename(year = X1, year.term = X2) %>% 
+              gather(age, number.v, -ea, -year, - year.term) %>% 
+              mutate(year = f2n(year), year.term = f2n(year.term), age = f2n(age))
 # proc.time() - t1
 #stopCluster(cl)  
 
 # Join population data frames and liability data frames. 
 
-liab_tot_active <- lldf %>% left_join(df_wf_active) %>% 
-                   mutate(ALx.tot = (ALx.EAN.CP) * number,
-                          NCx.tot = NCx.EAN.CP * number,
-                          PR.tot  = sx * number) %>% 
-                   group_by(year) %>% 
-                   summarise(ALx.tot = sum(ALx.tot, na.rm = TRUE), 
-                             NCx.tot = sum(NCx.tot, na.rm = TRUE),
-                             PR.tot  = sum(PR.tot,  na.rm = TRUE)) %>% 
-                   as.matrix # extracting elements from matrices is much faster than from data.frame
+#liab_tot_active <- 
+
+liab %<>% left_join(df_wf_active)  %>%
+          left_join(df_wf_retired) %>% 
+          mutate(ALx.tot = (ALx + ALx.v) * number.a + ALx.r * number.r,
+                 NCx.tot = (NCx + NCx.v) * number.a,
+                 PR.tot  = sx * number.a,
+                 B.tot = B * number.r
+                 ) %>% 
+          group_by(year) %>% 
+          summarise(ALx.tot = sum(ALx.tot, na.rm = TRUE), 
+                    NCx.tot = sum(NCx.tot, na.rm = TRUE),
+                    PR.tot  = sum(PR.tot,  na.rm = TRUE),
+                    B.tot   = sum(B.tot, na.rm = TRUE)) %>% 
+                    as.matrix # extracting elements from matrices is much faster than from data.frame
+# 
+# liab_tot_retired <- liab %>% left_join(df_wf_retired) %>% 
+#   mutate(B.tot = B * number,
+#          ALx.tot.r = ALx.r * number) %>% 
+#   group_by(year) %>% 
+#   summarise(B.tot     = sum(B.tot, na.rm = TRUE),
+#             ALx.tot.r = sum(ALx.tot.r, na.rm = TRUE)) %>% 
+#   as.matrix
+# 
 
 # x <- as.matrix(liab_tot_active)
 # microbenchmark(
@@ -136,32 +151,30 @@ liab_tot_active <- lldf %>% left_join(df_wf_active) %>%
 
                  
                     
-liab_tot_retired <- lldf %>% left_join(df_wf_retired) %>% 
-                    mutate(B.tot = B * number,
-                           ALx.tot.r = ALx.r * number) %>% 
-                    group_by(year) %>% 
-                    summarise(B.tot     = sum(B.tot, na.rm = TRUE),
-                              ALx.tot.r = sum(ALx.tot.r, na.rm = TRUE)) %>% 
-                    as.matrix
+
 # liab_tot_retired$ALx.tot.r[1]
-# 
-# liab_tot_term <- lldf.term %>% left_join(df_wf_term) %>% 
-#                   mutate(ALx.tot.v = ALx.v * number,
-#                          B.tot.v   = B.v   * number) %>% 
-#                   group_by(year) %>% 
-#                   summarise(ALx.tot.v = sum(ALx.tot.v, na.rm = TRUE),
-#                             B.tot.v   = sum(B.tot.v  , na.rm = TRUE))
-# 
+#rm(liab) # free up memory
+
+#liab_tot_term <- 
+# liab.term1 <- 
+# rm(liab.term)
+liab.term %<>% left_join(df_wf_term) %>% 
+               mutate(ALx.tot.v = ALx.v * number.v,
+                      B.tot.v   = B.v   * number.v) %>% 
+               group_by(year) %>% 
+               summarise(ALx.tot.v = sum(ALx.tot.v, na.rm = TRUE),
+                         B.tot.v   = sum(B.tot.v  , na.rm = TRUE)) %>% 
+               as.matrix
+
+end_time_prep_loop <-  proc.time()
 
 
 
 
-
+start_time_loop <- proc.time()
 
 cl <- makeCluster(ncore) 
 registerDoParallel(cl)
-
-start_time_loop <- proc.time()
 
 #penSim_results <- list()
 #for(k in 1:nsim){
@@ -179,17 +192,17 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     # AL(j) 
     
     # AL(j)
-    #penSim[j, "AL"] <- sum(wf_active[, , j] * ll2[[ALx.method]][[j]] + wf_retired[, , j] * ll2[["ALx.r"]][[j]])
-    penSim[j, "AL"] <- liab_tot_active[j, "ALx.tot"] + liab_tot_retired[j, "ALx.tot.r"]
+    #penSim[j, "AL"] <- liab_tot_active[j, "ALx.tot"] + liab_tot_retired[j, "ALx.tot.r"] + liab_tot_term[j, "ALx.tot.v"]
+    penSim[j, "AL"] <- liab[j, "ALx.tot"] + liab.term[j, "ALx.tot.v"]
     # NC(j)
     #penSim[j, "NC"] <- sum(wf_active[, , j] * ll2[[NCx.method]][[j]]) 
-    penSim[j, "NC"]  <- liab_tot_active[j, "NCx.tot"] 
+    penSim[j, "NC"]  <- liab[j, "NCx.tot"] 
     # B(j)
     #penSim[j, "B"] <-  sum(wf_retired[, , j] * ll2[["B"]][[j]])
-    penSim[j, "B"]  <-  liab_tot_retired[j, "B.tot"]
+    penSim[j, "B"]  <-  liab[j, "B.tot"] + liab.term[j, "B.tot.v"]
     # PR(j)
     #penSim[j, "PR"] <-  sum(wf_active[, , j] * ll2[["sx"]][[j]])
-    penSim[j, "PR"]  <-  liab_tot_active[j, "PR.tot"]
+    penSim[j, "PR"]  <-  liab[j, "PR.tot"]
     
     # MA(j) and EAA(j) 
     if(j == 1) {penSim[j, "MA"] <- switch(init_MA,
@@ -281,7 +294,7 @@ end_time_loop <- proc.time()
 stopCluster(cl)
 
 Time_loop <- end_time_loop - start_time_loop 
-
+Time_prep_loop <- end_time_prep_loop - start_time_prep_loop
 
 
 # x <- matrix(rep(1,10000),1000); colnames(x) = 1:10

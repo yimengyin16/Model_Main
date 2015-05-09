@@ -4,8 +4,10 @@
 
 
 # This program consists of following files:
-  # Model_Actuarial_Val.R
+  # Model_Actuarial_Val_master.R
+  # Model_Actuarial_Val_Liab.R
   # Model_Actuarial_Val_wf.R
+  # MOdel_Actuarial_Val_Sim.R
   # Model_Actuarial_Var_Import_Data.R
   # Functions.R
 # Data files are contained in "your project directory"\Data\:
@@ -22,10 +24,9 @@
 # Assumptions
  # Plan Desgin
   # Beneficiary:  : Retirement Only; No disability, death, surivorship benefits
-  # Benfit formula: 1% of FAS per YOS; FAS for last 3 years
-  # Retirment age : 65, not early retirement
-  # Vesting:      : 1) No vesting;
-  #                 2) Vested if YOS >= 3
+  # Benfit formula: % of FAS per YOS; FAS for last # years
+  # Retirment age : NO early retirement
+  # Vesting:      : Vested if YOS > #
 
  # Cost Method
   # 1) EAN(Entry Age Normal)
@@ -89,11 +90,12 @@ benfactor <- 0.01   # benefit factor, % of final average salary per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
 # WARNING: In curret version, please do not set a r.max greater than 65 and less than 55 
 r.max     <- 65     # maximum retirement age, at which all actives retire with probability 1. 
-r.min     <- 55     # minimum retirement age. (for multi-retirement ages, will not be used in current version) 
+r.min     <- 55     # minimum retirement age. (for multi-retirement ages, will not be used in current version)
+                    # Current version depends on the assumption that active workers do not quit their jobs once reaching age r.min. 
 cola      <- 0.01   # annual growth of retirement benefits in a simple COLA 
 
-v.yos     <- 5      # yos required to be vested.  
-
+v.yos     <- 10      # yos required to be vested.  
+r.yos     <- 10      # yos required to be eligible for early retirement
 
 ## Actuarial assumptions
 
@@ -112,8 +114,8 @@ m = 3                # years of amortization of gain/loss
 
 
 ## Contriubtion Policy
-ConPolicy <- "ADC"
-PR_pct_cap <- 0.25
+ConPolicy    <- "ADC"
+PR_pct_cap   <- 0.25
 PR_pct_fixed <- 0.145
  # Values of ConPolicy:
   # ADC:     pay full ADC
@@ -134,7 +136,9 @@ w <- 1  # No asset smoothing when set to 1.
 
 ## Population 
 # Age and entry age combinations  
-range_ea  <- seq(20, r.max - 1, 5) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+# range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+# range_ea <- c(20, 25, 30, 35, 40:(r.max - 1))
+range_ea <- 20:(r.max - 1)
 range_age <- 20:110 
 
 # Initial Active
@@ -143,7 +147,10 @@ init_active <- rbind(c(20, 20, 100), # (entry age,  age, number)
                      c(20, 40, 100),
                      c(20, r.max - 1, 100),
                      c(40, 40, 100),
-                     c(40, r.max - 1, 100)
+                     c(40, r.max - 1, 100),
+                     c(50, 50, 100),
+                     c(55, 55, 100),
+                     c(r.max - 1, r.max - 1, 100)
                      )
 
 # Initial Retired 
@@ -152,7 +159,7 @@ init_retired <- rbind(c(20, 65, 100),
                       c(20, 85, 100))
 
 # Growth rate of workforce
-wf_growth <- 0.00    # growth rate of the size of workforce. For now, new entrants are equally distributed across all entry ages. 
+wf_growth   <- 0.00    # growth rate of the size of workforce. For now, new entrants are equally distributed across all entry ages. 
 no_entrance <- TRUE  # No new entrants into the workforce if set "TRUE". Overrides "wf_growth"
 
 
@@ -214,7 +221,10 @@ df <- bind_rows(penSim_results) %>%
 # Running time of major modules
 Time_liab # liability
 Time_wf   # workforce
+Time_prep_loop # Preparing for the loop
 Time_loop # the big loop
+
+(Time_liab + Time_wf + Time_prep_loop + Time_loop)[3]/60
 
 
 
