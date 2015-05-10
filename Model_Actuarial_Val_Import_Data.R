@@ -5,6 +5,8 @@ library(dplyr)
 library(tidyr)
 library(gdata) # read.xls
 library(xlsx)
+library(XLConnect) # slow but convenient because it reads ranges
+
 cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric, eliminating "," "$" "%". chars will become NA
 
 file_path <- paste0("Data/")
@@ -86,39 +88,6 @@ hire <- hire[-1, ]
 names(hire) <- c("eage", "dist", "salscale")
 hire <- hire %>%
   mutate_each(funs(cton))
-
-
-
-
-#*************************************************************************************************************
-#                                      Import Salary scale from AV                                       #####                  
-#*************************************************************************************************************
-
-## Salary scale type 1: Growth only depends on age
-# Example: PA-PSERS
-
-SS <- read.xlsx2(paste0(file_path, "PA-PSERS.xlsx"), sheetName = "SalaryGrowth", colClasses = "numeric", startRow = 3, stringsAsFactors = FALSE)
-SS %<>%  rename(age.match = age) %>% right_join(data.frame(age = 20:70) %>% mutate(age.match = floor(age/10)*10)) %>% 
-      select(-age.match) %>% 
-      mutate(growth = cton(growth))
-
-
-# Salary scale for all starting year
-SS.all <- expand.grid(start.year = -89:nyear, ea = range_ea, age = 20:(r.max - 1)) %>% 
-  filter(age >= ea, start.year + 110 - ea >= 1 ) %>%
-  arrange(start.year, ea, age) %>%
-  left_join(SS) %>% 
-  group_by(start.year, ea) %>% 
-  mutate(year = start.year + (age - ea),
-         scale = cumprod(ifelse(age == ea, 1, lag(1 + growth)))
-         )
-
-
-
-## Salary scale type 2: Growth depends on yos and year.
-# Example: NJ-TPAF
-
-
 
 
 

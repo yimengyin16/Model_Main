@@ -106,7 +106,7 @@ r.yos     <- 10      # yos required to be eligible for early retirement
 ## Actuarial assumptions
 
 # Economic assumptions
-infl <- 0.04        # Assumed inflation
+infl <- 0.03        # Assumed inflation
 prod <- 0.01        # Assumed productivity
 i <- 0.08           # Assumed discount rate
 v <- 1/(1 + i)      # discount factor
@@ -142,8 +142,8 @@ w <- 1  # No asset smoothing when set to 1.
 
 ## Population 
 # Age and entry age combinations  
-  range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-# range_ea <- c(20, 25, 30, 35, 40, 45, 50, 55:(r.max - 1))
+ range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+# range_ea <- c(20, 25, 30, 35, 40, 45, 50:(r.max - 1))
 # range_ea <- 20:(r.max - 1)
 range_age <- 20:110 
 
@@ -161,7 +161,7 @@ init_active <- rbind(c(20, 20, 100), # (entry age,  age, number)
 
 # Initial Retired 
 # WARNING: Ages and entry ages of retirees must be no less than retirement age. (min retirement age when multiple retirement ages is implemented)
-init_retired <- rbind(c(20, 65, 100),
+init_retired <- rbind(c(20, r.max, 100),
                       c(20, 85, 100))
 
 # Growth rate of workforce

@@ -28,6 +28,8 @@ start_time_liab <- proc.time()
 
 load("Data/winklevossdata.RData")
 term3 %<>% mutate(qxt.p = ifelse(age >= r.min & yos >= r.yos, 0, qxt.p)) # coerce termination rates to 0 when eligible for early retirement. 
+
+
 # select(term3, -yos) %>% spread(ea, qxt.p)
 
 # Create decrement table and calculate probability of survival
@@ -77,12 +79,17 @@ decrement %<>%
 
 
 
-# 2. Salary scale #### 
+# 2. Salary #### 
+
+# source the the script below or import the compelte salary data frame from other source.
+#source("Model_Actuarial_Val_Salary_Benefit.R")
+
+
 # We start out with the case where 
 # (1) the starting salary at each entry age increases at the rate of productivity growth plus inflation.
 # (2) The starting salary at each entry age are obtained by scaling up the the salary at entry age 20,
 #     hence at any given period, the age-30 entrants at age 30 have the same salary as the age-20 entrants at age 30. 
-
+# 
 # Notes:
 # At time 1, in order to determine the liability for the age 20 entrants who are at age 110, we need to trace back 
 # to the year when they are 20, which is -89. 
@@ -98,6 +105,8 @@ salary <- expand.grid(start.year = -89:nyear, ea = range_ea, age = 20:(r.max - 1
   left_join(merit) %>% left_join(growth) %>%
   group_by(start.year, ea) %>%
   mutate( sx = growth*scale*(1 + infl + prod)^(age - min(age)))
+
+
 
 
 # 3. Individual AL and NC by age and entry age ####
@@ -188,7 +197,7 @@ liab %<>%
          )
 
 # Calculate AL and benefit payment for vested terms terminating at different ages.   
-liab.term <- expand.grid(start.year = -89:nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>%
+liab.term <- expand.grid(start.year = -89:nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>% # start year no longer needs to start from -89 if we import initial benefit data.
   filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
   arrange(start.year, ea, age.term, age) %>%
   group_by(start.year, ea, age.term) %>% 
