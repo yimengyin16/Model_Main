@@ -15,7 +15,7 @@
 # AM: Amount to be amortized at period t. 
 # i is assumed interest rate. ELs of each period will be amortized seperately.  
 # SC: Supplement cost 
-# ADC: ADC
+# ADC: actuarially required contribution by employer. NC + SC - EEC
 # C : Actual contribution
 # C_ADC: shortfall in paying ADC
 # B : Total beneift Payment   
@@ -35,7 +35,9 @@
 # Ia(t) = i * AA(t)
 # Ib(t) = i * B(t)
 # Ic(t) = i * C(t)
-# EI(t) = Ia(t) - Ib(t) + Ic(t) 
+# EI(t) = Ia(t) - Ib(t) + Ic(t)
+# ADC   = NC(t) + SC(t)
+# ADC.ER = NC(t) + SC(t) - EEC(t)
 # C(t) = NC(t) + SC(t)
 # UAAL(t) = AL(t) - AA(t)
 # EUAAL(t) = [UAAL(t-1) + NC(t-1)](1+i(t-1)) - C(t-1) - Ic(t-1)
@@ -65,7 +67,10 @@ penSim0 <- data.frame(year = 1:nyear) %>%
          AM   = 0, # amount to be amortized: AM(t) = LG(t) + [ADC(t - 1) - C(t-1)]*[1 + i(t-1)], i.e. actuarial loss/gain plus shortfall in paying NC+SC in last period(plus interests) 
          NC   = 0, #
          SC   = 0, #
+         EEC  = 0, #
+         ERC  = 0, #
          ADC  = 0, #
+         ADC.ER = 0, #
          C    = 0, #
          C_ADC= 0, #
          B    = 0, #                        
@@ -243,18 +248,22 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$SC[j] <- sum(SC_amort[, j])
     
     
-    # ADC(j)
-    penSim$ADC[j] <- with(penSim, NC[j] + SC[j])
+    #Employee contribution
+    penSim$EEC[j] <- with(penSim, PR[j] * EEC_rate)
     
+    # ADC(j)
+    penSim$ADC[j]    <- with(penSim, NC[j] + SC[j]) 
+    penSim$ADC.ER[j] <- with(penSim, NC[j] + SC[j] - EEC[j])  
  
     # C(j)
-    penSim$C[j] <- ifelse(j %in% c(0), 0,  
+    penSim$ERC[j] <- ifelse(j %in% c(0), 0,  
                    switch(ConPolicy,
-                          ADC     = with(penSim, ADC[j]),                          # Full ADC
-                          ADC_cap = with(penSim, min(ADC[j], PR_pct_cap * PR[j])), # ADC with cap. Cap is a percent of payroll 
+                          ADC     = with(penSim, ADC.ER[j]),                          # Full ADC
+                          ADC_cap = with(penSim, min(ADC.ER[j], PR_pct_cap * PR[j])), # ADC with cap. Cap is a percent of payroll 
                           Fixed   = with(penSim, PR_pct_fixed * PR[j])             # Fixed percent of payroll
       ) 
     )
+    penSim$C[j] <- with(penSim, EEC[j] + ERC[j])
     
     # C(j) - ADC(j)
     penSim$C_ADC[j] <- with(penSim, C[j] - ADC[j])

@@ -92,7 +92,7 @@ nyear <- 100        # # of years in simulation
 ncore <- 4          # # of CPU cores used in parallelled loops
 
 ## Benefit structure
-benfactor <- 0.01   # benefit factor, % of final average salary per year of yos
+benfactor <- 0.015   # benefit factor, % of final average salary per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
 # WARNING: In curret version, please do not set a r.max greater than 65 and less than 55 
 r.max     <- 65     # maximum retirement age, at which all actives retire with probability 1. 
@@ -125,8 +125,21 @@ PR_pct_cap   <- 0.25
 PR_pct_fixed <- 0.145
  # Values of ConPolicy:
   # ADC:     pay full ADC
-  # ADC_cap: pay full ADC with cap, which is defined as a proportion of payroll. If ADC_cap is chosen, set the parameter PR_pct_cap.
+  # ADC_cap: pay full ADC with a cap, which is defined as a proportion of payroll. If ADC_cap is chosen, set the parameter PR_pct_cap.
   # Fixed:   pay a fixed percent of payroll. If Fixed is chosen, set the parameter PR_pct_fixed.
+EEC_rate     <- 0.005   
+
+# For now the employer and employee contributions are calculated as follows:
+# 1). Calculate ADC = NC + SC
+# 2). Calculate EEC = EEC_rate * Payroll
+# 3). Calculate employer's proportion of ADC: ADC_ER = ADC - EEC
+# 4). Employer's contribution ERC is determined by one of the three contribution rules
+# 5). Total contribution: C = EEC + ERC
+# Potential problem:
+  # Employee contribution as % of salary. For now this rate is fixed in all period, even 
+  # employee contribution is greater than normal costs and results in negative employer contribution.
+  # More rules are needed to avoid negative contributions. 
+
 
 
 # Set inital asset values
@@ -213,10 +226,13 @@ source("Model_Actuarial_Val_Sim.R")
 options(digits = 2, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
-var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",    "ExF",   
-                 "UAAL",  "EUAAL", "LG",    "NC",    "SC",    "ADC",   "C", "B",     
-                 "I.r" ,   "I.e",  "i",    "i.r",
-                 "PR", "ADC_PR", "C_PR", "AM", "C_ADC")
+var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",    # "ExF",   
+                 "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
+                 "ADC", "EEC", "ERC",  "C", "B",     
+                 #"I.r" ,   "I.e",  "i",    "i.r",
+                 "PR", "ADC_PR", "C_PR", 
+                 # "AM", 
+                 "C_ADC")
 
 x <- penSim_results[[1]][,var.display]
 kable(x, digits = 2)
