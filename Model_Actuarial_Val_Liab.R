@@ -86,7 +86,6 @@ decrement %<>%
 #*************************************************************************************************************
 
 # source the the script below or import the compelte salary data frame from other source.
-source("Model_Actuarial_Val_Salary_Benefit.R")
 
 #
 # We start out with the case where 
@@ -139,7 +138,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
     B.init = ifelse(start.year < 1 & age >= r.max, avgben[which(!is.na(avgben))] * COLA.scale/COLA.scale[which(!is.na(avgben))], 0), # Calculte future benefits of initial retirees.
-    # B  = rowSums(cbind(B, B.init), na.rm = TRUE),
+    B  = rowSums(cbind(B, B.init), na.rm = TRUE),
 
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at 110 for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age 110. 
     axR = c(get_tla(pxT[age<r.max],i), rep(0, 110 - r.max + 1)),                      # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       

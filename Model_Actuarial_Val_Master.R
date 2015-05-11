@@ -185,14 +185,40 @@ no_entrance <- TRUE  # No new entrants into the workforce if set "TRUE". Overrid
 
 
 #*********************************************************************************************************
-# 1. Actuarial liabilities, normal costs and benenfits ####
+# 1. Import Salary table and initial retirement benefit table ####
+#*********************************************************************************************************
+
+# Notes:
+# 1. User must provide the following data frames
+#   "salary": a complete salary table containing salary history of current actives and projected salary path for future workers,
+#              both of which are calculated based on a salary table of current actives from the AV and assumptions on salary growth.  
+#   "avgben": a data frame containing average retirement benefit payment(including both service retirement and deferred retirement)
+#             of all valid ea and age combos. The user MUST make sure the smallest age in the retirement benefit table is smaller than the 
+#             single retirement age specified in parameter section. (smaller than r.min with multiple retirement ages)
+# 2. Note that avgben is only used to calculate the current and projected values of benefits and liabilities of retirees at year 1. Future retirees' 
+#    benefits and liabilities are calculated based on their salary history provided in "salary". 
+# 3. I don't think in "avgben" we need average benefit for all combos of ea and age. All we need is actually average benefits
+#    by age. Once we have that we can assign an arbitrary ea to it an throw it into the model. Note that the AV of NJ-TPAF only contains 
+#    average benefits for retirees and vested terms by age group. Also note that if service retirees and vested terms follow the same mortality table 
+#    and have the same COLA rule, I don't think we need to distinguish between them.     
+#
+
+# Artificial salary table and benefit table for testing purpose are imported by sourcing the following script.
+# These tables are based on PA-PSERS and some naive assumptions for imputation.  
+source("Model_Actuarial_Val_Salary_Benefit.R")
+
+
+
+
+#*********************************************************************************************************
+# 2. Actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
 source("Model_Actuarial_Val_Liab.R")
 
 
 
 #*********************************************************************************************************
-# 2. Workforce ####
+# 3. Workforce ####
 #*********************************************************************************************************
 
 # Simulation of the workforce is done in the file below: 
@@ -206,7 +232,7 @@ source("Model_Actuarial_Val_wf.R")
 
 
 #*********************************************************************************************************
-# 3. Simulation ####
+# 4. Simulation ####
 #*********************************************************************************************************
 
 nsim  <- 10    # No. of sims
@@ -220,16 +246,16 @@ source("Model_Actuarial_Val_Sim.R")
 
 
 #*********************************************************************************************************
-# 4. Results ####
+# 5. Results ####
 #*********************************************************************************************************
 
 options(digits = 2, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
-var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",    # "ExF",   
+var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",  "ExF",   
                  "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  "ADC", "EEC", "ERC",  "C", "B",     
-                 #"I.r" ,   "I.e",  "i",    "i.r",
+                 "I.r" ,   "I.e",  "i",    "i.r",
                  "PR", "ADC_PR", "C_PR", 
                  # "AM", 
                  "C_ADC")
@@ -252,7 +278,7 @@ Time_loop # the big loop
 
 (Time_liab + Time_wf + Time_prep_loop + Time_loop)[3]/60 # # of minutes
 # 5.7 munites with all entry ages and 10 simulations
-
+# 11  munites with all entry ages and 10000 simulations (8 core on home computer)
 
 # AL: Total Actuarial liability, which includes liabilities for active workers and pensioners.
 # NC: Normal Cost  
