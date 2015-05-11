@@ -143,8 +143,8 @@ w <- 1  # No asset smoothing when set to 1.
 ## Population 
 # Age and entry age combinations  
 # range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-# range_ea <- c(20, 25, 30, 35, 40, 45:(r.max - 1))
-range_ea <- 20:(r.max - 1)
+range_ea <- c(20, 25, 30, 35, 40, 45:(r.max - 1))
+# range_ea <- 20:(r.max - 1)
 
 range_age <- 20:110 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
 
@@ -235,7 +235,7 @@ Time_loop # the big loop
 
 
 (Time_liab + Time_wf + Time_prep_loop + Time_loop)[3]/60 # # of minutes
-
+# 5.7 munites with all entry ages and 10 simulations
 
 
 # AL: Total Actuarial liability, which includes liabilities for active workers and pensioners.

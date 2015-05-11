@@ -87,8 +87,8 @@ SC_amort0 <- matrix(0, nyear + m, nyear + m)
 #SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
 # select actuarial method for AL and NC
-ALx.method <- paste0("ALx.", actuarial_method)
-NCx.method <- paste0("NCx.", actuarial_method)
+# ALx.method <- paste0("ALx.", actuarial_method)
+# NCx.method <- paste0("NCx.", actuarial_method)
 
 
 ## Calculate total liabilities, NCs and benefits
@@ -107,7 +107,6 @@ df_wf_retired <- adply(wf_retired, 3, function(x) {df = as.data.frame(x); df$ea 
 
 
 # cl <- makeCluster(ncore);registerDoParallel(cl)
-
 # t1 <- proc.time()
 df_wf_term <- adply(wf_term, c(3,4), .fun = function(x){df = as.data.frame(x); df$ea = as.numeric(rownames(x)); df}, .parallel = F) %>% 
               rename(year = X1, year.term = X2) %>% 
@@ -295,6 +294,7 @@ stopCluster(cl)
 
 Time_loop <- end_time_loop - start_time_loop 
 Time_prep_loop <- end_time_prep_loop - start_time_prep_loop
+
 
 
 # x <- matrix(rep(1,10000),1000); colnames(x) = 1:10

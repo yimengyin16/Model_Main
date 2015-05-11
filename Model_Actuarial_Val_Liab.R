@@ -3,7 +3,9 @@
 
 start_time_liab <- proc.time()
 
-# 1. Decrement table ####
+#*************************************************************************************************************
+#                                     1. Decrement table ####
+#*************************************************************************************************************
 
 # Notes
  # 1) For now, we assume all decrement rates do not change over time.  
@@ -79,12 +81,14 @@ decrement %<>%
 
 
 
-# 2. Salary #### 
+#*************************************************************************************************************
+#                                       2. Salary  #### 
+#*************************************************************************************************************
 
 # source the the script below or import the compelte salary data frame from other source.
 source("Model_Actuarial_Val_Salary_Benefit.R")
 
-
+#
 # We start out with the case where 
 # (1) the starting salary at each entry age increases at the rate of productivity growth plus inflation.
 # (2) The starting salary at each entry age are obtained by scaling up the the salary at entry age 20,
@@ -108,8 +112,9 @@ source("Model_Actuarial_Val_Salary_Benefit.R")
 
 
 
-
-# 3. Individual AL and NC by age and entry age ####
+#*************************************************************************************************************
+#                     3. Individual AL and NC by age and entry age ####
+#*************************************************************************************************************
 
 # variables relevant to COLA: B, ax, ALx.r
 
@@ -123,7 +128,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
   group_by(start.year, ea) %>%
   # Calculate salary and benefits
   mutate(
-    # vrx = v^(r.max-age),                                # discount factor
+    # vrx = v^(r.max-age),                             # discount factor
     Sx = ifelse(age == min(age), 0, lag(cumsum(sx))),  # Cumulative salary
     yos= age - min(age),                               # years of service
     n  = pmin(yos, fasyears),                          # years used to compute fas
@@ -134,7 +139,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
     B.init = ifelse(start.year < 1 & age >= r.max, avgben[which(!is.na(avgben))] * COLA.scale/COLA.scale[which(!is.na(avgben))], 0), # Calculte future benefits of initial retirees.
-    B  = rowSums(cbind(B, B.init), na.rm = TRUE),
+    # B  = rowSums(cbind(B, B.init), na.rm = TRUE),
 
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at 110 for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age 110. 
     axR = c(get_tla(pxT[age<r.max],i), rep(0, 110 - r.max + 1)),                      # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
@@ -147,8 +152,10 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     ayxs= c(get_tla2(pxT[age <= r.max], i,  sx[age <= r.max]), rep(0, 110 - r.max))   # need to make up the length of the vector up to age 110
   )
   
-  #(liab %>% filter(start.year == -89, ea == 20, age >= r.max) %>% select(pxm))$pxm %>% get_tla(i)
-  #(liab %>% filter(start.year == -89, ea == 20, age <= r.max) %>% select(pxT))$pxT %>% get_tla2a(i)
+# c1 <- !is.na(liab$B) & liab$B!=0
+# c2 <- !is.na(liab$B.init) & liab$B.init!=0
+# cbind(c1, c2)
+# range(c1+c2) # Good if only 0 and 1
 
 # Calculate normal costs and liabilities of retirement benefits with multiple retirement ages  
 liab %<>%   
@@ -174,6 +181,7 @@ liab %<>%
          ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * axRs,
          ALx.r      = ifelse(age < r.max, 0, ax * B)  # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods  # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
   ) 
+
 
 # Calculate normal costs and liabilities of deferred retirement benefits
 # Vested terms begins to receive deferred retirement benefit at r.max.
@@ -218,7 +226,10 @@ liab %<>% ungroup %>% select(start.year, year, ea, age, everything())
 liab.term %<>% ungroup %>% select(-start.year, -age.term, -Bx, -Bx.v, -gx.v, -ax, -COLA.scale, -pxRm) 
 
 
-# 4. Prepare data frames that are ready to be used with workforce data
+
+#*************************************************************************************************************
+#             4. Prepare data frames that are ready to be used with workforce data ####
+#*************************************************************************************************************
 
 # Choosing AL and NC variables corresponding to the chosen acturial methed
 ALx.method <- paste0("ALx.", actuarial_method)
@@ -233,11 +244,6 @@ liab %<>%
   rename_("ALx" = ALx.method, "NCx" = NCx.method, "ALx.v" = ALx.v.method, "NCx.v" = NCx.v.method) %>% # Note that the positions of old names and new names are reversed when using dplyr::rename_
   right_join(expand.grid(year=1:100, ea=range_ea, age=range_age))
 liab <- colwise(na2zero)(liab)
-#   %>% # make sure we have all possible combos
-#   gather(variable, value, -year, -ea, -age) %>%
-#   spread(age, value, fill=0) %>%
-#   select(variable, year, ea, everything()) %>%
-#   arrange(variable, year, ea) # this df is in the same form and order, within each var, as the liab_list of matrices (vars may be in a different order)
 
 
 liab.term %<>% 
@@ -246,28 +252,15 @@ liab.term %<>%
 liab.term <- colwise(na2zero)(liab.term)
 
 
-#   %>% filter(year >= year.term))%>%  # make sure we have all possible combos
-#   gather(variable, value, -year, -ea, -age, -year.term) %>% 
-#   spread(age, value, fill = 0) %>% 
-#   arrange(variable, year.term, year, ea)
-#   
-
-  
-# # might be possible to stop here, but continue and create an equivalent list
-# f.inner <- function(df.inner, n) as.matrix(df.inner[-c(1:n)])
-# f.outer <- function(df.outer, n) lapply(split(df.outer, df.outer$year), f.inner, n = n) # process each year
-# 
-# #ll2 <- llply(split(lldf, lldf$variable), f.outer, n = 3) # process each variable
-# #ll2.term <- llply(split(lldf.term, lldf.term$variable), function(x) llply(split(x, x$year.term), f.outer, n = 4))
-
-
-
-  
-
-
 end_time_liab <- proc.time()
 Time_liab <- end_time_liab - start_time_liab
 Time_liab
+
+
+
+
+
+
 
 # Some comparisons
 
