@@ -138,6 +138,8 @@ salary %>% filter(age == ea, start.year <=1) %>% ungroup %>% group_by(ea) %>%  a
 
 ## Read in an example of retirement benefit table: PA-PSERS
 
+## WARNING: # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
+
 # repeat for retirees p.35 ####
 # age x yos
 # age has different groupings than for actives, of course; yos groupings are the same
@@ -169,7 +171,8 @@ avgben <- (expand.grid(age = 48:110, yos = 0:50) %>% mutate(yos.match = ifelse(y
 avgben %<>% 
   mutate(ea = 70 - yos,
          year = 1) %>%    
-  filter(ea >= 20) %>% 
+  filter(ea >= 20, 
+         age >= r.max) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
   select(-age.match, -yos.match, -yos)
 
 # Notes:
@@ -184,7 +187,7 @@ avgben %<>%
 
   
 # Display in matrix form  
-# avgben %<>% select(-yos) %>% 
+# avgben %<>% 
 #   spread(age, avgben, fill = 0)
 # rownames(avgben) <- avgben$ea
 # avgben

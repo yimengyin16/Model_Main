@@ -117,7 +117,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
   filter(start.year + 110 - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
   mutate(year = start.year + age - ea) %>%  # year index in the simulation)
   left_join(salary) %>%
-  left_join(avgben) %>% 
+  left_join(avgben) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
   right_join(decrement) %>%
   arrange(start.year, ea, age) %>%
   group_by(start.year, ea) %>%
@@ -131,10 +131,11 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     fas= ifelse(age == min(age), 0, fas),
     COLA.scale = (1 + cola)^(age - min(age)),          # later we can specify other kinds of COLA scale.
     Bx = benfactor * yos * fas,                        # accrued benefits payable at age r.max
-    B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
-    B.init = ifelse(start.year < 1 & age>=r.max, avgben[which(!is.na(avgben))] * COLA.scale/COLA.scale[which(!is.na(avgben))], 0), # Calculte future benefits of initial retirees.
-    B  = rowSums(cbind(B, B.init), na.rm = TRUE),
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
+    B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
+    B.init = ifelse(start.year < 1 & age >= r.max, avgben[which(!is.na(avgben))] * COLA.scale/COLA.scale[which(!is.na(avgben))], 0), # Calculte future benefits of initial retirees.
+    B  = rowSums(cbind(B, B.init), na.rm = TRUE),
+
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at 110 for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age 110. 
     axR = c(get_tla(pxT[age<r.max],i), rep(0, 110 - r.max + 1)),                      # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
     axRs= c(get_tla(pxT[age<r.max],i, sx[age<r.max]), rep(0, 110 - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
@@ -231,7 +232,7 @@ liab %<>%
   select(year, ea, age, one_of(var.names)) %>%
   rename_("ALx" = ALx.method, "NCx" = NCx.method, "ALx.v" = ALx.v.method, "NCx.v" = NCx.v.method) %>% # Note that the positions of old names and new names are reversed when using dplyr::rename_
   right_join(expand.grid(year=1:100, ea=range_ea, age=range_age))
-
+liab <- colwise(na2zero)(liab)
 #   %>% # make sure we have all possible combos
 #   gather(variable, value, -year, -ea, -age) %>%
 #   spread(age, value, fill=0) %>%
@@ -242,7 +243,7 @@ liab %<>%
 liab.term %<>% 
   filter(year %in% 1:100) %>% 
   right_join(expand.grid(year = 1:100, ea = range_ea, age = range_age, year.term = 1:100))
-  
+liab.term <- colwise(na2zero)(liab.term)
 
 
 #   %>% filter(year >= year.term))%>%  # make sure we have all possible combos

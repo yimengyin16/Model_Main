@@ -142,10 +142,11 @@ w <- 1  # No asset smoothing when set to 1.
 
 ## Population 
 # Age and entry age combinations  
- range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-# range_ea <- c(20, 25, 30, 35, 40, 45, 50:(r.max - 1))
-# range_ea <- 20:(r.max - 1)
-range_age <- 20:110 
+# range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+# range_ea <- c(20, 25, 30, 35, 40, 45:(r.max - 1))
+range_ea <- 20:(r.max - 1)
+
+range_age <- 20:110 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
 
 # Initial Active
 # WARNING: Ages and entry ages of active members must be less than retirement age. (max retirement age when multiple retirement ages is implemented) 
@@ -161,8 +162,8 @@ init_active <- rbind(c(20, 20, 1), # (entry age,  age, number)
 
 # Initial Retired 
 # WARNING: Ages and entry ages of retirees must be no less than retirement age. (min retirement age when multiple retirement ages is implemented)
-init_retired <- rbind(c(20, r.max, 0),
-                      c(20, 85, 0))
+init_retired <- rbind(c(20, r.max, 1),
+                      c(20, 85, 1))
 
 # Growth rate of workforce
 wf_growth   <- 0.00    # growth rate of the size of workforce. For now, new entrants are equally distributed across all entry ages. 
@@ -209,7 +210,7 @@ source("Model_Actuarial_Val_Sim.R")
 # 4. Results ####
 #*********************************************************************************************************
 
-options(digits = 2, scipen = 3)
+options(digits = 2, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",    "ExF",   
