@@ -122,7 +122,7 @@ df_wf_term <- adply(wf_term, c(3,4), .fun = function(x){df = as.data.frame(x); d
 
 liab %<>% left_join(df_wf_active)  %>%
           left_join(df_wf_retired) %>% 
-          mutate(ALx.tot = (ALx + ALx.v) * number.a + ALx.r * number.r,
+          mutate(ALx.tot =  (ALx + ALx.v) * number.a + ALx.r * number.r, 
                  NCx.tot = (NCx + NCx.v) * number.a,
                  PR.tot  = sx * number.a,
                  B.tot = B * number.r

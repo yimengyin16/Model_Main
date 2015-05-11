@@ -149,20 +149,20 @@ range_age <- 20:110
 
 # Initial Active
 # WARNING: Ages and entry ages of active members must be less than retirement age. (max retirement age when multiple retirement ages is implemented) 
-init_active <- rbind(c(20, 20, 100), # (entry age,  age, number)
-                     c(20, 40, 100),
-                     c(20, r.max - 1, 100),
-                     c(45, 45, 100),
-                     c(45, r.max - 1, 100),
-                     c(50, 50, 100),
-                     c(55, 55, 100),
-                     c(r.max - 1, r.max - 1, 100)
+init_active <- rbind(c(20, 20, 1), # (entry age,  age, number)
+                     c(20, 40, 1),
+                     c(20, r.max - 1, 1),
+                     c(45, 45, 1),
+                     c(45, r.max - 1, 1),
+                     c(50, 50, 1),
+                     c(55, 55, 1),
+                     c(r.max - 1, r.max - 1, 1)
                      )
 
 # Initial Retired 
 # WARNING: Ages and entry ages of retirees must be no less than retirement age. (min retirement age when multiple retirement ages is implemented)
-init_retired <- rbind(c(20, r.max, 100),
-                      c(20, 85, 100))
+init_retired <- rbind(c(20, r.max, 0),
+                      c(20, 85, 0))
 
 # Growth rate of workforce
 wf_growth   <- 0.00    # growth rate of the size of workforce. For now, new entrants are equally distributed across all entry ages. 
@@ -216,7 +216,9 @@ var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",    "ExF",
                  "UAAL",  "EUAAL", "LG",    "NC",    "SC",    "ADC",   "C", "B",     
                  "I.r" ,   "I.e",  "i",    "i.r",
                  "PR", "ADC_PR", "C_PR", "AM", "C_ADC")
-kable(penSim_results[[1]][,var.display], digits = 2)
+
+x <- penSim_results[[1]][,var.display]
+kable(x, digits = 2)
 
 
 # Conbine results into a data frame. 
@@ -230,7 +232,8 @@ Time_wf   # workforce
 Time_prep_loop # Preparing for the loop
 Time_loop # the big loop
 
-(Time_liab + Time_wf + Time_prep_loop + Time_loop)[3]/60
+
+(Time_liab + Time_wf + Time_prep_loop + Time_loop)[3]/60 # # of minutes
 
 
 

@@ -82,7 +82,7 @@ decrement %<>%
 # 2. Salary #### 
 
 # source the the script below or import the compelte salary data frame from other source.
-#source("Model_Actuarial_Val_Salary_Benefit.R")
+source("Model_Actuarial_Val_Salary_Benefit.R")
 
 
 # We start out with the case where 
@@ -94,17 +94,17 @@ decrement %<>%
 # At time 1, in order to determine the liability for the age 20 entrants who are at age 110, we need to trace back 
 # to the year when they are 20, which is -89. 
 
-# scale for starting salary 
-growth <- data.frame(start.year = -89:nyear) %>%
-  mutate(growth = (1 + infl + prod)^(start.year - 1 ))
-
-# Salary scale for all starting year
-salary <- expand.grid(start.year = -89:nyear, ea = range_ea, age = 20:(r.max - 1)) %>% 
-  filter(age >= ea, start.year + 110 - ea >= 1 ) %>%
-  arrange(start.year, ea, age) %>%
-  left_join(merit) %>% left_join(growth) %>%
-  group_by(start.year, ea) %>%
-  mutate( sx = growth*scale*(1 + infl + prod)^(age - min(age)))
+# # scale for starting salary 
+# growth <- data.frame(start.year = -89:nyear) %>%
+#   mutate(growth = (1 + infl + prod)^(start.year - 1 ))
+# 
+# # Salary scale for all starting year
+# salary <- expand.grid(start.year = -89:nyear, ea = range_ea, age = 20:(r.max - 1)) %>% 
+#   filter(age >= ea, start.year + 110 - ea >= 1 ) %>%
+#   arrange(start.year, ea, age) %>%
+#   left_join(merit) %>% left_join(growth) %>%
+#   group_by(start.year, ea) %>%
+#   mutate( sx = growth*scale*(1 + infl + prod)^(age - min(age)))
 
 
 
@@ -114,14 +114,15 @@ salary <- expand.grid(start.year = -89:nyear, ea = range_ea, age = 20:(r.max - 1
 # variables relevant to COLA: B, ax, ALx.r
 
 liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
-  filter(start.year + 110 - ea >= 1) %>% # drop redundant combinations of start.year and ea. 
-  left_join(salary) %>% 
+  filter(start.year + 110 - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
+  mutate(year = start.year + age - ea) %>%  # year index in the simulation)
+  left_join(salary) %>%
+  left_join(avgben) %>% 
   right_join(decrement) %>%
   arrange(start.year, ea, age) %>%
   group_by(start.year, ea) %>%
   # Calculate salary and benefits
   mutate(
-    year = start.year + age - ea,                      # year index in the simulation
     # vrx = v^(r.max-age),                                # discount factor
     Sx = ifelse(age == min(age), 0, lag(cumsum(sx))),  # Cumulative salary
     yos= age - min(age),                               # years of service
@@ -131,6 +132,8 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     COLA.scale = (1 + cola)^(age - min(age)),          # later we can specify other kinds of COLA scale.
     Bx = benfactor * yos * fas,                        # accrued benefits payable at age r.max
     B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
+    B.init = ifelse(start.year < 1 & age>=r.max, avgben[which(!is.na(avgben))] * COLA.scale/COLA.scale[which(!is.na(avgben))], 0), # Calculte future benefits of initial retirees.
+    B  = rowSums(cbind(B, B.init), na.rm = TRUE),
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at 110 for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age 110. 
     axR = c(get_tla(pxT[age<r.max],i), rep(0, 110 - r.max + 1)),                      # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
@@ -197,7 +200,7 @@ liab %<>%
          )
 
 # Calculate AL and benefit payment for vested terms terminating at different ages.   
-liab.term <- expand.grid(start.year = -89:nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>% # start year no longer needs to start from -89 if we import initial benefit data.
+liab.term <- expand.grid(start.year = (1 - (r.max - 1 - 20)):nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>% # start year no longer needs to start from -89 if we import initial benefit data.
   filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
   arrange(start.year, ea, age.term, age) %>%
   group_by(start.year, ea, age.term) %>% 

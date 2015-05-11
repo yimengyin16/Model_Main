@@ -27,7 +27,6 @@ file_path <- paste0("Data/")
 #    3) Based on the starting calculated in 2), calculate complete salary table (ea by age) for year 2 to year nyear using the salary scale. 
 
 
-
 ## Salary scale type 1: Growth only depends on age
 # Example: PA-PSERS
 
@@ -115,7 +114,7 @@ fn <- function(x) (x[length(x)]/x[1])^(1/(length(x) - 1)) - 1
 start.pay <- salary %>% filter(age == ea, start.year <=1) %>% ungroup %>%  arrange(ea, year) %>% 
   select(ea, year, sx)
 start.pay %>%  kable
-start.pay %>% ggplot(aes(x = year + 2012, y = sx, colour = factor(ea))) + geom_line(size = 1)
+# start.pay %>% ggplot(aes(x = year + 2012, y = sx, colour = factor(ea))) + geom_line(size = 1)
 
 
 # average growht rates of starting salary 
@@ -134,8 +133,64 @@ salary %>% filter(age == ea, start.year <=1) %>% ungroup %>% group_by(ea) %>%  a
 
 
 #*************************************************************************************************************
-#                                        Create complete salary history                                  #####                  
+#                               Import initial retirement benefit table from AV                          #####                  
 #*************************************************************************************************************
+
+## Read in an example of retirement benefit table: PA-PSERS
+
+# repeat for retirees p.35 ####
+# age x yos
+# age has different groupings than for actives, of course; yos groupings are the same
+# age <50 50-54 55-59 60-64 65-69 70-74 75-79 80-84 85-89 Over 89
+# yos 0-4	 5-9	 10-14	15-19	20-24	25-29	30-34	35-39	40+
+age.mid <- c(48, seq(52, 87, 5), 92)
+yos.mid <- c(seq(2, 37, 5), 42)
+
+# convert to the ea x age format 
+df <- readWorksheetFromFile(paste0(file_path, "PA-PSERS.xlsx"), sheet = "PA-PSERS", header = FALSE, region = "A30:L49")
+names(df) <- c("order", "tabletype", "agegrp", yos.mid)
+
+avgben <- df %>% filter(tabletype=="bens") %>% 
+  arrange(order) %>%
+  mutate(age=age.mid) %>%
+  select(-order, -tabletype, -agegrp) %>% 
+  gather(yos, avgben, -age) %>%
+  mutate(yos = f2n(yos)) %>% 
+  splong("age", method = "natural") %>%
+  splong("yos", method = "natural")
+  #%>% spread(yos, avgben) %>% print
+
+avgben <- (expand.grid(age = 48:110, yos = 2:42) %>% mutate(age.match = ifelse(age > 92, 92, age))) %>% 
+  left_join(avgben %>% rename(age.match = age))
+
+avgben <- (expand.grid(age = 48:110, yos = 0:50) %>% mutate(yos.match = ifelse(yos < 2, 2, ifelse(yos>42, 42, yos)))) %>% 
+  left_join(avgben %>% rename(yos.match = yos))
+
+avgben %<>% 
+  mutate(ea = 70 - yos,
+         year = 1) %>%    
+  filter(ea >= 20) %>% 
+  select(-age.match, -yos.match, -yos)
+
+# Notes:
+# 1. With single retirement age, entry age is assumed retirement age minus yos. Note that "assumed retirement age" is
+#    not necessarily equal to r.max. But this is only a example of retirement benefit table used to develop the main model,
+#    all we want to make sure is that its format is compatible with the model. When we want to model the a prototype plan,
+#    we need to make the table consistent with the parameters in the main model. 
+# 2. With multiple retirement ages and vested terms, we can simple assume they retire/quite at age r.max, since 
+#    when they retire/quite does not affect the calculation 
+# 3. Actually all we need is average salary by age group. I don't think we care about the ea and yos of retirees. 
+#    When merged to the main model we can assign any proper ea to the initial retirees. 
+
+  
+# Display in matrix form  
+# avgben %<>% select(-yos) %>% 
+#   spread(age, avgben, fill = 0)
+# rownames(avgben) <- avgben$ea
+# avgben
+
+# there are negative values at the upper left corner. But it should be ok if we assume there is no retirees under age 52. 
+
 
 
 
