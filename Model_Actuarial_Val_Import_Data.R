@@ -92,13 +92,4 @@ hire <- hire %>%
 
 
 
-
-
-
-
-
-
-
-
-
 save(gam1971, term, term2,term3, dbl, disb, er, merit, hire, file = paste0(file_path, "winklevossdata.RData"))

@@ -240,6 +240,9 @@ memory<-function(maxnobjs=5){
 na2zero <- function(x){x[is.na(x)] <- 0 ;return(x)}
 
 f2n <- function(x) as.numeric(levels(x)[x])
+#f2n2 <- function(x) as.numeric(as.character(factor(x))) # much slower than f2n
+
+
 
 
 ## spline smoothing 

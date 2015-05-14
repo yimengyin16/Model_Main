@@ -56,7 +56,6 @@
 
 rm(list = ls())
 
-library(zoo) # rollapply
 library(knitr)
 library(gdata) # read.xls
 library(plyr)
@@ -94,7 +93,7 @@ ncore <- 4          # # of CPU cores used in parallelled loops
 benfactor <- 0.015   # benefit factor, % of final average salary per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
 # WARNING: In curret version, please do not set a r.max greater than 65 and less than 55 
-r.max     <- 53     # maximum retirement age, at which all actives retire with probability 1. 
+r.max     <- 65     # maximum retirement age, at which all actives retire with probability 1. 
 r.min     <- r.max  # minimum retirement age. (for multi-retirement ages, will not be used in current version)
                     # Current version depends on the assumption that active workers do not quit their jobs once reaching age r.min. 
 cola      <- 0.01   # annual growth of retirement benefits in a simple COLA 
@@ -111,7 +110,7 @@ i <- 0.08           # Assumed discount rate
 v <- 1/(1 + i)      # discount factor
 
 # Actuarial method
-actuarial_method <- "PUC"  # One of "PUC", "EAN.CD", "EAN.CP"
+actuarial_method <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
 
 # Amortization 
 amort_method <- "cd" # "cd" for Constant dollar, "cp" for constant percent, "sl" for straitline
@@ -155,8 +154,8 @@ w <- 1  # No asset smoothing when set to 1.
 ## Population 
 # Age and entry age combinations  
 # range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-range_ea <- c(20, 25, 30, 35, 40, 45:(r.max - 1))
-# range_ea <- 20:(r.max - 1)
+# range_ea <- c(20, 25, 30, 35, 40, 45:(r.max - 1))
+range_ea <- 20:(r.max - 1)
 
 range_age <- 20:110 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
 
@@ -234,7 +233,7 @@ source("Model_Actuarial_Val_wf.R")
 # 4. Simulation ####
 #*********************************************************************************************************
 
-nsim  <- 10    # No. of sims
+nsim  <- 10000    # No. of sims
 set.seed(1234)
 
 # setting actual investment return.
