@@ -144,8 +144,8 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     axR = c(get_tla(pxT[age<r.max],i), rep(0, 110 - r.max + 1)),                      # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
     axRs= c(get_tla(pxT[age<r.max],i, sx[age<r.max]), rep(0, 110 - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
     
-    axr = ifelse(ea >= r.min, 0, c(get_tla(pxT[age<r.min],i), rep(0, 110 - r.min + 1))),                          
-    axrs= ifelse(ea >= r.min, 0, c(get_tla(pxT[age<r.min],i, sx[age<r.min]), rep(0, 110 - r.min + 1))),      
+    axr = c(get_tla(pxT[age<r.min],i), rep(0, 110 - r.min + 1)),                      # Similar to axR, but based on r.min        
+    axrs= c(get_tla(pxT[age<r.min],i, sx[age<r.min]), rep(0, 110 - r.min + 1)),       # Similar to axRs, but based on r.min   
     
     ayx = c(get_tla2(pxT[age <= r.max], i), rep(0, 110 - r.max)),                     # need to make up the length of the vector up to age 110
     ayxs= c(get_tla2(pxT[age <= r.max], i,  sx[age <= r.max]), rep(0, 110 - r.max))   # need to make up the length of the vector up to age 110
@@ -190,14 +190,19 @@ liab %<>%
   # 2. During each year with a positive probability of termination, a proportion of the active member liability will be shifted to vested term liabilities as active members quit their jobs. Note that
   #    at least for EAN method. 
   #    
-  # WARNING: There will be a problem of actives entering after r.min can get vested, when PVFB is only amortized up to age r.min   
-
+  # WARNING: There will be a problem if actives entering after r.min can get vested, when PVFB is only amortized up to age r.min   
 
 liab %<>% 
   mutate(gx.v = ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
-         TCx.v = gx.v * Bx * qxt.a * lead(pxRm) * v^(r.max - age) * ax[age == r.max],  # term cost of vested termination benefits
+         Bx.v  = gx.v * Bx,
+         TCx.v = Bx.v * qxt.a * lead(pxRm) * v^(r.max - age) * ax[age == r.max],  # term cost of vested termination benefits
          PVFBx.v = c(get_PVFB(pxT[age < r.max], v, TCx.v[age < r.max]), rep(0, 110 - r.max + 1)),  # To be compatible with the cases where workers enter after age r.min, r.max is used instead of r.min, which is used in textbook formula(winklevoss p115).         
          
+         # NC and AL of PUC
+         TCx.vPUC = TCx.v / (age - min(age)),
+         NCx.PUC.v = c(get_NC.UC(pxT[age <= r.max],  v, TCx.vPUC[age <= r.max]), rep(0, 110 - r.max)),
+         ALx.PUC.v = c(get_AL.PUC(pxT[age <= r.max], v, TCx.vPUC[age <= r.max]), rep(0, 110 - r.max)),
+          
          # NC and AL of EAN.CD
          NCx.EAN.CD.v = ifelse(age < r.min, PVFBx.v[age == min(age)]/ayx[age == r.min], 0), # Note that NC is 0 after age r.min - 1
          ALx.EAN.CD.v = PVFBx.v - NCx.EAN.CD.v * axr,
@@ -212,22 +217,22 @@ liab.term <- expand.grid(start.year = (1 - (r.max - 1 - 20)):nyear, ea = range_e
   filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
   arrange(start.year, ea, age.term, age) %>%
   group_by(start.year, ea, age.term) %>% 
-  left_join(liab %>% select(start.year, year, ea, age, Bx, gx.v, ax, COLA.scale, pxRm)) %>% 
+  left_join(liab %>% select(start.year, year, ea, age, Bx.v, ax, COLA.scale, pxRm)) %>% 
   mutate(year.term = year[age == age.term],
          #year.term = year - (age - age.term),
-         Bx.v  = gx.v * Bx,
+         
          B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
          ALx.v = ifelse(age < r.max, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
                                   B.v * ax)  
          )
   
 liab %<>% ungroup %>% select(start.year, year, ea, age, everything()) 
-liab.term %<>% ungroup %>% select(-start.year, -age.term, -Bx, -Bx.v, -gx.v, -ax, -COLA.scale, -pxRm) 
+liab.term %<>% ungroup %>% select(-start.year, -age.term, -Bx.v, -ax, -COLA.scale, -pxRm) 
 
 
 
 #*************************************************************************************************************
-#             4. Prepare data frames that are ready to be used with workforce data ####
+#             4. Prepare data frames that are ready to be used with workforce data  ####
 #*************************************************************************************************************
 
 # Choosing AL and NC variables corresponding to the chosen acturial methed
@@ -240,7 +245,7 @@ var.names <- c("sx", "B", "ALx.r", ALx.method, NCx.method, ALx.v.method, NCx.v.m
 liab %<>% 
   filter(year %in% 1:100) %>%
   select(year, ea, age, one_of(var.names)) %>%
-  rename_("ALx" = ALx.method, "NCx" = NCx.method, "ALx.v" = ALx.v.method, "NCx.v" = NCx.v.method) %>% # Note that the positions of old names and new names are reversed when using dplyr::rename_
+  rename_("ALx" = ALx.method, "NCx" = NCx.method, "ALx.v" = ALx.v.method, "NCx.v" = NCx.v.method) %>% # Note that dplyr::rename_ is used. 
   right_join(expand.grid(year=1:100, ea=range_ea, age=range_age))
 liab <- colwise(na2zero)(liab)
 

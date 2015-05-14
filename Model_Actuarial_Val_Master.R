@@ -82,9 +82,8 @@ source("Functions.R")
 #*********************************************************************************************************
 # Rstrictions on current version
 # 1. r.max must be in the range [55, 65]
-# 2. r.min must be fixed at 55
-# 3. v.yos <= r.max - r.min
-# 4. Only EAN.CP and EAN.CD are ready for vested terms. 
+# 2. v.yos <= r.max - r.min
+# 3. Only EAN.CP and EAN.CD are ready for vested terms. 
 
 
 ## Model parameters
@@ -95,8 +94,8 @@ ncore <- 4          # # of CPU cores used in parallelled loops
 benfactor <- 0.015   # benefit factor, % of final average salary per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
 # WARNING: In curret version, please do not set a r.max greater than 65 and less than 55 
-r.max     <- 65     # maximum retirement age, at which all actives retire with probability 1. 
-r.min     <- 55     # minimum retirement age. (for multi-retirement ages, will not be used in current version)
+r.max     <- 53     # maximum retirement age, at which all actives retire with probability 1. 
+r.min     <- r.max  # minimum retirement age. (for multi-retirement ages, will not be used in current version)
                     # Current version depends on the assumption that active workers do not quit their jobs once reaching age r.min. 
 cola      <- 0.01   # annual growth of retirement benefits in a simple COLA 
 
@@ -112,7 +111,7 @@ i <- 0.08           # Assumed discount rate
 v <- 1/(1 + i)      # discount factor
 
 # Actuarial method
-actuarial_method <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
+actuarial_method <- "PUC"  # One of "PUC", "EAN.CD", "EAN.CP"
 
 # Amortization 
 amort_method <- "cd" # "cd" for Constant dollar, "cp" for constant percent, "sl" for straitline
@@ -169,7 +168,7 @@ init_active <- rbind(c(20, 20, 1), # (entry age,  age, number)
                      c(45, 45, 1),
                      c(45, r.max - 1, 1),
                      c(50, 50, 1),
-                     c(55, 55, 1),
+                     #c(55, 55, 1),
                      c(r.max - 1, r.max - 1, 1)
                      )
 

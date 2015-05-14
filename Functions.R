@@ -112,8 +112,9 @@ get_NC.UC <- function(px, v, TC){
   # Note The last elements (at age r'') of the result is NA by construction. 
   # px must be survival probability from min(age) to r''.
   # TC must be defined as  
-    #  gx.r(x) * qxr(x) * ax(x), x running from y (entry age) to r'' (eg. 20 to 65 in Winklevoss book)
-    #  Bx(x)/(x - y) * gx.r(x) * qxr(x) * ax(x), x running from entry age (y) to r'' (0 when x = y)      
+    #  UC for retirement:    gx.r(x) * qxr(x) * ax(x), x running from y (entry age) to r'' (eg. 20 to 65 in Winklevoss book)
+    #  PUC for retirement:   Bx(x)/(x - y) * gx.r(x) * qxr(x) * ax(x), x running from entry age (y) to r'' (0 when x = y)      
+    #  PUC for vested terms: Bx(x)/(x - y) * gx.r(x) * qxt.a * lead(pxRm) * v^(r.max - age) * ax[age == r.max]
   n <- length(px) # n is r''
   
   Fun_NC <- function(j) ifelse(j == n, NA, sum(cumprod(px[j:(n - 1)]) * v^(1:(n-j)) * TC[(j + 1):n]))
@@ -131,7 +132,7 @@ get_AL.PUC <- function(px, v, TC){
   
   # Note that y(entry age) corresponds to index 1 and age x corresponds to index j, so at age x the individual
   # has been accruing benefits for x - y years, which is equal to j - 1 years. (eg. Assuming y = 20, then when x = 21 and j = 2 the 
-  # individual have accrued benefits for 1 year (x - y = 21 - 1 and j - 1 =  2 - 1).
+  # individual have accrued benefits for 1 year (x - y = 21 - 20 and j - 1 =  2 - 1).
   
   # TC must be defined the same way as in get_NC.UC. 
   # the first element (age y) should be zero, the last element should be the same as the last element in TC.
