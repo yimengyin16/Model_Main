@@ -113,6 +113,10 @@ v <- 1/(1 + i)      # discount factor
 actuarial_method <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
 
 # Amortization 
+amort_type   <- "closed"  # one of "closed" and "open".
+ # Notes:
+ #  "closed": Loss/gain + underfunding of ADC for each year is amortized separately using closed-ended method.
+ #  "open"  : UAAL of each year is amortized using open-ended method.
 amort_method <- "cd" # "cd" for Constant dollar, "cp" for constant percent, "sl" for straitline
 m = 3                # years of amortization of gain/loss
 
@@ -233,12 +237,13 @@ source("Model_Actuarial_Val_wf.R")
 # 4. Simulation ####
 #*********************************************************************************************************
 
-nsim  <- 10000    # No. of sims
+nsim  <- 10    # No. of sims
 set.seed(1234)
 
 # setting actual investment return.
 #i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
 i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
+i.r[10,] <- 0 # Create a loss due to zero return in year 10
 
 source("Model_Actuarial_Val_Sim.R")
 
@@ -250,13 +255,15 @@ source("Model_Actuarial_Val_Sim.R")
 options(digits = 2, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
-var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",  "ExF",   
+var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",  
+                 # "ExF",   
                  "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  "ADC", "EEC", "ERC",  "C", "B",     
                  "I.r" ,   "I.e",  "i",    "i.r",
                  "PR", "ADC_PR", "C_PR", 
-                 # "AM", 
-                 "C_ADC")
+                 "AM", 
+                  "C_ADC"
+                 )
 
 x <- penSim_results[[1]][,var.display]
 kable(x, digits = 2)

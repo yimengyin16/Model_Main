@@ -232,8 +232,9 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     # UAAL(j)
     penSim$UAAL[j] <- with(penSim, AL[j] - AA[j]) 
     
+  
     # LG(j)
-    # Note that what is amortized at time t is the sum of 1) actuarial loss/gain(LG) during t -1, and 2) shortfall in paying ADC(C_ADC) at (t-1)
+     # Note that what is amortized at time t is the sum of 1) actuarial loss/gain(LG) during t -1, and 2) shortfall in paying ADC(C_ADC) at (t-1)
     if (j == 1){
       penSim$EUAAL[j] <- 0
       penSim$LG[j] <- with(penSim,  UAAL[j])  # This is the intial underfunding, rather than actuarial loss/gain if the plan is established at period 1. 
@@ -242,16 +243,17 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     } else {
       penSim$EUAAL[j] <- with(penSim, (UAAL[j - 1] + NC[j - 1])*(1 + i[j - 1]) - C[j - 1] - Ic[j - 1])
       penSim$LG[j] <- with(penSim,  UAAL[j] - EUAAL[j])
-      penSim$AM[j] <- with(penSim, (LG[j] - C_ADC[j - 1]) * (1 + i[j - 1]))
+      penSim$AM[j] <- with(penSim, LG[j] - (C_ADC[j - 1]) * (1 + i[j - 1]))
     }   
     
     
     # Amortize LG(j)
-    SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$AM[penSim$year == j], i, m, g, end = FALSE, method = amort_method)  
+    if(amort_type == "closed") SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$AM[j], i, m, g, end = FALSE, method = amort_method)  
     
     # Supplemental cost in j
-    penSim$SC[j] <- sum(SC_amort[, j])
-    
+    penSim$SC[j] <- switch(amort_type,
+                           closed = sum(SC_amort[, j]),
+                           open   = amort_LG(penSim$UAAL[j], i, m, g, end = FALSE, method = amort_method)[1])
     
     #Employee contribution
     penSim$EEC[j] <- with(penSim, PR[j] * EEC_rate)
@@ -261,7 +263,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$ADC.ER[j] <- with(penSim, NC[j] + SC[j] - EEC[j])  
  
     # C(j)
-    penSim$ERC[j] <- ifelse(j %in% c(0), 0,  
+    penSim$ERC[j] <- ifelse(j %in% c(10), 0,  
                    switch(ConPolicy,
                           ADC     = with(penSim, ADC.ER[j]),                          # Full ADC
                           ADC_cap = with(penSim, min(ADC.ER[j], PR_pct_cap * PR[j])), # ADC with cap. Cap is a percent of payroll 
@@ -325,10 +327,7 @@ Time_prep_loop <- end_time_prep_loop - start_time_prep_loop
 # )
 # head(x)
 
-
-x <- matrix(1:10, 2)
-colnames(x) <- paste0("v",1:5)
-microbenchmark( data.frame(x),
-                as.data.frame(x)) # faster
-x
-as.vector(x)
+# x <- matrix(1:10, 2)
+# colnames(x) <- paste0("v",1:5)
+# microbenchmark( data.frame(x),
+#                 as.data.frame(x)) # faster
