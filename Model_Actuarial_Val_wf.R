@@ -334,66 +334,6 @@ Time_wf <- end_time_wf - start_time_wf
 # 
 #  
 
-# Deleted code ####
-
-# # Workers retire at 65 with probability 1 without other competing exit rates.  
-# qxrdf <- data.frame(age=range_age) %>% mutate(qxr.p=ifelse(age == 64, 1, 0)) # use .p to signify prime, for single decrement
-# 
-# # termination probs dependent on entry age
-# term2a <- data.frame(age=range_age) %>% left_join(term) %>% 
-#   gather(ea, qxt.p, -age) %>% # use .p to signify prime, for single decrement
-#   mutate(ea=as.numeric(gsub("[^-.0-9]", "", ea)),
-#          qxt.p=ifelse(is.na(qxt.p), 0, qxt.p))
-
-# dtab <- filter(rename(gam1971, qxm.p = qxm), age>=20) %>% # use .p to signify prime, for single decrement
-#   left_join(rename(dbl, qxmd.p = qxmd)) %>%
-#   left_join(term2a) %>%
-#   left_join(rename(disb, qxd.p = qxd) ) %>%
-#   left_join(qxrdf) %>%
-#   mutate(qxd.p=ifelse(is.na(qxd.p), 0, qxd.p)) %>%
-#   select(ea, age, everything()) %>%
-#   filter(age >= ea) %>%
-#   group_by(ea) %>%
-#   arrange(age)
-
-# dtab %<>% 
-#   # For active(denoted by ".a"), target status are term-vested, term-non-vested, disabled, retired, dead. 
-#   # For now, no one will become vested 
-#   mutate(
-# #          qxtv.a  = qxt.p         * (1 - qxd.p/2) * (1 - qxr.p/2) * (1 - qxm.p/2) * 0,
-# #          qxtnv.a = qxt.p         * (1 - qxd.p/2) * (1 - qxr.p/2) * (1 - qxm.p/2) * 1,
-# #          qxd.a   = (1 - qxt.p/2) * qxd.p         * (1 - qxr.p/2) * (1 - qxm.p/2),
-# #          qxm.a   = (1 - qxt.p/2) * (1 - qxd.p/2) * (1 - qxr.p/2) * qxm.p, 
-# #          qxr.a   = ifelse(age == 64, 1 - qxm.a  - qxtnv.a - qxd.a, 0),
-#          # Correct the code abvoe:
-#            # Retirement is not a risk competing with other risks(death, terminatin, diability). Rather, it is
-#            # an event that happens for sure for all participants who have survived all other risks till the beginning of age 65. 
-#          qxtv.a  = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * 0,
-#          qxtnv.a = qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2) * 1,
-#          qxd.a   = (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
-#          qxm.a   = (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
-#          qxr.a   = ifelse(age == 64, 1 - qxm.a  - qxtnv.a - qxd.a, 0), 
-#     
-#          # set probs of vested to 0 at 64, since they are already included in the prob of retirement. 
-#          # this will be modified later when multiple retirement matrices are added. 
-#          #qxd.a   = ifelse(age >= 64, 0, qxd.a),
-#          qxtv.a  = ifelse(age >= 64, 0, qxtv.a)
-#          ) %>%
-#   # For terminated-vested(".v"), target status are dead and retired. 
-#   mutate(qxm.v   = qxm.p, 
-#          qxr.v   = ifelse(age == 64, 1 - qxm.v, 0)) %>%
-#   # For terminated-nonvested(".n"), target status is dead only. 
-#   mutate(qxm.n   = qxm.p) %>%
-#   # For disabled(".d"), target status are dead. Note that we need to use the mortality for disabled 
-#   # Note the difference from the flows 2Darray.R. Disabled can not become retired here. 
-#   mutate(qxm.d = qxmd.p # for now disabled do not retire and receive benefits
-#          #qxm.d   = (1 - qxr.p/2) * qxmd.p, 
-#          #qxr.d   = ifelse(age == 64, 1 - qxm.d, 0)
-#          ) %>%
-#   # For retired(".r"), the only target status is dead
-#   mutate(qxm.r   = qxm.p)
-# 
-# dimnames(df)
 
 
 # x <- array(0, c(3,3,3,3))

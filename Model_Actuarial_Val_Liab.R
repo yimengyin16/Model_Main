@@ -9,7 +9,7 @@ start_time_liab <- proc.time()
 
 # Notes
  # 1) For now, we assume all decrement rates do not change over time.  
- # 2) Use decrement rates from winklevoss.  
+ # 2) Use decrement rates from winklevoss.   
  # 3) Now assume the decrement tables contain multiple decrement rates(probabilities) rather than single decrement rates.
       # If the decrement tables provide single decrement rates, we need to convert them to multiple decrement rates in a consistent way.   
       # At least for TPAF, the multiple decrement rates (probabilities) are provided in AV.  
@@ -85,9 +85,7 @@ decrement %<>%
 #                                       2. Salary  #### 
 #*************************************************************************************************************
 
-# source the the script below or import the compelte salary data frame from other source.
-
-#
+# This part will no longer be used. It is kept here just for reference. 
 # We start out with the case where 
 # (1) the starting salary at each entry age increases at the rate of productivity growth plus inflation.
 # (2) The starting salary at each entry age are obtained by scaling up the the salary at entry age 20,
@@ -188,8 +186,9 @@ liab %<>%
 # Notes on deferred retirement benefits for vested terms. 
   # 1. Note that the PVFB and AL are different at age r.min - 1. This is very different from the case for retirement benefits with single retirement age, where PVFB = AL for EAN actuarial methods
   #    at age r.manx
-  # 2. During each year with a positive probability of termination, a proportion of the active member liability will be shifted to vested term liabilities as active members quit their jobs. Note that
-  #    at least for EAN method. 
+  # 2. During each year with a positive probability of termination, a proportion of the active member liability will be shifted to vested term liabilities as active members quit their jobs. At each
+  #    new period, changes in the liability side are: reduction in PVFB, increase in AL for terminated and increase in -PVFNC(by NC). Note the first two parts cancel out, so the 
+  #    increase in liability side is equal to NC. If the amount of NC is fully contributed to the asset side, the balance sheet will remain balance. 
   #    
   # WARNING: There will be a problem if actives entering after r.min can get vested, when PVFB is only amortized up to age r.min   
 
@@ -216,7 +215,7 @@ liab %<>%
 # Calculate AL and benefit payment for vested terms terminating at different ages.   
 liab.term <- expand.grid(start.year = (1 - (r.max - 1 - 20)):nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>% # start year no longer needs to start from -89 if we import initial benefit data.
   filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
-#  arrange(start.year, ea, age.term, age) %>%
+# arrange(start.year, ea, age.term, age) %>% # Very slow. Uncomment it only when we want to examine liab.term.
   group_by(start.year, ea, age.term) %>% 
   left_join(liab %>% select(start.year, year, ea, age, Bx.v, ax, COLA.scale, pxRm)) %>% 
   mutate(year.term = year[age == age.term],
@@ -259,9 +258,6 @@ liab.term %<>%
 end_time_liab <- proc.time()
 Time_liab <- end_time_liab - start_time_liab
 Time_liab
-
-
-
 
 
 

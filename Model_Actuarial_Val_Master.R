@@ -15,11 +15,8 @@
  # Winklevoss(6).xlsx
 
 # Goals: 
-# 1. Conduct an actuarial valuation at time 1 based on plan design, actuarial assumptions, and plan data.
-# 2. Conduct an actuarial valuation at time 2 based on the plan experience during the period [1, 2), and calculate
-#    supplemental costs at time 2 based on the experience gain/loss or assumption changes. 
-# 3. Conduct actuarial valuations each year during a time period of 100 years, allowing for stochastic investment returns.
-# 4. Conduct the stochastic simulation in 3 for 10k times. 
+# 1. Conduct actuarial valuations each year during a time period of 100 years, allowing for stochastic investment returns.
+# 2. Conduct the stochastic simulation in 3 for 10k times. 
 
 # Assumptions
  # Plan Desgin
@@ -79,18 +76,17 @@ source("Functions.R")
 #*********************************************************************************************************
 # 0. Parameters ####
 #*********************************************************************************************************
-# Rstrictions on current version
+# Restrictions on current version
 # 1. r.max must be in the range [55, 65]
 # 2. v.yos <= r.max - r.min
-# 3. Only EAN.CP and EAN.CD are ready for vested terms. 
-
+# Note: The restrictions above are removed in current version since we use single retirement age and set r.min = r.max.
 
 ## Model parameters
 nyear <- 100        # # of years in simulation 
 ncore <- 4          # # of CPU cores used in parallelled loops
 
 ## Benefit structure
-benfactor <- 0.015   # benefit factor, % of final average salary per year of yos
+benfactor <- 0.015  # benefit factor, % of final average salary per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
 # WARNING: In curret version, please do not set a r.max greater than 65 and less than 55 
 r.max     <- 65     # maximum retirement age, at which all actives retire with probability 1. 
@@ -157,9 +153,9 @@ w <- 1  # No asset smoothing when set to 1.
 
 ## Population 
 # Age and entry age combinations  
-# range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # For now, assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-# range_ea <- c(20, 25, 30, 35, 40, 45:(r.max - 1))
-range_ea <- 20:(r.max - 1)
+# range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+# range_ea <- c(20, 25, 30, 35, 40, 45:(r.max - 1)) # "Continuous" entry ages after 45
+range_ea <- 20:(r.max - 1)                          # Complete range of entry ages. Most time comsuming. 
 
 range_age <- 20:110 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
 
@@ -171,7 +167,7 @@ init_active <- rbind(c(20, 20, 1), # (entry age,  age, number)
                      c(45, 45, 1),
                      c(45, r.max - 1, 1),
                      c(50, 50, 1),
-                     #c(55, 55, 1),
+                     c(55, 55, 1),
                      c(r.max - 1, r.max - 1, 1)
                      )
 
@@ -182,7 +178,7 @@ init_retired <- rbind(c(20, r.max, 1),
 
 # Growth rate of workforce
 wf_growth   <- 0.00    # growth rate of the size of workforce. For now, new entrants are equally distributed across all entry ages. 
-no_entrance <- TRUE  # No new entrants into the workforce if set "TRUE". Overrides "wf_growth"
+no_entrance <- FALSE    # No new entrants into the workforce if set "TRUE". Overrides "wf_growth"
 
 
 
@@ -206,9 +202,9 @@ no_entrance <- TRUE  # No new entrants into the workforce if set "TRUE". Overrid
 #
 
 # Artificial salary table and benefit table for testing purpose are imported by sourcing the following script.
-# These tables are based on PA-PSERS and some naive assumptions for imputation.  
+# These tables are based on PA-PSERS and some naive assumptions for imputation.
+# Please do NOT source the script below if external salary and benefit tables are used.   
 source("Model_Actuarial_Val_Salary_Benefit.R")
-
 
 
 
@@ -265,8 +261,8 @@ var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",
                   "C_ADC"
                  )
 
-x <- penSim_results[[1]][,var.display]
-kable(x, digits = 2)
+r1 <- penSim_results[[1]][,var.display]
+kable(r1, digits = 2)
 
 
 # Conbine results into a data frame. 
@@ -282,8 +278,7 @@ Time_loop # the big loop
 
 
 (Time_liab + Time_wf + Time_prep_loop + Time_loop)[3]/60 # # of minutes
-# 5.7 munites with all entry ages and 10 simulations
-# 11  munites with all entry ages and 10000 simulations (8 core on home computer)
+
 
 # AL: Total Actuarial liability, which includes liabilities for active workers and pensioners.
 # NC: Normal Cost  

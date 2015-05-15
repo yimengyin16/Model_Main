@@ -153,7 +153,7 @@ liab %<>%        mutate(ALx.tot =  (ALx + ALx.v) * number.a + ALx.r * number.r,
 # x <- as.matrix(liab_tot_active)
 # microbenchmark(
 # x[1, "ALx.tot"],
-# x[1, 2],
+# x[1, 2], # fastest
 # liab_tot_active$ALx.tot[1] , times = 10000)
 
                  
