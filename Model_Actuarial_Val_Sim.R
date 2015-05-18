@@ -166,8 +166,27 @@ liab %<>%        mutate(ALx.tot =  (ALx + ALx.v) * number.a + ALx.r * number.r,
 # liab.term1 <- 
 # rm(liab.term)
 
-liab.term <-  left_join(df_wf_term, liab.term) 
+
+# # Test speed of data.table
+# system.time( {DT.liab.term <- data.table(liab.term)
+# DT.wf_term   <- data.table(df_wf_term, key = "ea,age,year,year.term")
+# DT <- merge(DT.wf_term, DT.liab.term, by = c("ea", "age","year", "year.term"), all.x = TRUE)
+# }
+# ) # 10.77 # 16.5
+# rm(DT,DT.liab.term, DT.wf_term)
+#system.time(DF <- left_join(df_wf_term, liab.term)) # 13.4 # 28.3
+#rm(DF)
+
+
+# Save 10 seconds by using data.table to merge
+liab.term  <- data.table(liab.term, key = "ea,age,year,year.term")
+df_wf_term <- data.table(df_wf_term, key = "ea,age,year,year.term")
+liab.term  <- merge(df_wf_term, liab.term, by = c("ea", "age","year", "year.term"), all.x = TRUE)
+liab.term  <- as.data.frame(liab.term)
+
+# liab.term <-  left_join(df_wf_term, liab.term)
 # liab.term[c("B.v", "ALx.v")] <- colwise(na2zero)(liab.term[c("B.v", "ALx.v")])  
+
 liab.term %<>%mutate(ALx.tot.v = ALx.v * number.v,
                       B.tot.v   = B.v   * number.v) %>% 
                group_by(year) %>% 
@@ -331,3 +350,14 @@ Time_prep_loop <- end_time_prep_loop - start_time_prep_loop
 # colnames(x) <- paste0("v",1:5)
 # microbenchmark( data.frame(x),
 #                 as.data.frame(x)) # faster
+
+(dt1 <- data.table(A = letters[1:10], X = 1:10))
+(dt2 <- data.table(A = letters[5:14], Y = 1:10))
+merge(dt1, dt2, by = "A")
+merge(dt1, dt2, by = "A", all = TRUE)
+
+(dt1 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(1:3, 2)], X = 1:6, key = "A,B"))
+(dt2 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(2:4, 2)], Y = 6:1, key = "A,B"))
+merge(dt1, dt2)
+merge(dt1, dt2, by="B", allow.cartesian=TRUE)
+
