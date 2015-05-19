@@ -152,8 +152,8 @@ init_EAA <- "MA"  # "MA" for the same value as MA; "EAA" for preset value of ini
 w <- 1  # No asset smoothing when set to 1. 
 
 # Smoothing parameter for PSERS 
-s.year <- 10 
-s.vector <- seq(0,1,length = s.year + 1)[-(s.year+1)]
+# s.year <- 10 
+# s.vector <- seq(0,1,length = s.year + 1)[-(s.year+1)]
 
 ## Population 
 # Age and entry age combinations  
@@ -243,7 +243,7 @@ set.seed(1234)
 # setting actual investment return.
 #i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
 i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
-i.r[10,] <- 0 # Create a loss due to zero return in year 10
+i.r[10,] <- 0 # Create a loss due to zero return in year 10. For the purpose of checking amortization of UAAL
 
 source("Model_Actuarial_Val_Sim.R")
 

@@ -199,7 +199,6 @@ end_time_prep_loop <-  proc.time()
 
 
 
-
 start_time_loop <- proc.time()
 
 cl <- makeCluster(ncore) 
@@ -303,7 +302,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
      
      # I.e(j)
      # penSim$I.e[j] <- with(penSim, Ia[j] + Ic[j] - Ib[j])
-     penSim$I.e[j] <- with(penSim, i[j] *( MA[j] + C[j] - B[j]))
+     penSim$I.e[j] <- with(penSim, i[j] *(MA[j] + C[j] - B[j]))
      
      # I.r(j)
      penSim$I.r[j] <- with(penSim, i.r[j] *( MA[j] + C[j] - B[j]))
@@ -311,12 +310,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
      # I.dif(j) = I.r(j) - I.e(j)
      penSim$I.dif[j] <- with(penSim, I.r[j] - I.e[j])
      
-     
-     
-     
-    
-    
-    
+ 
     # Funded Ratio
     penSim$FR[j] <- with(penSim, 100*AA[j] / exp(log(AL[j]))) # produces NaN when AL is 0.
     
