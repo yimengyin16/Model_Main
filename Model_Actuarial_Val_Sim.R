@@ -76,6 +76,7 @@ penSim0 <- data.frame(year = 1:nyear) %>%
          B    = 0, #                        
          I.r  = 0, #                        
          I.e  = 0, #
+         I.dif= 0,
          Ia   = 0, #                         
          Ib   = 0, #                         
          Ic   = 0, #  
@@ -246,7 +247,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     
     # AA(j)
     penSim[j, "AA"] <- with(penSim, (1 - w) * EAA[j] + w * MA[j]  )
-    
+    #penSim[j, "AA"] <- with(penSim, MA[j] - sum(s.vector[(s.year-min(j, s.year)+1):s.year] * I.dif[(j-min(j, s.year)+1):j]))
     
     # UAAL(j)
     penSim$UAAL[j] <- with(penSim, AL[j] - AA[j]) 
@@ -282,7 +283,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$ADC.ER[j] <- with(penSim, NC[j] + SC[j] - EEC[j])  
  
     # C(j)
-    penSim$ERC[j] <- ifelse(j %in% c(10), 0,  
+    penSim$ERC[j] <- ifelse(j %in% c(0), 0,  
                    switch(ConPolicy,
                           ADC     = with(penSim, ADC.ER[j]),                          # Full ADC
                           ADC_cap = with(penSim, min(ADC.ER[j], PR_pct_cap * PR[j])), # ADC with cap. Cap is a percent of payroll 
@@ -295,15 +296,26 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$C_ADC[j] <- with(penSim, C[j] - ADC[j])
     
     # Ia(j), Ib(j), Ic(j)
-    penSim$Ia[j] <- with(penSim, AA[j] * i[j])
-    penSim$Ib[j] <- with(penSim,  B[j] * i[j])
-    penSim$Ic[j] <- with(penSim,  C[j] * i[j])
+     penSim$Ia[j] <- with(penSim,  MA[j] * i[j])
+     penSim$Ib[j] <- with(penSim,  B[j] * i[j])
+     penSim$Ic[j] <- with(penSim,  C[j] * i[j])
+     
+     
+     # I.e(j)
+     # penSim$I.e[j] <- with(penSim, Ia[j] + Ic[j] - Ib[j])
+     penSim$I.e[j] <- with(penSim, i[j] *( MA[j] + C[j] - B[j]))
+     
+     # I.r(j)
+     penSim$I.r[j] <- with(penSim, i.r[j] *( MA[j] + C[j] - B[j]))
+     
+     # I.dif(j) = I.r(j) - I.e(j)
+     penSim$I.dif[j] <- with(penSim, I.r[j] - I.e[j])
+     
+     
+     
+     
     
-    # I.e(j)
-    penSim$I.e[j] <- with(penSim, Ia[j] + Ic[j] - Ib[j])
     
-    # I.r(j)
-    penSim$I.r[j] <- with(penSim, i.r[j] *( AA[j] + C[j] - B[j]))
     
     # Funded Ratio
     penSim$FR[j] <- with(penSim, 100*AA[j] / exp(log(AL[j]))) # produces NaN when AL is 0.
@@ -351,13 +363,19 @@ Time_prep_loop <- end_time_prep_loop - start_time_prep_loop
 # microbenchmark( data.frame(x),
 #                 as.data.frame(x)) # faster
 
-(dt1 <- data.table(A = letters[1:10], X = 1:10))
-(dt2 <- data.table(A = letters[5:14], Y = 1:10))
-merge(dt1, dt2, by = "A")
-merge(dt1, dt2, by = "A", all = TRUE)
+# (dt1 <- data.table(A = letters[1:10], X = 1:10))
+# (dt2 <- data.table(A = letters[5:14], Y = 1:10))
+# merge(dt1, dt2, by = "A")
+# merge(dt1, dt2, by = "A", all = TRUE)
+# 
+# (dt1 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(1:3, 2)], X = 1:6, key = "A,B"))
+# (dt2 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(2:4, 2)], Y = 6:1, key = "A,B"))
+# merge(dt1, dt2)
+# merge(dt1, dt2, by="B", allow.cartesian=TRUE)
+# 
 
-(dt1 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(1:3, 2)], X = 1:6, key = "A,B"))
-(dt2 <- data.table(A = c(rep(1L, 5), 2L), B = letters[rep(2:4, 2)], Y = 6:1, key = "A,B"))
-merge(dt1, dt2)
-merge(dt1, dt2, by="B", allow.cartesian=TRUE)
+
+
+
+
 
