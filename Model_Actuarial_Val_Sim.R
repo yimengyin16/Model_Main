@@ -238,15 +238,20 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
                                           AL = penSim[j, "AL"]) # Assume inital fund equals inital liability.
                 penSim[j, "EAA"] <- switch(init_EAA,
                                            AL = EAA_0,                # Use preset value 
-                                           MA = penSim[j, "MA"]) # Assume inital EAA equals inital market value.                      
+                                           MA = penSim[j, "MA"]) # Assume inital EAA equals inital market value.
+                
     } else {
       penSim[j, "MA"]  <- with(penSim, MA[j - 1] + I.r[j - 1] + C[j - 1] - B[j - 1])
       penSim[j, "EAA"] <- with(penSim, AA[j - 1] + I.e[j - 1] + C[j - 1] - B[j - 1])
     }
     
     # AA(j)
-    penSim[j, "AA"] <- with(penSim, (1 - w) * EAA[j] + w * MA[j]  )
-    #penSim[j, "AA"] <- with(penSim, MA[j] - sum(s.vector[(s.year-min(j, s.year)+1):s.year] * I.dif[(j-min(j, s.year)+1):j]))
+    # penSim[j, "AA"] <- with(penSim, (1 - w) * EAA[j] + w * MA[j]  )
+    if(j == 1){penSim[j, "AA"] <- with(penSim, MA[j])
+    } else {
+    penSim[j, "AA"] <- with(penSim, MA[j] - sum(s.vector[max(s.year + 2 - j, 1):s.year] * I.dif[(j-min(j, s.year + 1)+1):(j-1)]))
+    }
+    
     
     # UAAL(j)
     penSim$UAAL[j] <- with(penSim, AL[j] - AA[j]) 
@@ -305,7 +310,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
      penSim$I.e[j] <- with(penSim, i[j] *(MA[j] + C[j] - B[j]))
      
      # I.r(j)
-     penSim$I.r[j] <- with(penSim, i.r[j] *( MA[j] + C[j] - B[j]))
+     penSim$I.r[j] <- with(penSim, i.r[j] *( MA[j] + C[j] - B[j])) # C[j] should be multiplied by i.r if assuming contribution is made at year end. 
      
      # I.dif(j) = I.r(j) - I.e(j)
      penSim$I.dif[j] <- with(penSim, I.r[j] - I.e[j])
