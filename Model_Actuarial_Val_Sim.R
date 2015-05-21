@@ -178,6 +178,8 @@ liab %<>%        mutate(ALx.tot =  (ALx + ALx.v) * number.a + ALx.r * number.r,
 #system.time(DF <- left_join(df_wf_term, liab.term)) # 13.4 # 28.3
 #rm(DF)
 
+# save(liab.term, df_wf_term, file = "./Data/term_df.RData")
+
 
 # Save 10 seconds by using data.table to merge
 liab.term  <- data.table(liab.term, key = "ea,age,year,year.term")
