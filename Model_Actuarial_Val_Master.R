@@ -182,7 +182,10 @@ w <- 1            # weight on market value in asset smoothing; no asset smoothin
 # range_ea <- c(20, 25, 30, 35, 40:(r.max - 1)) # "Continuous" entry ages after 45
  range_ea <- 20:(r.max - 1)                          # Complete range of entry ages. Most time comsuming. 
 
+
+
 range_age <- 20:110 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
+max.age   <- max(range_age) 
 
 # Initial Active
 # WARNING: Ages and entry ages of active members must be less than retirement age. (max retirement age when multiple retirement ages is implemented) 
