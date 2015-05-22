@@ -1,5 +1,67 @@
 ## Actuarial Valuation
 
+start_time_prep_loop <-  proc.time()
+#*************************************************************************************************************
+#                                     1. Calculating total AL, NC and benefits ####
+#*************************************************************************************************************
+
+## Calculate total liabilities, NCs and benefits
+#  Convert 3D arrays of actives, retired and terms to data frame, to be joined by liability data frames
+
+df_wf_active <- adply(wf_active, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
+                rename(year = X1) %>%
+                gather(age, number.a, -ea, -year) %>% 
+                mutate(year = f2n(year), age = f2n(age))
+
+df_wf_retired <- adply(wf_retired, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
+                 rename(year = X1) %>% 
+                 gather(age, number.r, -ea, -year) %>% 
+                 mutate(year = f2n(year), age = f2n(age))
+
+df_wf_term <- expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.term = 1:nyear)
+df_wf_term$number.v <- as.vector(wf_term)
+
+
+
+# Join population data frames and liability data frames. 
+liab <- left_join(df_wf_active, df_wf_retired) %>% 
+        left_join(liab)
+liab[-(1:3)] <- colwise(na2zero)(liab[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
+liab %<>%        mutate(ALx.tot =  (ALx + ALx.v) * number.a + ALx.r * number.r, 
+                 NCx.tot = (NCx + NCx.v) * number.a,
+                 PR.tot  = sx * number.a,
+                 B.tot = B * number.r
+                 ) %>% 
+          group_by(year) %>% 
+          summarise(ALx.tot = sum(ALx.tot, na.rm = TRUE), 
+                    NCx.tot = sum(NCx.tot, na.rm = TRUE),
+                    PR.tot  = sum(PR.tot,  na.rm = TRUE),
+                    B.tot   = sum(B.tot, na.rm = TRUE)) %>% 
+                    as.matrix # extracting elements from matrices is much faster than from data.frame
+
+
+# Save 10 seconds by using data.table to merge
+liab.term  <- data.table(liab.term, key = "ea,age,year,year.term")
+df_wf_term <- data.table(df_wf_term, key = "ea,age,year,year.term")
+liab.term  <- merge(df_wf_term, liab.term, by = c("ea", "age","year", "year.term"), all.x = TRUE)
+liab.term  <- as.data.frame(liab.term)
+
+# liab.term <-  left_join(df_wf_term, liab.term)
+# liab.term[c("B.v", "ALx.v")] <- colwise(na2zero)(liab.term[c("B.v", "ALx.v")])  
+
+liab.term %<>%mutate(ALx.tot.v = ALx.v * number.v,
+                      B.tot.v   = B.v  * number.v) %>% 
+               group_by(year) %>% 
+               summarise(ALx.tot.v = sum(ALx.tot.v, na.rm = TRUE),
+                         B.tot.v   = sum(B.tot.v  , na.rm = TRUE)) %>% 
+               as.matrix
+
+
+
+#*************************************************************************************************************
+#                                     2. Defining variables in simulation ####
+#*************************************************************************************************************
+
 
 # Now we do the actuarial valuations 
 # In each period, following values will be caculated:
@@ -51,7 +113,7 @@
 # In this program, the only source of gain or loss is the difference between assumed interest rate i and real rate of return i.r,
 # which will make I(t) != Ia(t) + Ic(t) - Ib(t)
 
-start_time_prep_loop <-  proc.time()
+
 
 # Set up data frame
 penSim0 <- data.frame(year = 1:nyear) %>%
@@ -88,117 +150,16 @@ penSim0 <- data.frame(year = 1:nyear) %>%
 
 # matrix representation of amortization: better visualization but large size, used in this excercise
 SC_amort0 <- matrix(0, nyear + m, nyear + m)
-#SC_amort0
+# SC_amort0
 # data frame representation of amortization: much smaller size, can be used in real model later.
-#SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
-
-# select actuarial method for AL and NC
-# ALx.method <- paste0("ALx.", actuarial_method)
-# NCx.method <- paste0("NCx.", actuarial_method)
-
-
-## Calculate total liabilities, NCs and benefits
-
-# Convert 3D arrays of actives, retired and terms to data frame, to be joined by liability data frames
-
-df_wf_active <- adply(wf_active, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
-                rename(year = X1) %>%
-                gather(age, number.a, -ea, -year) %>% 
-                mutate(year = f2n(year), age = f2n(age))
-
-df_wf_retired <- adply(wf_retired, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
-                 rename(year = X1) %>% 
-                 gather(age, number.r, -ea, -year) %>% 
-                 mutate(year = f2n(year), age = f2n(age))
-
-df_wf_term <- expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.term = 1:nyear)
-df_wf_term$number.v <- as.vector(wf_term)
-
-
-# The following method is much slower:
-# df_wf_term <- adply(wf_term, c(3,4), .fun = function(x){df = as.data.frame(x); df$ea = as.numeric(rownames(x)); df}, .parallel = F) %>% 
-#                rename(year = X1, year.term = X2) %>% 
-#                gather(age, number.v, -ea, -year, - year.term) %>% 
-#                mutate(year = f2n(year), year.term = f2n(year.term), age = f2n(age))
-# array(1:256, c(4,4,4,4)) %>% as.vector
-
-
-# Join population data frames and liability data frames. 
-
-#liab_tot_active <- 
-
-liab <- left_join(df_wf_active, df_wf_retired) %>% 
-        left_join(liab)
-liab[-(1:3)] <- colwise(na2zero)(liab[-(1:3)])
-liab %<>%        mutate(ALx.tot =  (ALx + ALx.v) * number.a + ALx.r * number.r, 
-                 NCx.tot = (NCx + NCx.v) * number.a,
-                 PR.tot  = sx * number.a,
-                 B.tot = B * number.r
-                 ) %>% 
-          group_by(year) %>% 
-          summarise(ALx.tot = sum(ALx.tot, na.rm = TRUE), 
-                    NCx.tot = sum(NCx.tot, na.rm = TRUE),
-                    PR.tot  = sum(PR.tot,  na.rm = TRUE),
-                    B.tot   = sum(B.tot, na.rm = TRUE)) %>% 
-                    as.matrix # extracting elements from matrices is much faster than from data.frame
-# 
-# liab_tot_retired <- liab %>% left_join(df_wf_retired) %>% 
-#   mutate(B.tot = B * number,
-#          ALx.tot.r = ALx.r * number) %>% 
-#   group_by(year) %>% 
-#   summarise(B.tot     = sum(B.tot, na.rm = TRUE),
-#             ALx.tot.r = sum(ALx.tot.r, na.rm = TRUE)) %>% 
-#   as.matrix
-# 
-
-# x <- as.matrix(liab_tot_active)
-# microbenchmark(
-# x[1, "ALx.tot"],
-# x[1, 2], # fastest
-# liab_tot_active$ALx.tot[1] , times = 10000)
-
-                 
-                    
-
-# liab_tot_retired$ALx.tot.r[1]
-#rm(liab) # free up memory
-
-#liab_tot_term <- 
-# liab.term1 <- 
-# rm(liab.term)
-
-
-# # Test speed of data.table
-# system.time( {DT.liab.term <- data.table(liab.term)
-# DT.wf_term   <- data.table(df_wf_term, key = "ea,age,year,year.term")
-# DT <- merge(DT.wf_term, DT.liab.term, by = c("ea", "age","year", "year.term"), all.x = TRUE)
-# }
-# ) # 10.77 # 16.5
-# rm(DT,DT.liab.term, DT.wf_term)
-#system.time(DF <- left_join(df_wf_term, liab.term)) # 13.4 # 28.3
-#rm(DF)
-
-
-# Save 10 seconds by using data.table to merge
-liab.term  <- data.table(liab.term, key = "ea,age,year,year.term")
-df_wf_term <- data.table(df_wf_term, key = "ea,age,year,year.term")
-liab.term  <- merge(df_wf_term, liab.term, by = c("ea", "age","year", "year.term"), all.x = TRUE)
-liab.term  <- as.data.frame(liab.term)
-
-# liab.term <-  left_join(df_wf_term, liab.term)
-# liab.term[c("B.v", "ALx.v")] <- colwise(na2zero)(liab.term[c("B.v", "ALx.v")])  
-
-liab.term %<>%mutate(ALx.tot.v = ALx.v * number.v,
-                      B.tot.v   = B.v   * number.v) %>% 
-               group_by(year) %>% 
-               summarise(ALx.tot.v = sum(ALx.tot.v, na.rm = TRUE),
-                         B.tot.v   = sum(B.tot.v  , na.rm = TRUE)) %>% 
-               as.matrix
+# SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
 end_time_prep_loop <-  proc.time()
 
 
-
+#*************************************************************************************************************
+#                                     3.  Simuation  ####
+#*************************************************************************************************************
 start_time_loop <- proc.time()
 
 cl <- makeCluster(ncore) 
@@ -214,42 +175,37 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   SC_amort <- SC_amort0 
   penSim[,"i.r"] <- i.r[, k]
   
-
   for (j in 1:nyear){
     # j <- 1
     # AL(j) 
     
     # AL(j)
-    #penSim[j, "AL"] <- liab_tot_active[j, "ALx.tot"] + liab_tot_retired[j, "ALx.tot.r"] + liab_tot_term[j, "ALx.tot.v"]
     penSim[j, "AL"] <- liab[j, "ALx.tot"] + liab.term[j, "ALx.tot.v"]
     # NC(j)
-    #penSim[j, "NC"] <- sum(wf_active[, , j] * ll2[[NCx.method]][[j]]) 
-    penSim[j, "NC"]  <- liab[j, "NCx.tot"] 
+    penSim[j, "NC"] <- liab[j, "NCx.tot"] 
     # B(j)
-    #penSim[j, "B"] <-  sum(wf_retired[, , j] * ll2[["B"]][[j]])
-    penSim[j, "B"]  <-  liab[j, "B.tot"] + liab.term[j, "B.tot.v"]
+    penSim[j, "B"]  <- liab[j, "B.tot"] + liab.term[j, "B.tot.v"]
     # PR(j)
-    #penSim[j, "PR"] <-  sum(wf_active[, , j] * ll2[["sx"]][[j]])
-    penSim[j, "PR"]  <-  liab[j, "PR.tot"]
+    penSim[j, "PR"] <- liab[j, "PR.tot"]
     
     # MA(j) and EAA(j) 
-    if(j == 1) {penSim[j, "MA"] <- switch(init_MA,
-                                          MA = MA_0,                 # Use preset value
-                                          AL = penSim[j, "AL"]) # Assume inital fund equals inital liability.
+    if(j == 1) {penSim[j, "MA"]  <- switch(init_MA,
+                                           MA = MA_0,             # Use preset value
+                                           AL = penSim[j, "AL"])  # Assume inital fund equals inital liability.
                 penSim[j, "EAA"] <- switch(init_EAA,
-                                           AL = EAA_0,                # Use preset value 
+                                           AL = EAA_0,           # Use preset value 
                                            MA = penSim[j, "MA"]) # Assume inital EAA equals inital market value.
-                
+                penSim[j, "AA"]  <- switch(smooth_method,
+                                           method1 =  with(penSim, MA[j]),  # we may want to allow for a preset initial AA.
+                                           method2 =  with(penSim, (1 - w) * EAA[j] + w * MA[j])
+                                          )
     } else {
-      penSim[j, "MA"]  <- with(penSim, MA[j - 1] + I.r[j - 1] + C[j - 1] - B[j - 1])
-      penSim[j, "EAA"] <- with(penSim, AA[j - 1] + I.e[j - 1] + C[j - 1] - B[j - 1])
-    }
-    
-    # AA(j)
-    # penSim[j, "AA"] <- with(penSim, (1 - w) * EAA[j] + w * MA[j]  )
-    if(j == 1){penSim[j, "AA"] <- with(penSim, MA[j])
-    } else {
-    penSim[j, "AA"] <- with(penSim, MA[j] - sum(s.vector[max(s.year + 2 - j, 1):s.year] * I.dif[(j-min(j, s.year + 1)+1):(j-1)]))
+                penSim[j, "MA"]  <- with(penSim, MA[j - 1] + I.r[j - 1] + C[j - 1] - B[j - 1])
+                penSim[j, "EAA"] <- with(penSim, AA[j - 1] + I.e[j - 1] + C[j - 1] - B[j - 1])
+                penSim[j, "AA"]  <- switch(smooth_method,
+                                           method1 = with(penSim, MA[j] - sum(s.vector[max(s.year + 2 - j, 1):s.year] * I.dif[(j-min(j, s.year + 1)+1):(j-1)])),
+                                           method2 = with(penSim, (1 - w) * EAA[j] + w * MA[j]) 
+                                           )
     }
     
     
@@ -300,20 +256,20 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$C_ADC[j] <- with(penSim, C[j] - ADC[j])
     
     # Ia(j), Ib(j), Ic(j)
-     penSim$Ia[j] <- with(penSim,  MA[j] * i[j])
-     penSim$Ib[j] <- with(penSim,  B[j] * i[j])
-     penSim$Ic[j] <- with(penSim,  C[j] * i[j])
+    penSim$Ia[j] <- with(penSim,  MA[j] * i[j])
+    penSim$Ib[j] <- with(penSim,  B[j] * i[j])
+    penSim$Ic[j] <- with(penSim,  C[j] * i[j])
      
      
-     # I.e(j)
-     # penSim$I.e[j] <- with(penSim, Ia[j] + Ic[j] - Ib[j])
-     penSim$I.e[j] <- with(penSim, i[j] *(MA[j] + C[j] - B[j]))
+    # I.e(j)
+    # penSim$I.e[j] <- with(penSim, Ia[j] + Ic[j] - Ib[j])
+    penSim$I.e[j] <- with(penSim, i[j] *(MA[j] + C[j] - B[j]))
      
-     # I.r(j)
-     penSim$I.r[j] <- with(penSim, i.r[j] *( MA[j] + C[j] - B[j])) # C[j] should be multiplied by i.r if assuming contribution is made at year end. 
+    # I.r(j)
+    penSim$I.r[j] <- with(penSim, i.r[j] *( MA[j] + C[j] - B[j])) # C[j] should be multiplied by i.r if assuming contribution is made at year end. 
      
-     # I.dif(j) = I.r(j) - I.e(j)
-     penSim$I.dif[j] <- with(penSim, I.r[j] - I.e[j])
+    # I.dif(j) = I.r(j) - I.e(j)
+    penSim$I.dif[j] <- with(penSim, I.r[j] - I.e[j])
      
  
     # Funded Ratio
@@ -331,8 +287,6 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   #penSim_results[[k]] <- penSim
   penSim
 }
-
-
 
 end_time_loop <- proc.time()
 
@@ -372,6 +326,11 @@ Time_prep_loop <- end_time_prep_loop - start_time_prep_loop
 # merge(dt1, dt2)
 # merge(dt1, dt2, by="B", allow.cartesian=TRUE)
 # 
+# x <- as.matrix(liab_tot_active)
+# microbenchmark(
+# x[1, "ALx.tot"],
+# x[1, 2], # fastest
+# liab_tot_active$ALx.tot[1] , times = 10000)
 
 
 

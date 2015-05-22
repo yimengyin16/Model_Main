@@ -48,6 +48,15 @@
   # UAAL
   # Funded Ratio
 
+# List of tasks:
+# Allow age up to 120
+# Choosing amortization method
+# Module for reading in model inputs
+# Further modulize the model. 
+# More options of initial asset value? eg. % of AL
+
+
+
 
 # Preamble ###############################################################################################
 
@@ -142,25 +151,36 @@ EEC_rate     <- 0.005
 
 
 
-# Set inital asset values
+
+
+## Market value and actuarial value of assets
+# Set inital asset, market value
 MA_0 <- 200   # market value at 0
-EAA_0 <- MA_0 # expected market value at 0
-init_MA  <- "AL"  # "MA" for preset value; "AL" for being equal to initial liability 
 init_EAA <- "MA"  # "MA" for the same value as MA; "EAA" for preset value of inital EAA.
 
-# weight on market value in asset smoothing
-w <- 1  # No asset smoothing when set to 1. 
+# Choose asset smoothing method
+smooth_method <- "method1" # one of "method1" and "method2"
 
-# Smoothing parameter for PSERS 
-s.year <- 10 
-s.vector <- seq(0,1,length = s.year + 1)[-(s.year+1)]
-s.vector
+# Parameters for asset smoothing method 1 (PSERS) 
+# Note: The difference between expected and actual investment return will be realized over s.year years. (realize 1/s.year each year) 
+s.year <- 10    # amortization period for unexpected investment gain/loss
+s.vector <- seq(0,1,length = s.year + 1)[-(s.year+1)]; s.vector  # a vector containing the porportion of 
+
+# Parameters for asset smoothing method 2 (TPAF)
+# Note: actuarial asset value of current year is a weighted average of expected actuarial asset value and market asset value. 
+init_MA  <- "AL"  # "MA" for preset value; "AL" for being equal to initial liability 
+EAA_0    <- MA_0  # expected market value at 0
+w <- 1            # weight on market value in asset smoothing; no asset smoothing when set to 1. 
+
+
+
+
 
 ## Population 
 # Age and entry age combinations  
 # range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-  range_ea <- c(20, 25, 30, 35, 40:(r.max - 1)) # "Continuous" entry ages after 45
-# range_ea <- 20:(r.max - 1)                          # Complete range of entry ages. Most time comsuming. 
+# range_ea <- c(20, 25, 30, 35, 40:(r.max - 1)) # "Continuous" entry ages after 45
+ range_ea <- 20:(r.max - 1)                          # Complete range of entry ages. Most time comsuming. 
 
 range_age <- 20:110 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
 
@@ -238,7 +258,7 @@ source("Model_Actuarial_Val_wf.R")
 # 4. Simulation ####
 #*********************************************************************************************************
 
-nsim  <- 10    # No. of sims
+nsim  <- 1000    # No. of sims
 set.seed(1234)
 
 # setting actual investment return.
@@ -263,7 +283,7 @@ var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",
                  "I.r" ,   "I.e",  "i",    "i.r",
                  "PR", "ADC_PR", "C_PR", 
                  "AM", 
-                  "C_ADC"
+                 "C_ADC"
                  )
 
 r1 <- penSim_results[[1]][,var.display]
