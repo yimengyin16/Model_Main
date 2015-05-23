@@ -20,12 +20,12 @@ file_path <- paste0("Data/")
 # Example: PA-PSERS
 
 SS <- read.xlsx2(paste0(file_path, "PA-PSERS.xlsx"), sheetName = "SalaryGrowth", colClasses = "numeric", startRow = 3, stringsAsFactors = FALSE)
-SS %<>%  rename(age.match = age) %>% right_join(data.frame(age = 20:70) %>% mutate(age.match = floor(age/10)*10)) %>% 
+SS %<>%  rename(age.match = age) %>% right_join(data.frame(age = min.age:70) %>% mutate(age.match = floor(age/10)*10)) %>% 
   select(-age.match) %>% 
   mutate(growth = cton(growth)/100)
 
 # Salary scale for all starting year
-SS.all <- expand.grid(start.year = -89:nyear, ea = range_ea, age = 20:(r.max - 1)) %>% 
+SS.all <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = min.age:(r.max - 1)) %>% 
   filter(age >= ea, start.year + r.max - 1 - ea >= 1 ) %>%
   arrange(start.year, ea, age) %>%
   left_join(SS) %>% 
@@ -67,14 +67,14 @@ avgpay <- df %>% filter(tabletype=="avgpay") %>%
   splong("age", method = "natural") %>%
   splong("yos", method = "natural")
 
-avgpay <- (expand.grid(age = 20:70, yos = 2:42) %>% mutate(age.match = ifelse(age < 25, 25,ifelse(age>66, 66,age)))) %>% 
+avgpay <- (expand.grid(age = min.age:70, yos = 2:42) %>% mutate(age.match = ifelse(age < 25, 25,ifelse(age>66, 66,age)))) %>% 
   left_join(avgpay %>% rename(age.match = age))
 
-avgpay <- (expand.grid(age = 20:70, yos = 0:50) %>% mutate(yos.match = ifelse(yos < 2, 2, ifelse(yos>42, 42, yos)))) %>% 
+avgpay <- (expand.grid(age = min.age:70, yos = 0:50) %>% mutate(yos.match = ifelse(yos < 2, 2, ifelse(yos>42, 42, yos)))) %>% 
   left_join(avgpay %>% rename(yos.match = yos))
 
 avgpay %<>% select(-age.match, -yos.match) %>% 
-  filter(age - yos >= 20) %>% 
+  filter(age - yos >= min.age) %>% 
   mutate(ea = age - yos)
 
 
@@ -151,16 +151,16 @@ avgben <- df %>% filter(tabletype=="bens") %>%
   splong("yos", method = "natural")
   #%>% spread(yos, avgben) %>% print
 
-avgben <- (expand.grid(age = 48:110, yos = 2:42) %>% mutate(age.match = ifelse(age > 92, 92, age))) %>% 
+avgben <- (expand.grid(age = 48:max.age, yos = 2:42) %>% mutate(age.match = ifelse(age > 92, 92, age))) %>% 
   left_join(avgben %>% rename(age.match = age))
 
-avgben <- (expand.grid(age = 48:110, yos = 0:50) %>% mutate(yos.match = ifelse(yos < 2, 2, ifelse(yos>42, 42, yos)))) %>% 
+avgben <- (expand.grid(age = 48:max.age, yos = 0:50) %>% mutate(yos.match = ifelse(yos < 2, 2, ifelse(yos>42, 42, yos)))) %>% 
   left_join(avgben %>% rename(yos.match = yos))
 
 avgben %<>% 
   mutate(ea = 70 - yos,
          year = 1) %>%    
-  filter(ea >= 20, 
+  filter(ea >= min.age, 
          age >= r.max) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
   select(-age.match, -yos.match, -yos)
 

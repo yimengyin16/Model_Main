@@ -97,7 +97,7 @@ source("Functions.R")
 
 ## Model parameters
 nyear <- 100        # # of years in simulation 
-ncore <- 4          # # of CPU cores used in parallelled loops
+ncore <- 6          # # of CPU cores used in parallelled loops
 
 ## Benefit structure
 benfactor <- 0.015  # benefit factor, % of final average salary per year of yos
@@ -182,10 +182,10 @@ w <- 1            # weight on market value in asset smoothing; no asset smoothin
 ## Population 
 # Age and entry age combinations  
 # range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
- range_ea <- c(20, 25, 30, 35, 40:(r.max - 1)) # "Continuous" entry ages after 45
+range_ea <- c(20, 25, 30, 35, 40:(r.max - 1)) # "Continuous" entry ages after 45
 # range_ea <- 20:(r.max - 1)                          # Complete range of entry ages. Most time comsuming. 
 
-range_age <- 20:110 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
+range_age <- 20:120 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
 max.age   <- max(range_age) 
 min.age   <- min(range_age) 
 
