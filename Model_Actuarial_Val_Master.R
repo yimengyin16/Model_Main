@@ -187,6 +187,7 @@ w <- 1            # weight on market value in asset smoothing; no asset smoothin
 
 range_age <- 20:110 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
 max.age   <- max(range_age) 
+min.age   <- min(range_age) 
 
 # Initial Active
 # WARNING: Ages and entry ages of active members must be less than retirement age. (max retirement age when multiple retirement ages is implemented) 

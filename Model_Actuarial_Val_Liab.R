@@ -36,7 +36,7 @@ term3 %<>% mutate(qxt.p = ifelse(age >= r.min & yos >= r.yos, 0, qxt.p)) # coerc
 
 # Create decrement table and calculate probability of survival
 decrement <- expand.grid(age = range_age, ea = range_ea) %>% 
-  left_join(filter(gam1971, age>=20)) %>%    # mortality 
+  left_join(filter(gam1971, age>=min.age)) %>%    # mortality 
   left_join(term3) %>%                       # termination
   left_join(disb)  %>%                       # disability
   left_join(dbl)   %>%                       # mortality for disabled
@@ -115,8 +115,8 @@ decrement %<>%
 
 # variables relevant to COLA: B, ax, ALx.r
 
-liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
-  filter(start.year + 110 - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
+liab <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = range_age) %>%
+  filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
   mutate(year = start.year + age - ea) %>%  # year index in the simulation)
   left_join(salary) %>%
   left_join(avgben) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
@@ -138,15 +138,15 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
     B.init = ifelse(start.year < 1 & age >= r.max, avgben[which(!is.na(avgben))] * COLA.scale/COLA.scale[which(!is.na(avgben))], 0), # Calculte future benefits of initial retirees.
     B  = rowSums(cbind(B, B.init), na.rm = TRUE),
 
-    ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at 110 for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age 110. 
-    axR = c(get_tla(pxT[age<r.max],i), rep(0, 110 - r.max + 1)),                      # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
-    axRs= c(get_tla(pxT[age<r.max],i, sx[age<r.max]), rep(0, 110 - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
+    ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at max.age for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age max.age. 
+    axR = c(get_tla(pxT[age<r.max],i), rep(0, max.age - r.max + 1)),                      # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
+    axRs= c(get_tla(pxT[age<r.max],i, sx[age<r.max]), rep(0, max.age - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
     
-    axr = c(get_tla(pxT[age<r.min],i), rep(0, 110 - r.min + 1)),                      # Similar to axR, but based on r.min        
-    axrs= c(get_tla(pxT[age<r.min],i, sx[age<r.min]), rep(0, 110 - r.min + 1)),       # Similar to axRs, but based on r.min   
+    axr = c(get_tla(pxT[age<r.min],i), rep(0, max.age - r.min + 1)),                      # Similar to axR, but based on r.min        
+    axrs= c(get_tla(pxT[age<r.min],i, sx[age<r.min]), rep(0, max.age - r.min + 1)),       # Similar to axRs, but based on r.min   
     
-    ayx = c(get_tla2(pxT[age <= r.max], i), rep(0, 110 - r.max)),                     # need to make up the length of the vector up to age 110
-    ayxs= c(get_tla2(pxT[age <= r.max], i,  sx[age <= r.max]), rep(0, 110 - r.max))   # need to make up the length of the vector up to age 110
+    ayx = c(get_tla2(pxT[age <= r.max], i), rep(0, max.age - r.max)),                     # need to make up the length of the vector up to age max.age
+    ayxs= c(get_tla2(pxT[age <= r.max], i,  sx[age <= r.max]), rep(0, max.age - r.max))   # need to make up the length of the vector up to age max.age
   )
   
 # c1 <- !is.na(liab$B) & liab$B!=0
@@ -158,7 +158,7 @@ liab <- expand.grid(start.year = -89:nyear, ea = range_ea, age = range_age) %>%
 liab %<>%   
   mutate(gx.r  = ifelse(age %in% r.min:r.max, 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits
          TCx.r = gx.r * Bx * qxr.a * ax,  # term cost of retirement
-         PVFBx.r = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, 110 - r.max)),
+         PVFBx.r = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
          
          ## NC and AL of UC
          # TCx.r1 = gx.r * qxe * ax,  # term cost of $1's benefit
@@ -167,8 +167,8 @@ liab %<>%
          
          # NC and AL of PUC
          TCx.rPUC = ifelse(age == min(age), 0, (Bx / (age - min(age)) * gx.r * qxr.a * ax)), # Note that this is not really term cost 
-         NCx.PUC = c(get_NC.UC(pxT[age <= r.max], v, TCx.rPUC[age <= r.max]), rep(0, 110 - r.max)),
-         ALx.PUC = c(get_AL.PUC(pxT[age <= r.max], v, TCx.rPUC[age <= r.max]), rep(0, 110 - r.max)),
+         NCx.PUC = c(get_NC.UC(pxT[age <= r.max], v, TCx.rPUC[age <= r.max]), rep(0, max.age - r.max)),
+         ALx.PUC = c(get_AL.PUC(pxT[age <= r.max], v, TCx.rPUC[age <= r.max]), rep(0, max.age - r.max)),
          
          # NC and AL of EAN.CD
          NCx.EAN.CD = ifelse(age < r.max, PVFBx.r[age == min(age)]/ayx[age == r.max], 0),
@@ -196,12 +196,12 @@ liab %<>%
   mutate(gx.v = ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
          Bx.v  = gx.v * Bx,
          TCx.v = Bx.v * qxt.a * lead(pxRm) * v^(r.max - age) * ax[age == r.max],  # term cost of vested termination benefits
-         PVFBx.v = c(get_PVFB(pxT[age < r.max], v, TCx.v[age < r.max]), rep(0, 110 - r.max + 1)),  # To be compatible with the cases where workers enter after age r.min, r.max is used instead of r.min, which is used in textbook formula(winklevoss p115).         
+         PVFBx.v = c(get_PVFB(pxT[age < r.max], v, TCx.v[age < r.max]), rep(0, max.age - r.max + 1)),  # To be compatible with the cases where workers enter after age r.min, r.max is used instead of r.min, which is used in textbook formula(winklevoss p115).         
          
          # NC and AL of PUC
          TCx.vPUC = TCx.v / (age - min(age)),
-         NCx.PUC.v = c(get_NC.UC(pxT[age <= r.max],  v, TCx.vPUC[age <= r.max]), rep(0, 110 - r.max)),
-         ALx.PUC.v = c(get_AL.PUC(pxT[age <= r.max], v, TCx.vPUC[age <= r.max]), rep(0, 110 - r.max)),
+         NCx.PUC.v = c(get_NC.UC(pxT[age <= r.max],  v, TCx.vPUC[age <= r.max]), rep(0, max.age - r.max)),
+         ALx.PUC.v = c(get_AL.PUC(pxT[age <= r.max], v, TCx.vPUC[age <= r.max]), rep(0, max.age - r.max)),
           
          # NC and AL of EAN.CD
          NCx.EAN.CD.v = ifelse(age < r.min, PVFBx.v[age == min(age)]/ayx[age == r.min], 0), # Note that NC is 0 after age r.min - 1
@@ -229,8 +229,8 @@ liab %<>%
 #          )
 
 # # Merge by using data.table: does not save much time, but time consumpton seems more stable than dplyr. The time consuming part is the mutate step.
-liab.term <- expand.grid(start.year = (1 - (r.max - 1 - 20)):nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>% # start year no longer needs to start from -89 if we import initial benefit data.
-  filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% 
+liab.term <- expand.grid(start.year = (1 - (r.max - 1 - min.age)):nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>% # start year no longer needs to start from -89 if we import initial benefit data.
+  filter(start.year + max.age - ea >= 1, age >= ea, age.term >= ea) %>% 
   data.table(key = "ea,age,start.year,age.term")# drop redundant combinations of start.year and ea. 
 liab.term <- merge(liab.term,
                    select(liab, start.year, year, ea, age, Bx.v, ax, COLA.scale, pxRm) %>% data.table(key = "ea,age,start.year"), 
