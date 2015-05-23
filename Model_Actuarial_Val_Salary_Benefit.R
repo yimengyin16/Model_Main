@@ -1,17 +1,6 @@
 # This script import salary and retirement benefit data.
 
-library(dplyr)
-library(tidyr)
-library(gdata) # read.xls
-library(xlsx)
-library(XLConnect) # slow but convenient because it reads ranges
-
-cton <- function (cvar) as.numeric(gsub("[ ,$%]", "", cvar))  # character to numeric, eliminating "," "$" "%". chars will become NA
-
 file_path <- paste0("Data/")
-
-
-
 
 #*************************************************************************************************************
 #                                      Import Salary scale from AV                                       #####                  

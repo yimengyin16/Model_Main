@@ -74,6 +74,9 @@ library(foreach)
 library(doParallel)
 library(microbenchmark)
 library(data.table)
+library(xlsx)
+library(XLConnect) # slow but convenient because it reads ranges
+
 #library(corrplot)
 
 source("Functions.R")
