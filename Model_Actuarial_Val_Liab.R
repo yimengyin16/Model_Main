@@ -29,10 +29,8 @@ start_time_liab <- proc.time()
 
 
 load("Data/winklevossdata.RData")
-term3 %<>% mutate(qxt.p = ifelse(age >= r.min & yos >= r.yos, 0, qxt.p)) # coerce termination rates to 0 when eligible for early retirement. 
+term3 %<>% mutate(qxt = ifelse(age >= r.min & yos >= r.yos, 0, qxt)) # coerce termination rates to 0 when eligible for early retirement. 
 
-
-# select(term3, -yos) %>% spread(ea, qxt.p)
 
 # Create decrement table and calculate probability of survival
 decrement <- expand.grid(age = range_age, ea = range_ea) %>% 
@@ -46,34 +44,34 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
   filter(age >= ea) %>%
   group_by(ea) 
 
-decrement$qxe.p <- na2zero(decrement$qxe.p)
-decrement$qxe.p <- ifelse(decrement$age == r.max, 1, 0) # Single retirement age. 
+decrement$qxr <- na2zero(decrement$qxr)
+decrement$qxr <- ifelse(decrement$age == r.max, 1, 0) # Single retirement age. 
 
 # Timing of decrements
   
 decrement %<>% 
   # For active(".a"). 
-  mutate(qxt.a   = ifelse(age >= r.max, 0, qxt.p),   # qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2),
-         qxd.a   = ifelse(age >= r.max, 0, qxd.p),   # (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
-         qxm.a   = ifelse(age >= r.max, 0, qxm.p),   # (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
-         qxr.a   = qxe.p                             # ifelse(age == 64, (1 - qxt.p)*(1 - qxd.p)*(1 - qxm.p), 0)
+  mutate(qxt.a   = ifelse(age >= r.max, 0, qxt),   # qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2),
+         qxd.a   = ifelse(age >= r.max, 0, qxd),   # (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
+         qxm.a   = ifelse(age >= r.max, 0, qxm),   # (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
+         qxr.a   = qxr                             # ifelse(age == 64, (1 - qxt.p)*(1 - qxd.p)*(1 - qxm.p), 0)
   ) %>%
   
   # For terminated(".t"), target status are dead and retired.
   # Terminated workers will never enter the status of "retired". Rather, they will begin to receive pension benefits 
   # when reaching age r.max, but still with the status "terminated". So now we do not need qxr.t
-  mutate(qxm.t   = qxm.p) %>%
+  mutate(qxm.t   = qxm) %>%
   
   # For disabled(".d"), target status are dead. Note that we need to use the mortality for disabled 
   # Note the difference from the flows 3Darray.R. Disabled can not become retired here. 
-  mutate(qxm.d = qxmd.p ) %>%
+  mutate(qxm.d = qxmd ) %>%
   
   # For retired(".r"), the only target status is "dead". Note that in practice retirement mortality may differ from the regular mortality.
-  mutate(qxm.r   = qxm.p) %>% 
+  mutate(qxm.r   = qxm) %>% 
   
   # Calculate various survival probabilities
-  mutate( pxm = 1 - qxm.p,
-          pxT = 1 - qxt.p - qxd.p - qxm.p - qxe.p, #(1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
+  mutate( pxm = 1 - qxm,
+          pxT = 1 - qxt - qxd - qxm - qxr, #(1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
           pxRm = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxm))) # prob of surviving up to r.max, mortality only
           # px65T = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxT))), # prob of surviving up to r.max, composite rate
           # p65xm = cumprod(ifelse(age <= r.max, 1, lag(pxm))))            # prob of surviving to x from r.max, mortality only

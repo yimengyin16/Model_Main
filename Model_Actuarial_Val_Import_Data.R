@@ -17,7 +17,7 @@ wvxl <- "Winklevoss(6).xlsx"
 # Mortality table GAM-1971 (http://mort.soa.org/Export.aspx?Type=xls&TableIdentity=818) is used. 
 fn <- "GAM-1971-Male.xls"
 gam1971 <- read.xls(paste0(file_path, fn), colClasses = "character")
-names(gam1971) <- c("age", "qxm.p")
+names(gam1971) <- c("age", "qxm")
 gam1971 <- gam1971 %>%  mutate_each(funs(cton)) %>%
   filter(age %in% 5:120)
 
@@ -37,9 +37,9 @@ term2[41:45,2:8] <- term2[41:45,9]
 
 # Reorganize termination table into long format
 term2 %<>% 
-  gather(ea, qxt.p, -age) %>%
+  gather(ea, qxt, -age) %>%
   mutate(ea = as.numeric(gsub("[^0-9]", "", ea)),
-         qxt.p=ifelse(is.na(qxt.p), 0, qxt.p))
+         qxt=ifelse(is.na(qxt), 0, qxt))
 
 
 term3 <-  expand.grid(age = 20:64, ea = 20:64) %>% 
@@ -58,21 +58,21 @@ term3 <-  expand.grid(age = 20:64, ea = 20:64) %>%
 
 # data table 2-5 disability life rates ####
 dbl <- read.xlsx2(paste0(file_path, wvxl), sheetName = "Tab2-5DisbLife", colClasses = "character", startRow = 3, stringsAsFactors = FALSE)
-names(dbl) <- c("age", "qxmd.p")
+names(dbl) <- c("age", "qxmd")
 dbl <- dbl %>%
 mutate_each(funs(cton))
 
 
 # data table 2-7 disability ####
 disb <- read.xlsx2(paste0(file_path, wvxl), sheetName = "Tab2-7Disb", colClasses = "character", startRow = 3, stringsAsFactors = FALSE)
-names(disb) <- c("age", "qxd.p")
+names(disb) <- c("age", "qxd")
 disb <- disb %>%
   mutate_each(funs(cton))
 
 
 # data table 2-9 early retirement ####
 er <- read.xlsx2(paste0(file_path, wvxl), sheetName = "Tab2-9EarlyRet", colClasses = "character", startRow = 3, stringsAsFactors = FALSE)
-names(er) <- c("age", "qxe.p")
+names(er) <- c("age", "qxr")
 er <- er %>%
   mutate_each(funs(cton))
 
