@@ -179,10 +179,8 @@ w <- 1            # weight on market value in asset smoothing; no asset smoothin
 ## Population 
 # Age and entry age combinations  
 # range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-# range_ea <- c(20, 25, 30, 35, 40:(r.max - 1)) # "Continuous" entry ages after 45
- range_ea <- 20:(r.max - 1)                          # Complete range of entry ages. Most time comsuming. 
-
-
+ range_ea <- c(20, 25, 30, 35, 40:(r.max - 1)) # "Continuous" entry ages after 45
+# range_ea <- 20:(r.max - 1)                          # Complete range of entry ages. Most time comsuming. 
 
 range_age <- 20:110 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
 max.age   <- max(range_age) 
@@ -261,7 +259,7 @@ source("Model_Actuarial_Val_wf.R")
 # 4. Simulation ####
 #*********************************************************************************************************
 
-nsim  <- 1000    # No. of sims
+nsim  <- 10    # No. of sims
 set.seed(1234)
 
 # setting actual investment return.

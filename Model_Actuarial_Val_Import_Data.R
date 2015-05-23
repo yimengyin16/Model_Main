@@ -35,7 +35,6 @@ term2[36:40,2:7] <- term2[36:40,8]
 term2[41:45,2:8] <- term2[41:45,9]
 
 
-
 # Reorganize termination table into long format
 term2 %<>% 
   gather(ea, qxt.p, -age) %>%
@@ -49,6 +48,9 @@ term3 <-  expand.grid(age = 20:64, ea = 20:64) %>%
           left_join(term2 %>% rename(ea.match = ea)) %>%
           filter(yos >= 0) %>% 
           select(-ea.match)
+
+
+
 
 
 
