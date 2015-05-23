@@ -19,7 +19,7 @@ fn <- "GAM-1971-Male.xls"
 gam1971 <- read.xls(paste0(file_path, fn), colClasses = "character")
 names(gam1971) <- c("age", "qxm.p")
 gam1971 <- gam1971 %>%  mutate_each(funs(cton)) %>%
-  filter(age %in% 5:110)
+  filter(age %in% 5:120)
 
 
 # data table 2-3 termination rates ####
