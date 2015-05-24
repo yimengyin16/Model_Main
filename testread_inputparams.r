@@ -22,7 +22,7 @@ library(stringr)
 # source("getParamsYY.R") # allows us to get YY's inputs
 
 # Alternatively, read parameters from a file
-rundf <- read_excel("./Data/RunControl.xlsx", sheet="RunControl", skip=2) %>% filter(!is.na(runname))
+rundf <- read_excel("RunControl.xlsx", sheet="RunControl", skip=2) %>% filter(!is.na(runname))
 glimpse(rundf)
 
 # what to do with the inputs once we get them?
@@ -48,16 +48,27 @@ getparms.old(rundf, "underfunded2", excludes=c("runname", "rundesc", "include", 
 
 
 
+
 # Better approach: put parameters into a list ####
-getparms.list <- function(rundf, runname) { # don't exclude anything
+get_parmsList <- function(rundf, runname) { # don't exclude anything
   # Assign the data from the spreadsheet for a single runname to a list. We'll pass the list to the model.
   runlist <- as.list(rundf[which(rundf$runname==runname), ])
   return(runlist)
 }
 
-paramlist <- getparms.list(rundf, "underfunded2")
+paramlist <- get_parmsList(rundf, "underfunded2")
 str(paramlist)
 paramlist
+# attach(paramlist)
+# detach(paramlist)
+
+assign_parmsList <- function(paramlist, excludes = NULL){
+  varNames   <- setdiff(names(paramlist), excludes)
+  assign_var <- function(x) assign(x, paramlist[[x]], envir = .GlobalEnv)
+  sapply(varNames, assign_var)
+}
+assign_parmsList(paramlist)
+
 
 
 

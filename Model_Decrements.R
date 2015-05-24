@@ -3,7 +3,7 @@
 #*************************************************************************************************************
 
 # Inputs
- # - Data frames:   
+ # Data frames:(can be selected from the RunControl file.)   
  # - Mortality table:    by age (later we may want mortality rates change over time also). Var name qxm
  # - Termination table:  by age and ea. Var name qxt
  # - Disability table:   by age. Var name qxd

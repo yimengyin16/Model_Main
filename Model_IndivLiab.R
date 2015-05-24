@@ -63,6 +63,8 @@ start_time_liab <- proc.time()
   # variables relevant to COLA: B, ax, ALx.r
 
 
+
+
 liab <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = range_age) %>%
   filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
   mutate(year = start.year + age - ea) %>%  # year index in the simulation)

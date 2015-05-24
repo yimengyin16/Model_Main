@@ -96,6 +96,8 @@ SC_amort0 <- matrix(0, nyear + m, nyear + m)
 # data frame representation of amortization: much smaller size, can be used in real model later.
 # SC_amort <- expand.grid(year = 1:(nyear + m), start = 1:(nyear + m))
 
+# Vector used in asset amortization
+s.vector <- seq(0,1,length = s.year + 1)[-(s.year+1)]; s.vector  # a vector containing the porportion of 
 
 
 #*************************************************************************************************************

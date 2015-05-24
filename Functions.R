@@ -265,6 +265,14 @@ splong<-function(df,fillvar,fitrange=NULL, method = "natural"){
 
 
 
+## Functions for model control
+assign_parmsList <- function(paramlist, excludes = NULL){
+  varNames   <- setdiff(names(paramlist), excludes)
+  assign_var <- function(x) assign(x, paramlist[[x]], envir = .GlobalEnv)
+  sapply(varNames, assign_var)
+}
+
+
 
 
 # pmt <- function(p, i, n){

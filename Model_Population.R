@@ -14,7 +14,9 @@ start_time_wf <- proc.time()
  # - wf_growth:        growth rate of the size of workforce
  # - no_entrance:      no new entrants into the workforce if set "TRUE". Overrides "wf_growth"
  # - Decrement table:  from Model_Decrements.R  
- # - Initial workforce for each type. 
+ # - Initial workforce for each type:
+ #    - init_active:  matrix, max ea by max age
+ #    - init_retiree  matrix, max ea by max age
 
 
 ## An array is created for each of the 6 status:
