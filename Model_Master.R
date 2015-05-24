@@ -75,6 +75,7 @@ library(data.table)
 library(xlsx)
 library(XLConnect) # slow but convenient because it reads ranges
 #library(corrplot)
+library(decrements)
 
 source("Functions.R")
 
@@ -236,7 +237,7 @@ init_retired <- rbind(c(20, r.max, 1),
 #*********************************************************************************************************
 # 1.4 Importing Decrement tables and Calculating Probabilities ####
 #*********************************************************************************************************
-source("Model_Decrement.R")
+source("Model_Decrements.R")
 # Output: Decrement (data.frame)
 
 
