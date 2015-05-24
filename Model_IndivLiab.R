@@ -3,79 +3,6 @@
 
 start_time_liab <- proc.time()
 
-#*************************************************************************************************************
-#                                     1. Decrement table ####
-#*************************************************************************************************************
-
-# Notes
- # 1) For now, we assume all decrement rates do not change over time.  
- # 2) Use decrement rates from winklevoss.   
- # 3) Now assume the decrement tables contain multiple decrement rates(probabilities) rather than single decrement rates.
-      # If the decrement tables provide single decrement rates, we need to convert them to multiple decrement rates in a consistent way.   
-      # At least for TPAF, the multiple decrement rates (probabilities) are provided in AV.  
-
-# Timing of decrements
- # Time period t is defined as the time interval [t, t+1), closed at the beginning and open at the end. 
- # Assume retirement is independent of all other risks and occurs at the beginning of time period t, with the probability qxr(t).
-   # Individual's status at t becomes "retired" immediately after the risk of retirement is realized at the beginning of t.    
- # The occurence of death, disability and termination follow UUD over period t. 
- # payment of retirement benefit occurs at the beginning of t. Hence all retirees will recieve benefit at least once, at the very moment when
-   # they become retirees. 
- # Given the assumptions above, it follows that (' indicates single decrement rates)
-   # qe = qe'
-   # qt = qt'(1 - 0.5qm')(1 - 0.5 qd')(1 - qe'), (qd, qm are similar), note that qd=qm=qt=0 at max retirement age, when qe' = 1
-   # p  = 1 - qe - qt - qm - qd
- # We assume qe, qt, qd, qm are directly available from data.     
-
-
-load("Data/winklevossdata.RData")
-term3 %<>% mutate(qxt = ifelse(age >= r.min & yos >= r.yos, 0, qxt)) # coerce termination rates to 0 when eligible for early retirement. 
-
-
-# Create decrement table and calculate probability of survival
-decrement <- expand.grid(age = range_age, ea = range_ea) %>% 
-  left_join(filter(gam1971, age>=min.age)) %>%    # mortality 
-  left_join(term3) %>%                       # termination
-  left_join(disb)  %>%                       # disability
-  left_join(dbl)   %>%                       # mortality for disabled
-  left_join(er)    %>%                       # early retirement
-  select(ea, age, everything()) %>%          
-  arrange(ea, age)  %>% 
-  filter(age >= ea) %>%
-  group_by(ea) 
-
-decrement$qxr <- na2zero(decrement$qxr)
-decrement$qxr <- ifelse(decrement$age == r.max, 1, 0) # Single retirement age. 
-
-# Timing of decrements
-  
-decrement %<>% 
-  # For active(".a"). 
-  mutate(qxt.a   = ifelse(age >= r.max, 0, qxt),   # qxt.p         * (1 - qxd.p/2) * (1 - qxm.p/2),
-         qxd.a   = ifelse(age >= r.max, 0, qxd),   # (1 - qxt.p/2) * qxd.p         * (1 - qxm.p/2),
-         qxm.a   = ifelse(age >= r.max, 0, qxm),   # (1 - qxt.p/2) * (1 - qxd.p/2) * qxm.p, 
-         qxr.a   = qxr                             # ifelse(age == 64, (1 - qxt.p)*(1 - qxd.p)*(1 - qxm.p), 0)
-  ) %>%
-  
-  # For terminated(".t"), target status are dead and retired.
-  # Terminated workers will never enter the status of "retired". Rather, they will begin to receive pension benefits 
-  # when reaching age r.max, but still with the status "terminated". So now we do not need qxr.t
-  mutate(qxm.t   = qxm) %>%
-  
-  # For disabled(".d"), target status are dead. Note that we need to use the mortality for disabled 
-  # Note the difference from the flows 3Darray.R. Disabled can not become retired here. 
-  mutate(qxm.d = qxmd ) %>%
-  
-  # For retired(".r"), the only target status is "dead". Note that in practice retirement mortality may differ from the regular mortality.
-  mutate(qxm.r   = qxm) %>% 
-  
-  # Calculate various survival probabilities
-  mutate( pxm = 1 - qxm,
-          pxT = 1 - qxt - qxd - qxm - qxr, #(1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
-          pxRm = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxm))) # prob of surviving up to r.max, mortality only
-          # px65T = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxT))), # prob of surviving up to r.max, composite rate
-          # p65xm = cumprod(ifelse(age <= r.max, 1, lag(pxm))))            # prob of surviving to x from r.max, mortality only
-          )
 
 
 
@@ -111,7 +38,30 @@ decrement %<>%
 #                     3. Individual AL and NC by age and entry age ####
 #*************************************************************************************************************
 
-# variables relevant to COLA: B, ax, ALx.r
+
+# Inputs:
+  # Data frames:
+  #  - salary table: history and prospect salary for all start.year, age and ea combos
+  #  - avgben table: benefit payments for all age and ea combos at period 1
+  #  - decrement tables
+  # Parameters:
+  #  - max.age, min.age
+  #  - nyear
+  #  - range_ea, range_age
+  #  - fasyears
+  #  - benfactor
+  #  - cola
+  #  - r.max, r.min
+  #  - v.yos
+  #  - i
+  #  - actuarial_method     
+# Output
+  # liab     : individual liabilities of actives by year, ea, and age
+  # liab.term: individual liabilities of terms   by year, year.term, ea and age 
+
+# Notes:
+  # variables relevant to COLA: B, ax, ALx.r
+
 
 liab <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = range_age) %>%
   filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
@@ -226,7 +176,7 @@ liab %<>%
 #                                   B.v * ax)  
 #          )
 
-# # Merge by using data.table: does not save much time, but time consumpton seems more stable than dplyr. The time consuming part is the mutate step.
+# Merge by using data.table: does not save much time, but time consumpton seems more stable than dplyr. The time consuming part is the mutate step.
 liab.term <- expand.grid(start.year = (1 - (r.max - 1 - min.age)):nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>% # start year no longer needs to start from -89 if we import initial benefit data.
   filter(start.year + max.age - ea >= 1, age >= ea, age.term >= ea) %>% 
   data.table(key = "ea,age,start.year,age.term")# drop redundant combinations of start.year and ea. 
@@ -242,18 +192,13 @@ liab.term %<>% as.data.frame %>%
          B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
          ALx.v = ifelse(age < r.max, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
                                   B.v * ax)  
-         )
-
-liab.term %<>% ungroup %>% 
+         ) %>% 
+  ungroup %>% 
   select(-start.year, -age.term, -Bx.v, -ax, -COLA.scale, -pxRm) %>% 
-  filter(year %in% 1:100)
-# right_join(expand.grid(year = 1:100, ea = range_ea, age = range_age, year.term = 1:100))
+  filter(year %in% 1:nyear)
 # liab.term[c("B.v", "ALx.v")] <- colwise(na2zero)(liab.term[c("B.v", "ALx.v")])
 
 
-#*************************************************************************************************************
-#             4. Prepare data frames that are ready to be used with workforce data  ####
-#*************************************************************************************************************
 
 # Choosing AL and NC variables corresponding to the chosen acturial methed
 ALx.method <- paste0("ALx.", actuarial_method)
@@ -263,11 +208,11 @@ NCx.v.method <- paste0("NCx.", actuarial_method, ".v")
 
 var.names <- c("sx", "B", "ALx.r", ALx.method, NCx.method, ALx.v.method, NCx.v.method)
 liab %<>% 
-  filter(year %in% 1:100) %>%
+  filter(year %in% 1:nyear) %>%
   select(year, ea, age, one_of(var.names)) %>%
   rename_("ALx" = ALx.method, "NCx" = NCx.method, "ALx.v" = ALx.v.method, "NCx.v" = NCx.v.method) # Note that dplyr::rename_ is used. 
-  #right_join(expand.grid(year=1:100, ea=range_ea, age=range_age))
   # liab[-(1:3)] <- colwise(na2zero)(liab[-(1:3)])
+
 
 
 

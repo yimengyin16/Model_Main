@@ -49,8 +49,6 @@
   # Funded Ratio
 
 # List of tasks:
-# Allow age up to 120
-# Choosing amortization method
 # Module for reading in model inputs
 # Further modulize the model. 
 # More options of initial asset value? eg. % of AL
@@ -76,33 +74,41 @@ library(microbenchmark)
 library(data.table)
 library(xlsx)
 library(XLConnect) # slow but convenient because it reads ranges
-
 #library(corrplot)
 
 source("Functions.R")
 
-# source("Model_Actuarial_Val_Import_Data.R")
 ##########################################################################################################
 
 
 
+#*********************************************************************************************************
+# 1.1 Model Parameters ####
+#*********************************************************************************************************
+
+## Model parameters
+nyear <- 100        # # of years in simulation 
+nsim  <- 10         # # of sims
+ncore <- 6          # # of CPU cores used in parallelled loops
+
+
 
 #*********************************************************************************************************
-# 0. Parameters ####
+# 1.2 Prototype Parameters ####
 #*********************************************************************************************************
+
+# Parameters can be read from "RunControl.xlsx"
+
 # Restrictions on current version
 # 1. r.max must be in the range [55, 65]
 # 2. v.yos <= r.max - r.min
 # Note: The restrictions above are removed in current version since we use single retirement age and set r.min = r.max.
 
-## Model parameters
-nyear <- 100        # # of years in simulation 
-ncore <- 6          # # of CPU cores used in parallelled loops
 
-## Benefit structure
+## 1. Benefit structure
 benfactor <- 0.015  # benefit factor, % of final average salary per year of yos
 fasyears  <- 3      # number of years in the final average salary calculation
-# WARNING: In curret version, please do not set a r.max greater than 65 and less than 55 
+# WARNING: In curret version, please do not set a r.max greater than 65 
 r.max     <- 65     # maximum retirement age, at which all actives retire with probability 1. 
 r.min     <- r.max  # minimum retirement age. (for multi-retirement ages, will not be used in current version)
                     # Current version depends on the assumption that active workers do not quit their jobs once reaching age r.min. 
@@ -111,18 +117,35 @@ cola      <- 0.01   # annual growth of retirement benefits in a simple COLA
 v.yos     <- 10      # yos required to be vested.  
 r.yos     <- 10      # yos required to be eligible for early retirement
 
-## Actuarial assumptions
 
-# Economic assumptions
+#*************************************************************************************************************
+# Range of age and entry age allowed by the model
+# (Note this is not in the RunControl file)  
+
+# Entry age
+# range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+range_ea <- c(20, 25, 30, 35, 40:(r.max - 1))       # "Continuous" entry ages after 45
+# range_ea <- 20:(r.max - 1)                        # Complete range of entry ages. Most time comsuming. 
+
+# Age
+range_age <- 20:120 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
+max.age   <- max(range_age) 
+min.age   <- min(range_age) 
+#*************************************************************************************************************
+
+
+## 2. Economic assumptions
 infl <- 0.03        # Assumed inflation
 prod <- 0.01        # Assumed productivity
 i <- 0.08           # Assumed discount rate
 v <- 1/(1 + i)      # discount factor
 
-# Actuarial method
+
+## 3. Actuarial method
 actuarial_method <- "EAN.CP"  # One of "PUC", "EAN.CD", "EAN.CP"
 
-# Amortization 
+
+## 4. Amortization method 
 amort_type   <- "closed"  # one of "closed" and "open".
  # Notes:
  #  "closed": Loss/gain + underfunding of ADC for each year is amortized separately using closed-ended method.
@@ -131,7 +154,7 @@ amort_method <- "cd" # "cd" for Constant dollar, "cp" for constant percent, "sl"
 m = 3                # years of amortization of gain/loss
 
 
-## Contriubtion Policy
+## 5. Contriubtion Policy
 ConPolicy    <- "ADC"
 PR_pct_cap   <- 0.25
 PR_pct_fixed <- 0.145
@@ -154,9 +177,7 @@ EEC_rate     <- 0.005
 
 
 
-
-
-## Market value and actuarial value of assets
+## 6. Market value and actuarial value of assets
 # Set inital asset, market value
 MA_0 <- 200   # market value at 0
 init_EAA <- "MA"  # "MA" for the same value as MA; "EAA" for preset value of inital EAA.
@@ -176,18 +197,23 @@ EAA_0    <- MA_0  # expected market value at 0
 w <- 1            # weight on market value in asset smoothing; no asset smoothing when set to 1. 
 
 
+## 7.  Growth rate of workforce
+wf_growth   <- 0.00    # growth rate of the size of workforce. For now, new entrants are equally distributed across all entry ages. 
+no_entrance <- TRUE    # No new entrants into the workforce if set "TRUE". Overrides "wf_growth"
+
+
+## 8. Parameters for 1.3-1.6
+
+# Choose initial population to use
+# Choose decrement tables to use
+# Choose salary and benefit tables to use
+# Choose actual investment matrix to use
 
 
 
-## Population 
-# Age and entry age combinations  
-# range_ea  <- c(seq(20, r.max - 1, 5), r.max - 1 ) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-range_ea <- c(20, 25, 30, 35, 40:(r.max - 1)) # "Continuous" entry ages after 45
-# range_ea <- 20:(r.max - 1)                          # Complete range of entry ages. Most time comsuming. 
-
-range_age <- 20:120 # please do not change this for now. The code needs to be modified if we use life table with larger max age.  
-max.age   <- max(range_age) 
-min.age   <- min(range_age) 
+#*********************************************************************************************************
+# 1.3 Inital population  ####
+#*********************************************************************************************************
 
 # Initial Active
 # WARNING: Ages and entry ages of active members must be less than retirement age. (max retirement age when multiple retirement ages is implemented) 
@@ -199,21 +225,23 @@ init_active <- rbind(c(20, 20, 1), # (entry age,  age, number)
                      c(50, 50, 1),
                      c(55, 55, 1),
                      c(r.max - 1, r.max - 1, 1)
-                     )
+)
 
 # Initial Retired 
 # WARNING: Ages and entry ages of retirees must be no less than retirement age. (min retirement age when multiple retirement ages is implemented)
 init_retired <- rbind(c(20, r.max, 1),
                       c(20, 85, 1))
 
-# Growth rate of workforce
-wf_growth   <- 0.00    # growth rate of the size of workforce. For now, new entrants are equally distributed across all entry ages. 
-no_entrance <- TRUE    # No new entrants into the workforce if set "TRUE". Overrides "wf_growth"
 
+#*********************************************************************************************************
+# 1.4 Importing Decrement tables and Calculating Probabilities ####
+#*********************************************************************************************************
+source("Model_Decrement.R")
+# Output: Decrement (data.frame)
 
 
 #*********************************************************************************************************
-# 1. Import Salary table and initial retirement benefit table ####
+# 1.5 Import Salary table and initial retirement benefit table ####
 #*********************************************************************************************************
 
 # Notes:
@@ -234,14 +262,24 @@ no_entrance <- TRUE    # No new entrants into the workforce if set "TRUE". Overr
 # Artificial salary table and benefit table for testing purpose are imported by sourcing the following script.
 # These tables are based on PA-PSERS and some naive assumptions for imputation.
 # Please do NOT source the script below if external salary and benefit tables are used.   
-source("Model_Actuarial_Val_Salary_Benefit.R")
+source("Inputs_Salary_Benefit.R")
+
+
+#*********************************************************************************************************
+# 1.6  Actual investment return. ####
+#*********************************************************************************************************
+
+set.seed(1234)
+#i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
+i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
+i.r[10,] <- 0.00 # Create a loss due to zero return in year 10. For the purpose of checking amortization of UAAL
 
 
 
 #*********************************************************************************************************
-# 2. Actuarial liabilities, normal costs and benenfits ####
+# 2. Individual actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-source("Model_Actuarial_Val_Liab.R")
+source("Model_IndivLiab.R")
 
 
 
@@ -250,7 +288,7 @@ source("Model_Actuarial_Val_Liab.R")
 #*********************************************************************************************************
 
 # Simulation of the workforce is done in the file below: 
-source("Model_Actuarial_Val_wf.R")
+source("Model_Population.R")
  # Note: Objects passed to the program above:
  #       range_age
  #       range_ea
@@ -258,24 +296,20 @@ source("Model_Actuarial_Val_wf.R")
  #       decrement
 
 
-
 #*********************************************************************************************************
-# 4. Simulation ####
+# 4. Aggregate actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-
-nsim  <- 10    # No. of sims
-set.seed(1234)
-
-# setting actual investment return.
-#i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
-i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
-i.r[10,] <- 0.00 # Create a loss due to zero return in year 10. For the purpose of checking amortization of UAAL
-
-source("Model_Actuarial_Val_Sim.R")
+source("Model_AggLiab.R")
 
 
 #*********************************************************************************************************
-# 5. Results ####
+# 5.  Simulation ####
+#*********************************************************************************************************
+source("Model_Sim.R")
+
+
+#*********************************************************************************************************
+# 6. Results ####
 #*********************************************************************************************************
 
 options(digits = 2, scipen = 6)
