@@ -1,41 +1,36 @@
-# Workforce Simulation by 3D array, for actuarial valuation model
+# Population Simulation by 3D array for actuarial valuation
 # Yimeng Yin
 # 2/3/2015
-
-# This program is adapted from "flows 3Darray.R"
-
 start_time_wf <- proc.time()
-## Inputs and Initialization ####
-# Currently only initial workforce is defined in this section. 
-# Need a complete list of initial inputs:
- # Initial workforce
- # Decrement table
- # vesting policy
+
+## Issues
+ # For now, new entrants are equally distributed across all entry ages. 
  # growth of workforce(controlled by growth rate or pre-defined path of growth.)
 
-
-## A 3D array is created for each of the 6 status:
-#  (1)Active
-#  (2)Terminated
-#  (3)Disabled
-#  (4)Retired
-#  (5)Dead
-
-# Retired can be further divided into 3 types by source this feature will be add in future versions
-#  (5)-1 Retired from active 
-#  (5)-2 Retired from teriminated, vested
-#  (5)-3 Retired from disabled
+## Inputs
+ # - range_ea:         all possible entry ages  
+ # - range_age:        range of age
+ # - nyear:            number of years in simulation
+ # - wf_growth:        growth rate of the size of workforce
+ # - no_entrance:      no new entrants into the workforce if set "TRUE". Overrides "wf_growth"
+ # - Decrement table:  from Model_Decrements.R  
+ # - Initial workforce for each type. 
 
 
-## Setting range of age/entry age, and number of years to be simulated.
- #  These parameters are defined in Model_Actuarial_Val.R
-   range_ea    # all possible entry ages  
-   range_age   # range of age
-   nyear      # number of years in simulation
+## An array is created for each of the 6 status:
+ #  (1)Active     (dim = 3)
+ #  (2)Terminated (dim = 4)
+ #  (3)Disabled   (dim = 3) later will be expanded to dim = 4, with additional dim being year.disb
+ #  (4)Retired    (dim = 3) later will be expanded to dim = 4, with additional dim being year.retired
+ #  (5)Dead       (dim = 3) We do not really need an array for dead, what's needed is only the total number of dead.  
 
+
+#*************************************************************************************************************
+#                                     Creating arrays for each status ####
+#*************************************************************************************************************
 
 ## In each 3D array, dimension 1(row) represents entry age, dimension 2(column) represents attained age,
-# dimension 3(depth) represents number of year. 
+ # dimension 3(depth) represents number of year, dimension 4(terms only) represents the termination year. 
 wf_dim <- c(length(range_ea), length(range_age), nyear)
 wf_dimnames <- list(range_ea, range_age, 1:nyear)
 
@@ -48,77 +43,26 @@ wf_active  <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_disb    <- array(0, wf_dim, dimnames = wf_dimnames) 
 wf_retired <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_dead    <- array(0, wf_dim, dimnames = wf_dimnames)
-
 wf_term    <- array(0, wf_dim.term, dimnames = wf_dimnames.term)
 
 
-## Setting workforce at time 1
-# For convenience, first define a function that can fill cells in a 3D arrary. 
+#*************************************************************************************************************
+#                                     Setting initial population  ####
+#*************************************************************************************************************
 
-fill_cell <- function(Fill, year, wf){
-  # This function fill cells in a workforce array.
-  # Input:
-  # Fill: numeric with 3 elements or matrix/dataframe with 3 columns. 1: entry age, 2: attained age, 3: number of people 
-  # year: numeric, which year in the array to fill
-  # wf  : name of the arrary to be filled.
-  # Output:
-  # wf  : the workforce array filled.  
-  
-  if(class(Fill) == c("numeric")){
-    wf[as.character(Fill[1]), as.character(Fill[2]) , year] = Fill[3]
-  } else {
-     for (i in 1:nrow(Fill))
-       wf[as.character(Fill[i,1]), as.character(Fill[i,2]) , year] = Fill[i,3]
-    }  
-  return(wf)
-}
-
-fill_cell3 <- function(fill, wf){
-  # a more-general fill
-  idx <- fill[, 1:3]
-  mode(idx) <- "character"
-  wf[idx] <- fill[, 4] # fill all designated cells in a single operation
-  return(wf)
-}
-
-# # create empty workforce array with dimensions ea, age, year
-# ea.r <- seq(20, 65, 5)
-# age.r <- 20:65
-# year.r <- 1:7
-# wf_dim <- c(length(ea.r), length(age.r), length(year.r))
-# wfa <- array(0, wf_dim, dimnames=list(ea.r, age.r, year.r))
-# 
-# # define the fill matrix: ea, age, year, n
-# fmat <- rbind(c(20, 20, 1, 100),
-#               c(30, 40, 1, 120),
-#               c(35, 64, 1, 140),
-#               c(35, 64, 2, 150))
-# 
-# # fill the array and inspect results
-# wfa <- fill_cell3(fmat, wfa)
-# wfa[ , , 1]
-# wfa[ , , 2]
-# wfa[ , , 3]
-# wfa[, "64", ]
-# wfa["35", , ]
+# Setting inital distribution of workforce and retirees.
+wf_active[, , 1]  <- init_active 
+wf_retired[, , 1] <- init_retiree
 
 
-# Test the function
-#fill_cell(c(50, 65, 30), 1, wf_active)
-#fill_cell(matrix(c(20, 25, 100, 30, 64, 80), 2,3, byrow = T), 2, wf_active)
-#fill_cell(data.frame(c(20, 30), c(25, 64), c(100, 80)), 2, wf_active)
 
-
-# Setting an inital distribution of workforce and retirees.
-wf_active <- fill_cell(init_active, 1, wf_active)
-
-wf_retired <- fill_cell(init_retired, 1, wf_retired)
-
-
+#*************************************************************************************************************
+#                                     Defining population dynamics  ####
+#*************************************************************************************************************
 
 ## Transition matrices ####
 
-# Assume the actual decrement rates are the same as that in the decrement table.
+# Assume the actual decrement rates are the same as the rates in decrement tables.
 # Later we may allow the actual decrement rates to differ from the assumed rates. 
 
 decrement_wf <- sapply(decrement, function(x){x[is.na(x)] <- 0; return(x)}) %>% data.frame
@@ -134,9 +78,9 @@ decrement_wf <- sapply(decrement, function(x){x[is.na(x)] <- 0; return(x)}) %>% 
     # whether they will die at r.max)      
 
 decrement_wf %<>% group_by(ea) %>%  
-  mutate(qxr.a = ifelse(age == r.max - 1,
-                        1 - qxt.a - qxm.a - qxd.a, 
-                        lead(qxr.a)*(1 - qxt.a - qxm.a - qxd.a)))
+                  mutate(qxr.a = ifelse(age == r.max - 1,
+                         1 - qxt.a - qxm.a - qxd.a, 
+                         lead(qxr.a)*(1 - qxt.a - qxm.a - qxd.a)))
 
 # decrement_wf %>% filter(age == 64)
 
@@ -185,6 +129,11 @@ p_retired2dead   <- make_dmat("qxm.r")
 A <- diag(length(range_age) + 1)[-1, -(length(range_age) + 1)] 
 
 
+#*************************************************************************************************************
+#                                     Creating a function to calculate new entrants ####
+#*************************************************************************************************************
+
+
 # define function for determining the number of new entrants 
 calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
   # This function deterimine the number of new entrants based on workforce before and after decrement and workforce 
@@ -229,12 +178,14 @@ calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
  # sum(calc_entrants(wf0, wf1, 0), na.rm = T)
 
 
+
+#*************************************************************************************************************
+#                                     Simulating the evolution of population  ####
+#*************************************************************************************************************
+
 # Now the next slice of the array (array[, , i + 1]) is defined
 # wf_active[, , i + 1] <- (wf_active[, , i] + inflow_active[, , i] - outflow_active[, , i]) %*% A + wf_new[, , i + 1]
 # i runs from 2 to nyear. 
-
-
-
 
 for (j in 1:(nyear - 1)){
 #i <-  1  
@@ -242,7 +193,7 @@ for (j in 1:(nyear - 1)){
   active2term  <- wf_active[, , j] * p_active2term  # This will join wf_term[, , j + 1, j], note that workers who terminate in year j won't join the terminated group until j+1. 
   active2disb  <- wf_active[, , j] * p_active2disb
   active2dead  <- wf_active[, , j] * p_active2dead
-  active2retired <- wf_active[, , j]*p_active2retired
+  active2retired <- wf_active[, , j] * p_active2retired
   
   # Where do the terminated_vested go
   term2dead    <- wf_term[, , j, ] * as.vector(p_term2dead)    # a 3D array, each slice(3rd dim) contains the # of death in a termination age group
@@ -279,12 +230,17 @@ for (j in 1:(nyear - 1)){
   wf_retired[, ,j + 1]    <- (wf_retired[, , j] + in_retired - out_retired) %*% A
   wf_dead[, ,   j + 1]    <- (wf_dead[, , j] + in_dead) %*% A
 }
+
+
  
 end_time_wf <- proc.time()
 Time_wf <- end_time_wf - start_time_wf
 
 
-# ## Look at the results ####
+#*************************************************************************************************************
+#                                     Checking the results  ####
+#*************************************************************************************************************
+
 # 
 # # The workforce arrays
 # wf_active
@@ -294,17 +250,15 @@ Time_wf <- end_time_wf - start_time_wf
 # wf_disb
 # wf_dead
 # 
-# 
-# 
 # # Test the loop with no new entrants, set no.entrants = TRUE in cal_entrants()
 #   
-#   apply(wf_active, 3, sum) + 
+#   apply(wf_active, 3, sum)  + 
 #   apply(wf_retired, 3, sum) + 
-#   apply(wf_term_v, 3, sum) + 
+#   apply(wf_term_v, 3, sum)  + 
 #   apply(wf_term_nv, 3, sum) + 
-#   apply(wf_disb, 3, sum) + 
-#   apply(wf_dead, 3, sum)
-# 
+#   apply(wf_disb, 3, sum)    + 
+#   apply(wf_dead, 3, sum) 
+#   
 # 
 # # summarizing the results
 # 
@@ -333,6 +287,9 @@ Time_wf <- end_time_wf - start_time_wf
 # # Potential problem, values for age over 65 are not exact 0s, although may be computationally equivalent to 0s.
 # 
 #  
+
+
+
 
 
 

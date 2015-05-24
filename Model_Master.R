@@ -79,7 +79,7 @@ library(decrements)
 
 source("Functions.R")
 
-##########################################################################################################
+#*********************************************************************************************************
 
 
 
@@ -226,12 +226,19 @@ init_active <- rbind(c(20, 20, 1), # (entry age,  age, number)
                      c(50, 50, 1),
                      c(55, 55, 1),
                      c(r.max - 1, r.max - 1, 1)
-)
+) %>% as.data.frame
+colnames(init_active) <- c("ea", "age", "nactives")
+init_active <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_active) %>% 
+               spread_("age", "nactives", fill = 0) %>% select(-ea) %>% as.matrix
 
 # Initial Retired 
 # WARNING: Ages and entry ages of retirees must be no less than retirement age. (min retirement age when multiple retirement ages is implemented)
-init_retired <- rbind(c(20, r.max, 1),
-                      c(20, 85, 1))
+init_retiree <- rbind(c(20, r.max, 1),
+                      c(20, 85, 1)
+                      ) %>% as.data.frame
+colnames(init_retiree) <- c("ea", "age", "nretirees")                 
+init_retiree <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_retiree) %>% 
+                spread_("age", "nretirees", fill = 0) %>% select(-ea) %>% as.matrix
 
 
 #*********************************************************************************************************
@@ -287,14 +294,9 @@ source("Model_IndivLiab.R")
 #*********************************************************************************************************
 # 3. Workforce ####
 #*********************************************************************************************************
-
 # Simulation of the workforce is done in the file below: 
 source("Model_Population.R")
- # Note: Objects passed to the program above:
- #       range_age
- #       range_ea
- #       nyear
- #       decrement
+
 
 
 #*********************************************************************************************************
