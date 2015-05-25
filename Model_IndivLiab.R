@@ -41,8 +41,8 @@ start_time_liab <- proc.time()
 
 # Inputs:
   # Data frames:
-  #  - salary table: history and prospect salary for all start.year, age and ea combos
-  #  - avgben table: benefit payments for all age and ea combos at period 1
+  #  - salary  table: history and prospect salary for all start.year, age and ea combos
+  #  - benefit table: benefit payments for all age and ea combos at period 1
   #  - decrement tables
   # Parameters:
   #  - max.age, min.age
@@ -69,7 +69,7 @@ liab <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea,
   filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
   mutate(year = start.year + age - ea) %>%  # year index in the simulation)
   left_join(salary) %>%
-  left_join(avgben) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
+  left_join(benefit) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
   right_join(decrement) %>%
   arrange(start.year, ea, age) %>%
   group_by(start.year, ea) %>%
@@ -85,7 +85,7 @@ liab <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea,
     Bx = benfactor * yos * fas,                        # accrued benefits payable at age r.max
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
-    B.init = ifelse(start.year < 1 & age >= r.max, avgben[which(!is.na(avgben))] * COLA.scale/COLA.scale[which(!is.na(avgben))], 0), # Calculte future benefits of initial retirees.
+    B.init = ifelse(start.year < 1 & age >= r.max, benefit[which(!is.na(benefit))] * COLA.scale/COLA.scale[which(!is.na(benefit))], 0), # Calculte future benefits of initial retirees.
     B  = rowSums(cbind(B, B.init), na.rm = TRUE),
 
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at max.age for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age max.age. 

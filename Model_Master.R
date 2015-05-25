@@ -75,7 +75,7 @@ library(data.table)
 library(xlsx)
 library(XLConnect) # slow but convenient because it reads ranges
 #library(corrplot)
-library(decrements)
+# devtools::install_github("donboyd5/decrements")
 
 source("Functions.R")
 
@@ -146,11 +146,11 @@ source("Model_Decrements.R")
 
 # Notes:
 # 1. User must provide the following data frames
-#   "salary": a complete salary table containing salary history of current actives and projected salary path for future workers,
+#   "salary":  a complete salary table containing salary history of current actives and projected salary path for future workers,
 #              both of which are calculated based on a salary table of current actives from the AV and assumptions on salary growth.  
-#   "avgben": a data frame containing average retirement benefit payment(including both service retirement and deferred retirement)
-#             of all valid ea and age combos. The user MUST make sure the smallest age in the retirement benefit table is smaller than the 
-#             single retirement age specified in parameter section. (smaller than r.min with multiple retirement ages)
+#   "benefit": a data frame containing average retirement benefit payment(including both service retirement and deferred retirement)
+#              of all valid ea and age combos. The user MUST make sure the smallest age in the retirement benefit table is smaller than the 
+#              single retirement age specified in parameter section. (smaller than r.min with multiple retirement ages)
 # 2. Note that avgben is only used to calculate the current and projected values of benefits and liabilities of retirees at year 1. Future retirees' 
 #    benefits and liabilities are calculated based on their salary history provided in "salary". 
 # 3. I don't think in "avgben" we need average benefit for all combos of ea and age. All we need is actually average benefits
@@ -162,7 +162,8 @@ source("Model_Decrements.R")
 # Artificial salary table and benefit table for testing purpose are imported by sourcing the following script.
 # These tables are based on PA-PSERS and some naive assumptions for imputation.
 # Please do NOT source the script below if external salary and benefit tables are used.   
-source("Inputs_Salary_Benefit.R")
+# source("Inputs_Salary_Benefit.R")
+source("Model_Salary_Benefit.R")
 
 
 #*********************************************************************************************************

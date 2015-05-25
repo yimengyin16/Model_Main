@@ -1,4 +1,20 @@
-# This script import salary and retirement benefit data.
+# This script import example salary and retirement benefit data.
+
+## Outputs:
+ # SS: salary scale
+ # avgpay: average salary by ea and age in year 1.  (ea range: 20-70, age range: 20-120)
+ # avgben: average benefit by ea and age in year 1. (ea range: 20-70, age range: 48-120) 
+
+
+
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+library(tidyr) # gather, spread
+library(XLConnect) # slow but convenient because it reads ranges
+
+source("Functions.R")
 
 file_path <- paste0("Data/")
 
@@ -20,22 +36,9 @@ file_path <- paste0("Data/")
 # Example: PA-PSERS
 
 SS <- read.xlsx2(paste0(file_path, "PA-PSERS.xlsx"), sheetName = "SalaryGrowth", colClasses = "numeric", startRow = 3, stringsAsFactors = FALSE)
-SS %<>%  rename(age.match = age) %>% right_join(data.frame(age = min.age:70) %>% mutate(age.match = floor(age/10)*10)) %>% 
+SS %<>%  rename(age.match = age) %>% right_join(data.frame(age = 20:70) %>% mutate(age.match = floor(age/10)*10)) %>% 
   select(-age.match) %>% 
-  mutate(growth = cton(growth)/100)
-
-# Salary scale for all starting year
-SS.all <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = min.age:(r.max - 1)) %>% 
-  filter(age >= ea, start.year + r.max - 1 - ea >= 1 ) %>%
-  arrange(start.year, ea, age) %>%
-  left_join(SS) %>% 
-  group_by(start.year, ea) %>% 
-  mutate(year = start.year + (age - ea),
-         growth.start = (1 + infl)^(start.year - 1), # assume starting salary grows at the rate of inflation for all entry ages 
-         scale = cumprod(ifelse(age == ea, 1, lag(1 + growth))),
-         scale = ifelse(start.year <= 1, scale/scale[year == 1],
-                        scale * growth.start)
-  )
+  mutate(sscale.hist.rate = cton(growth)/100)
 
 ## Salary scale type 2: Growth depends on yos and year.
 # Example: NJ-TPAF
@@ -61,64 +64,30 @@ avgpay <- df %>% filter(tabletype=="avgpay") %>%
   arrange(order) %>%
   mutate(age=age.mid) %>%
   select(-order, -tabletype, -agegrp) %>%
-  gather(yos, avgpay, -age) %>%
-  filter(!is.na(avgpay)) %>%
+  gather(yos, salary, -age) %>%
+  filter(!is.na(salary)) %>%
   mutate(yos = f2n(yos)) %>% 
   splong("age", method = "natural") %>%
   splong("yos", method = "natural")
 
-avgpay <- (expand.grid(age = min.age:70, yos = 2:42) %>% mutate(age.match = ifelse(age < 25, 25,ifelse(age>66, 66,age)))) %>% 
+avgpay <- (expand.grid(age = 20:70, yos = 2:42) %>% mutate(age.match = ifelse(age < 25, 25,ifelse(age>66, 66,age)))) %>% 
   left_join(avgpay %>% rename(age.match = age))
 
-avgpay <- (expand.grid(age = min.age:70, yos = 0:50) %>% mutate(yos.match = ifelse(yos < 2, 2, ifelse(yos>42, 42, yos)))) %>% 
+avgpay <- (expand.grid(age = 20:70, yos = 0:50) %>% mutate(yos.match = ifelse(yos < 2, 2, ifelse(yos>42, 42, yos)))) %>% 
   left_join(avgpay %>% rename(yos.match = yos))
 
 avgpay %<>% select(-age.match, -yos.match) %>% 
-  filter(age - yos >= min.age) %>% 
+  filter(age - yos >= 20) %>% 
   mutate(ea = age - yos)
 
 
-# Display in matrix form  
+#Display in matrix form  
 # avgpay %<>% select(-yos) %>% 
 #   spread(age, avgpay, fill = 0)
 # rownames(avgpay) <- avgpay$ea
 # avgpay
 
 
-
-#*************************************************************************************************************
-#                                        Create complete salary history                                  #####                  
-#*************************************************************************************************************
-
-salary <- SS.all %>% left_join(avgpay) %>% 
-  group_by(start.year, ea) %>% 
-  mutate(sx = ifelse(start.year <= 1, avgpay[year == 1]* scale, 
-                     avgpay[age == ea]* scale)) %>% 
-  select(start.year, ea, age, year, sx)
-
-# Check the growth of starting salary before year 1
-fn <- function(x) (x[length(x)]/x[1])^(1/(length(x) - 1)) - 1
-
-# starting salary over time
-start.pay <- salary %>% filter(age == ea, start.year <=1) %>% ungroup %>%  arrange(ea, year) %>% 
-  select(ea, year, sx)
-start.pay %>%  kable
-# start.pay %>% ggplot(aes(x = year + 2012, y = sx, colour = factor(ea))) + geom_line(size = 1)
-
-
-# average growht rates of starting salary 
-salary %>% filter(age == ea, start.year <=1) %>% ungroup %>% group_by(ea) %>%  arrange(ea, year) %>% 
-  select(ea, year, sx) %>% filter(year <= -12 ) %>% summarize(g = fn(sx) )%>% kable
-
-
-# 1. Starting salary generally has in rising trend, while drops after the Great Recession.(The rising trend in the end may be due to the imputation)
-# 2. The growth rates before 40 are around 3% ~ 4%, which is approximately the average inflation rate
-# 3. The growth rates of starting salary are much lower for ages greater 40, and even become negative in 50s.
-#    Even after taking into account that starting salary at higher entry ages have shorter history and hencea are
-#    affected by the recent recession more, their growth curves are still flatter than those of lower entry ages.
-# 4. Need to be carefull about the observations above since the imputed salary table is used.
-# 5. If the observations above are real, we need to make different assumptions about the growth rate of starting
-#    salary for different entry ages. The current assumption of a flat growth rate over all entry ages may be inappropriate.
 
 
 #*************************************************************************************************************
@@ -145,23 +114,22 @@ avgben <- df %>% filter(tabletype=="bens") %>%
   arrange(order) %>%
   mutate(age=age.mid) %>%
   select(-order, -tabletype, -agegrp) %>% 
-  gather(yos, avgben, -age) %>%
+  gather(yos, benefit, -age) %>%
   mutate(yos = f2n(yos)) %>% 
   splong("age", method = "natural") %>%
   splong("yos", method = "natural")
   #%>% spread(yos, avgben) %>% print
 
-avgben <- (expand.grid(age = 48:max.age, yos = 2:42) %>% mutate(age.match = ifelse(age > 92, 92, age))) %>% 
+avgben <- (expand.grid(age = 48:120, yos = 2:42) %>% mutate(age.match = ifelse(age > 92, 92, age))) %>% 
   left_join(avgben %>% rename(age.match = age))
 
-avgben <- (expand.grid(age = 48:max.age, yos = 0:50) %>% mutate(yos.match = ifelse(yos < 2, 2, ifelse(yos>42, 42, yos)))) %>% 
+avgben <- (expand.grid(age = 48:120, yos = 0:50) %>% mutate(yos.match = ifelse(yos < 2, 2, ifelse(yos>42, 42, yos)))) %>% 
   left_join(avgben %>% rename(yos.match = yos))
 
 avgben %<>% 
-  mutate(ea = 70 - yos,
-         year = 1) %>%    
-  filter(ea >= min.age, 
-         age >= r.max) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
+  mutate(ea = 70 - yos) %>%    
+  filter(ea >= 20) %>%  
+         #age >= r.max) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
   select(-age.match, -yos.match, -yos)
 
 # Notes:
@@ -183,8 +151,4 @@ avgben %<>%
 
 # there are negative values at the upper left corner. But it should be ok if we assume there is no retirees under age 52. 
 
-
-
-
-
-
+save(SS, avgpay, avgben, file = paste0(file_path, "example_Salary_benefit.RData"))

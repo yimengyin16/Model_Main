@@ -4,7 +4,7 @@
 
 Global_paramlist <- list(
 ## Model parameters
-nyear = 100,        # # of years in simulation 
+nyear = 105,        # # of years in simulation 
 nsim  = 10,         # # of sims
 ncore = 6 ,         # # of CPU cores used in parallelled loops
 
@@ -47,7 +47,7 @@ paramlist <- list(
   ## 2. Economic assumptions
   infl = 0.03,        # Assumed inflation
   prod = 0.01,        # Assumed productivity
-  i = 0.08,           # Assumed discount rate
+  i    = 0.08,           # Assumed discount rate
   
   
   
@@ -109,13 +109,15 @@ paramlist <- list(
   
   ## 7.  Growth rate of workforce
   wf_growth   = 0.00,    # growth rate of the size of workforce. For now, new entrants are equally distributed across all entry ages. 
-  no_entrance = TRUE    # No new entrants into the workforce if set "TRUE". Overrides "wf_growth"
+  no_entrance = TRUE,    # No new entrants into the workforce if set "TRUE". Overrides "wf_growth"
   
   
   ## 8. Parameters for 1.3-1.6
   
   # Choose initial population to use
   # Choose decrement tables to use
+      tablename_mortality   = "rp2000.hybrid.f75",  # "gam1971.hybrid",  # rp2000.hybrid
+      tablename_termination = "Winklevoss"
   # Choose salary and benefit tables to use
   # Choose actual investment matrix to use
 )
