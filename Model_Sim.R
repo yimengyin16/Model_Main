@@ -1,9 +1,14 @@
-
-
 #*************************************************************************************************************
 #                                     Defining variables in simulation ####
 #*************************************************************************************************************
 
+run_sim <- function(      .i.r = i.r, 
+                          .AggLiab   = AggLiab,
+                          .paramlist = paramlist,
+                          .Global_paramlist = Global_paramlist){
+  
+  assign_parmsList(.Global_paramlist, envir = environment())
+  assign_parmsList(.paramlist,        envir = environment())
 
 # Now we do the actuarial valuations 
 # In each period, following values will be caculated:
@@ -103,7 +108,8 @@ s.vector <- seq(0,1,length = s.year + 1)[-(s.year+1)]; s.vector  # a vector cont
 #*************************************************************************************************************
 #                                       Simuation  ####
 #*************************************************************************************************************
-start_time_loop <- proc.time()
+
+
 
 cl <- makeCluster(ncore) 
 registerDoParallel(cl)
@@ -116,20 +122,22 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   # initialize
   penSim <- penSim0
   SC_amort <- SC_amort0 
-  penSim[,"i.r"] <- i.r[, k]
+  penSim[,"i.r"] <- .i.r[, k]
+  
+  source("Functions.R")
   
   for (j in 1:nyear){
     # j <- 1
     # AL(j) 
     
     # AL(j)
-    penSim[j, "AL"] <- liab[j, "ALx.tot"] + liab.term[j, "ALx.tot.v"]
+    penSim[j, "AL"] <- .AggLiab$active[j, "ALx.tot"] + .AggLiab$term[j, "ALx.tot.v"]
     # NC(j)
-    penSim[j, "NC"] <- liab[j, "NCx.tot"] 
+    penSim[j, "NC"] <- .AggLiab$active[j, "NCx.tot"] 
     # B(j)
-    penSim[j, "B"]  <- liab[j, "B.tot"] + liab.term[j, "B.tot.v"]
+    penSim[j, "B"]  <- .AggLiab$active[j, "B.tot"] + .AggLiab$term[j, "B.tot.v"]
     # PR(j)
-    penSim[j, "PR"] <- liab[j, "PR.tot"]
+    penSim[j, "PR"] <- .AggLiab$active[j, "PR.tot"]
     
     # MA(j) and EAA(j) 
     if(j == 1) {penSim[j, "MA"]  <- switch(init_MA,
@@ -231,12 +239,19 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   penSim
 }
 
-end_time_loop <- proc.time()
-
 stopCluster(cl)
 
+return(penSim_results)
+
+}
+
+
+start_time_loop <- proc.time()
+
+penSim_results <- run_sim()
+
+end_time_loop <- proc.time()
 Time_loop <- end_time_loop - start_time_loop 
-Time_prep_loop <- end_time_prep_loop - start_time_prep_loop
 
 
 

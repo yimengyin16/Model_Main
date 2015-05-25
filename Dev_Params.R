@@ -4,7 +4,7 @@
 
 Global_paramlist <- list(
 ## Model parameters
-nyear = 105,        # # of years in simulation 
+nyear = 100,        # # of years in simulation 
 nsim  = 10,         # # of sims
 ncore = 6 ,         # # of CPU cores used in parallelled loops
 
@@ -14,8 +14,8 @@ range_age = 20:120,
 
 ## Range of entry age allowed. 
 # range_ea  = c(seq(20, 70, 5), 69 ) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-range_ea = c(20, 25, 30, 35, 40:70)       # "Continuous" entry ages after 45
-# range_ea = 20:70                        # Complete range of entry ages. Most time comsuming. 
+# range_ea = c(20, 25, 30, 35, 40:70)       # "Continuous" entry ages after 45
+range_ea = 20:70                        # Complete range of entry ages. Most time comsuming. 
 
 )
 
@@ -116,7 +116,7 @@ paramlist <- list(
   
   # Choose initial population to use
   # Choose decrement tables to use
-      tablename_mortality   = "rp2000.hybrid.f75",  # "gam1971.hybrid",  # rp2000.hybrid
+      tablename_mortality   = "gam1971.hybrid",  #  "rp2000.hybrid.f75",  # "gam1971.hybrid",  # rp2000.hybrid
       tablename_termination = "Winklevoss"
   # Choose salary and benefit tables to use
   # Choose actual investment matrix to use
@@ -124,17 +124,17 @@ paramlist <- list(
 
 
 # Assign parameters to global environment. 
-assign_parmsList(Global_paramlist)
-assign_parmsList(paramlist)
+# assign_parmsList(Global_paramlist)
+# assign_parmsList(paramlist)
 
 
 # Define Other parameters that depend on the fundamental parameters just imported. 
-max.age   <- max(range_age) 
-min.age   <- min(range_age) 
-v <- 1/(1 + i)  # discount factor, just for convenience
+Global_paramlist$max.age  <- with(Global_paramlist, max(range_age)) 
+Global_paramlist$min.age  <- with(Global_paramlist, min(range_age)) 
+paramlist$v <- with(paramlist, 1/(1 + i))  # discount factor, just for convenience
 
 ## Modify range_ea based on r.max
-range_ea <- unique(c(range_ea[range_ea <= (r.max - 1)], r.max - 1)) # make sure to include r.max - 1
+Global_paramlist$range_ea <- with(Global_paramlist, unique(c(range_ea[range_ea <= (paramlist$r.max - 1)], paramlist$r.max - 1))) # make sure to include r.max - 1
 
 
 
@@ -160,6 +160,10 @@ if(dev_mode){
   ## The following code is used for convevience when developing new features. 
   # Initial Active
   # WARNING: Ages and entry ages of active members must be less than retirement age. (max retirement age when multiple retirement ages is implemented) 
+range_ea  <- Global_paramlist$range_ea
+range_age <- Global_paramlist$range_age 
+r.max     <- paramlist$r.max
+  
   init_active <- rbind(c(20, 20, 1), # (entry age,  age, number)
                        c(20, 40, 1),
                        c(20, r.max - 1, 1),
@@ -181,4 +185,6 @@ if(dev_mode){
   colnames(init_retiree) <- c("ea", "age", "nretirees")                 
   init_retiree <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_retiree) %>% 
     spread_("age", "nretirees", fill = 0) %>% select(-ea) %>% as.matrix
+rm(range_ea, range_age, r.max)
+  
 }

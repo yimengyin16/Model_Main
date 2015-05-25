@@ -9,8 +9,8 @@
   # Model_Salary_Benefit.R
   # Model_IndvLiab.R
   # Model_Population.R
-  # MOdel_AggLiab.R
-  # MOdel_Sim.R
+  # Model_AggLiab.R
+  # Model_Sim.R
   # Functions.R
 
 # Data:
@@ -98,7 +98,6 @@ if(dev_mode) source("Dev_Params.R") else {
 assign_parmsList(Global_paramlist)
 assign_parmsList(paramlist)
 
-
 # Define Other parameters that depend on the fundamental parameters just imported. 
  max.age   <- max(range_age) 
  min.age   <- min(range_age) 
@@ -175,8 +174,8 @@ source("Model_Salary_Benefit.R")
 #*********************************************************************************************************
 
 set.seed(1234)
-#i.r <- matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim) 
-i.r <- matrix(0.08, nrow = nyear, ncol = nsim) 
+#i.r <- with(Global_paramlist, matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim)) 
+i.r <- with(Global_paramlist, matrix(0.08, nrow = nyear, ncol = nsim))
 i.r[10,] <- 0.00 # Create a loss due to zero return in year 10. For the purpose of checking amortization of UAAL
 
 
@@ -229,10 +228,10 @@ r1 <- penSim_results[[1]][,var.display]
 kable(r1, digits = 2)
 
 
-# Conbine results into a data frame. 
-df <- bind_rows(penSim_results) %>% 
-      mutate(sim=rep(1:nsim, each=nyear)) %>%
-      select(sim, year, everything())
+# # Conbine results into a data frame. 
+# df <- bind_rows(penSim_results) %>% 
+#       mutate(sim=rep(1:nsim, each=nyear)) %>%
+#       select(sim, year, everything())
 
 # Running time of major modules
 Time_liab # liability

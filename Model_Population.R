@@ -1,7 +1,12 @@
 # Population Simulation by 3D array for actuarial valuation
 # Yimeng Yin
 # 2/3/2015
-start_time_wf <- proc.time()
+
+get_Population <- function(.init_active  = init_active,
+                           .init_retiree = init_retiree,
+                           .paramlist    = paramlist,
+                           .Global_paramlist = Global_paramlist){
+
 
 ## Issues
  # For now, new entrants are equally distributed across all entry ages. 
@@ -26,11 +31,16 @@ start_time_wf <- proc.time()
  #  (4)Retired    (dim = 3) later will be expanded to dim = 4, with additional dim being year.retired
  #  (5)Dead       (dim = 3) We do not really need an array for dead, what's needed is only the total number of dead.  
 
+  
+assign_parmsList(.Global_paramlist, envir = environment())
+assign_parmsList(.paramlist,        envir = environment())  
 
 #*************************************************************************************************************
 #                                     Creating arrays for each status ####
 #*************************************************************************************************************
 
+
+  
 ## In each 3D array, dimension 1(row) represents entry age, dimension 2(column) represents attained age,
  # dimension 3(depth) represents number of year, dimension 4(terms only) represents the termination year. 
 wf_dim <- c(length(range_ea), length(range_age), nyear)
@@ -233,8 +243,15 @@ for (j in 1:(nyear - 1)){
   wf_dead[, ,   j + 1]    <- (wf_dead[, , j] + in_dead) %*% A
 }
 
+return(list(active = wf_active, term = wf_term, disb = wf_disb, retired = wf_retired, dead = wf_dead))
 
- 
+}
+
+
+start_time_wf <- proc.time()
+
+pop <- get_Population()
+
 end_time_wf <- proc.time()
 Time_wf <- end_time_wf - start_time_wf
 

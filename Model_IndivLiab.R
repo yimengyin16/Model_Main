@@ -1,49 +1,21 @@
+#*************************************************************************************************************
+#                        Individual AL and NC by age and entry age ####
+#*************************************************************************************************************
 # This program calculates actuarial liabilities, normal costs, benefits, and other values that will be used
 # in the simulation model
 
-start_time_liab <- proc.time()
 
-
-
-
-#*************************************************************************************************************
-#                                       2. Salary  #### 
-#*************************************************************************************************************
-
-# This part will no longer be used. It is kept here just for reference. 
-# We start out with the case where 
-# (1) the starting salary at each entry age increases at the rate of productivity growth plus inflation.
-# (2) The starting salary at each entry age are obtained by scaling up the the salary at entry age 20,
-#     hence at any given period, the age-30 entrants at age 30 have the same salary as the age-20 entrants at age 30. 
-# 
-# Notes:
-# At time 1, in order to determine the liability for the age 20 entrants who are at age 110, we need to trace back 
-# to the year when they are 20, which is -89. 
-
-# # scale for starting salary 
-# growth <- data.frame(start.year = -89:nyear) %>%
-#   mutate(growth = (1 + infl + prod)^(start.year - 1 ))
-# 
-# # Salary scale for all starting year
-# salary <- expand.grid(start.year = -89:nyear, ea = range_ea, age = 20:(r.max - 1)) %>% 
-#   filter(age >= ea, start.year + 110 - ea >= 1 ) %>%
-#   arrange(start.year, ea, age) %>%
-#   left_join(merit) %>% left_join(growth) %>%
-#   group_by(start.year, ea) %>%
-#   mutate( sx = growth*scale*(1 + infl + prod)^(age - min(age)))
-
-
-
-#*************************************************************************************************************
-#                     3. Individual AL and NC by age and entry age ####
-#*************************************************************************************************************
-
+get_IndivLiab <- function(.salary    = salary, 
+                          .benefit   = benefit, 
+                          .decrement = decrement,
+                          .paramlist = paramlist,
+                          .Global_paramlist = Global_paramlist){
 
 # Inputs:
   # Data frames:
-  #  - salary  table: history and prospect salary for all start.year, age and ea combos
-  #  - benefit table: benefit payments for all age and ea combos at period 1
-  #  - decrement tables
+  #  - salary:       Salary  table.  History and prospect salary for all start.year, age and ea combos
+  #  - benefit:      Benefit table.  Benefit payments for all age and ea combos at period 1
+  #  - decrement:    Decrement table.
   # Parameters:
   #  - max.age, min.age
   #  - nyear
@@ -56,26 +28,26 @@ start_time_liab <- proc.time()
   #  - i
   #  - actuarial_method     
 # Output
-  # liab     : individual liabilities of actives by year, ea, and age
-  # liab.term: individual liabilities of terms   by year, year.term, ea and age 
+  # liab: a list containing following data frames: 
+    # - active: individual liabilities of actives by year, ea, and age
+    # - term:   individual liabilities of terms   by year, year.term, ea and age 
 
 # Notes:
   # variables relevant to COLA: B, ax, ALx.r
 
-
-
-
-liab <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = range_age) %>%
+assign_parmsList(.Global_paramlist, envir = environment())
+assign_parmsList(.paramlist,        envir = environment())
+  
+liab.active <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = range_age) %>%
   filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
   mutate(year = start.year + age - ea) %>%  # year index in the simulation)
-  left_join(salary) %>%
-  left_join(benefit) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
-  right_join(decrement) %>%
+  left_join(.salary) %>%
+  left_join(.benefit) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
+  right_join(.decrement) %>%
   arrange(start.year, ea, age) %>%
   group_by(start.year, ea) %>%
   # Calculate salary and benefits
   mutate(
-    # vrx = v^(r.max-age),                             # discount factor
     Sx = ifelse(age == min(age), 0, lag(cumsum(sx))),  # Cumulative salary
     yos= age - min(age),                               # years of service
     n  = pmin(yos, fasyears),                          # years used to compute fas
@@ -105,7 +77,7 @@ liab <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea,
 # range(c1+c2) # Good if only 0 and 1
 
 # Calculate normal costs and liabilities of retirement benefits with multiple retirement ages  
-liab %<>%   
+liab.active %<>%   
   mutate(gx.r  = ifelse(age %in% r.min:r.max, 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits
          TCx.r = gx.r * Bx * qxr.a * ax,  # term cost of retirement
          PVFBx.r = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
@@ -142,7 +114,7 @@ liab %<>%
   #    
   # WARNING: There will be a problem if actives entering after r.min can get vested, when PVFB is only amortized up to age r.min   
 
-liab %<>% 
+liab.active %<>% 
   mutate(gx.v = ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
          Bx.v  = gx.v * Bx,
          TCx.v = Bx.v * qxt.a * lead(pxRm) * v^(r.max - age) * ax[age == r.max],  # term cost of vested termination benefits
@@ -183,7 +155,7 @@ liab.term <- expand.grid(start.year = (1 - (r.max - 1 - min.age)):nyear, ea = ra
   filter(start.year + max.age - ea >= 1, age >= ea, age.term >= ea) %>% 
   data.table(key = "ea,age,start.year,age.term")# drop redundant combinations of start.year and ea. 
 liab.term <- merge(liab.term,
-                   select(liab, start.year, year, ea, age, Bx.v, ax, COLA.scale, pxRm) %>% data.table(key = "ea,age,start.year"), 
+                   select(liab.active, start.year, year, ea, age, Bx.v, ax, COLA.scale, pxRm) %>% data.table(key = "ea,age,start.year"), 
                    all.x = TRUE, by = c("ea", "age","start.year"))
 
 liab.term %<>% as.data.frame %>% 
@@ -209,22 +181,24 @@ ALx.v.method <- paste0("ALx.", actuarial_method, ".v")
 NCx.v.method <- paste0("NCx.", actuarial_method, ".v")
 
 var.names <- c("sx", "B", "ALx.r", ALx.method, NCx.method, ALx.v.method, NCx.v.method)
-liab %<>% 
+liab.active %<>% 
   filter(year %in% 1:nyear) %>%
   select(year, ea, age, one_of(var.names)) %>%
   rename_("ALx" = ALx.method, "NCx" = NCx.method, "ALx.v" = ALx.v.method, "NCx.v" = NCx.v.method) # Note that dplyr::rename_ is used. 
   # liab[-(1:3)] <- colwise(na2zero)(liab[-(1:3)])
 
 
+return(list(active = liab.active, term = liab.term))
+}
 
 
 
+start_time_liab <- proc.time()
 
-end_time_liab <- proc.time()
-Time_liab <- end_time_liab - start_time_liab
+liab <- get_IndivLiab()
+
+Time_liab <- proc.time() - start_time_liab
 Time_liab
-
-
 
 
 # Some comparisons

@@ -2,6 +2,8 @@
 #                               Constructing Decrement Table  
 #*************************************************************************************************************
 
+get_decrements <- function(.paramlist = paramlist,
+                           .Global_paramlist  = Global_paramlist){
 # Inputs
  # Data frames:(can be selected from the RunControl file.)   
  # - Mortality table:    by age (later we may want mortality rates change over time also). Var name qxm
@@ -36,11 +38,13 @@
  # p  = 1 - qe - qt - qm - qd
  # We assume qe, qt, qd, qm are directly available from data.     
 
-
+# Assign parameters to the local function call.
+assign_parmsList(.Global_paramlist, envir = environment())
+assign_parmsList(.paramlist,        envir = environment())
+  
 ## Import data
 library(decrements) # mortality and termination for now
 load("Data/winklevossdata.RData") # disability, disability mortaity and early retirement
-
 
 ## From the decrements package
 mort <- mortality   %>% filter(tablename == tablename_mortality)   %>% select(age, qxm)
@@ -98,3 +102,11 @@ decrement %<>%
           # px65T = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxT))), # prob of surviving up to r.max, composite rate
           # p65xm = cumprod(ifelse(age <= r.max, 1, lag(pxm))))            # prob of surviving to x from r.max, mortality only
   )
+
+return(decrement)
+}
+
+decrement <- get_decrements()
+
+
+

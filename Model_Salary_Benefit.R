@@ -7,10 +7,18 @@
 
 load("Data/example_Salary_benefit.RData")
 
+
+get_salary <- function(.paramlist = paramlist,
+                       .Global_paramlist  = Global_paramlist){
+  # Inputs
+
 #*************************************************************************************************************
 #                                        Create complete salary scale                                    #####                  
 #*************************************************************************************************************
 
+assign_parmsList(.Global_paramlist, envir = environment()) # environment() returns the local environment of the function.
+assign_parmsList(.paramlist,        envir = environment())  
+  
 
 # Salary scale for all starting year
 SS.all <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = min.age:(r.max - 1)) %>% 
@@ -26,8 +34,6 @@ SS.all <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_e
   )
 
 
-
-
 #*************************************************************************************************************
 #                                        Create complete salary history                                  #####                  
 #*************************************************************************************************************
@@ -37,6 +43,13 @@ salary <- SS.all %>% left_join(avgpay) %>%
   mutate(sx = ifelse(start.year <= 1, salary[year == 1]* scale, 
                      salary[age == ea]* scale)) %>% 
   select(start.year, ea, age, year, sx)
+
+return(salary)
+}
+
+salary <- get_salary() 
+
+
 
 # Check the growth of starting salary before year 1
 fn <- function(x) (x[length(x)]/x[1])^(1/(length(x) - 1)) - 1
@@ -66,9 +79,20 @@ salary %>% filter(age == ea, start.year <=1) %>% ungroup %>% group_by(ea) %>%  a
 #*************************************************************************************************************
 #                               Import initial retirement benefit table from AV                          #####                  
 #*************************************************************************************************************
+get_benefit <- function(.paramlist = paramlist,
+                        .Global_paramlist  = Global_paramlist){
 
+assign_parmsList(.Global_paramlist, envir = environment())
+assign_parmsList(.paramlist,        envir = environment())  
+  
 benefit <- avgben %>% filter(age>=r.max) %>% 
            mutate(year = 1)
 # benefit %>% select(-year) %>% spread(age, benefit)
+}
+
+benefit <- get_benefit()
+
+
+
 
 
