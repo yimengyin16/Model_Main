@@ -5,8 +5,8 @@
 Global_paramlist <- list(
 ## Model parameters
 nyear = 100,        # # of years in simulation 
-nsim  = 10,         # # of sims
-ncore = 6 ,         # # of CPU cores used in parallelled loops
+nsim  = 10000,         # # of sims
+ncore = 8 ,         # # of CPU cores used in parallelled loops
 
 
 ## Range of age allowed.

@@ -7,9 +7,16 @@ run_sim <- function(      .i.r = i.r,
                           .paramlist = paramlist,
                           .Global_paramlist = Global_paramlist){
   
+#   .i.r = i.r 
+#   .AggLiab   = AggLiab
+#   .paramlist = paramlist
+#   .Global_paramlist = Global_paramlist
+  
+  
   assign_parmsList(.Global_paramlist, envir = environment())
   assign_parmsList(.paramlist,        envir = environment())
 
+  
 # Now we do the actuarial valuations 
 # In each period, following values will be caculated:
 # AL: Total Actuarial liability, which includes liabilities for active workers and pensioners.
@@ -94,6 +101,7 @@ penSim0 <- data.frame(year = 1:nyear) %>%
          PR   = 0,
          ADC_PR = 0,
          C_PR = 0)
+penSim0 <- as.list(penSim0)
 
 # matrix representation of amortization: better visualization but large size, used in this excercise
 SC_amort0 <- matrix(0, nyear + m, nyear + m)
@@ -122,38 +130,38 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   # initialize
   penSim <- penSim0
   SC_amort <- SC_amort0 
-  penSim[,"i.r"] <- .i.r[, k]
+  penSim[["i.r"]] <- .i.r[, k]
   
   source("Functions.R")
   
   for (j in 1:nyear){
-    # j <- 1
+    # j <- 2
     # AL(j) 
     
     # AL(j)
-    penSim[j, "AL"] <- .AggLiab$active[j, "ALx.tot"] + .AggLiab$term[j, "ALx.tot.v"]
+    penSim$AL[j] <- .AggLiab$active[j, "ALx.tot"] + .AggLiab$term[j, "ALx.tot.v"]
     # NC(j)
-    penSim[j, "NC"] <- .AggLiab$active[j, "NCx.tot"] 
+    penSim$NC[j] <- .AggLiab$active[j, "NCx.tot"] 
     # B(j)
-    penSim[j, "B"]  <- .AggLiab$active[j, "B.tot"] + .AggLiab$term[j, "B.tot.v"]
+    penSim$B[j]  <- .AggLiab$active[j, "B.tot"] + .AggLiab$term[j, "B.tot.v"]
     # PR(j)
-    penSim[j, "PR"] <- .AggLiab$active[j, "PR.tot"]
+    penSim$PR[j] <- .AggLiab$active[j, "PR.tot"]
     
     # MA(j) and EAA(j) 
-    if(j == 1) {penSim[j, "MA"]  <- switch(init_MA,
+    if(j == 1) {penSim$MA[j]  <- switch(init_MA,
                                            MA = MA_0,             # Use preset value
-                                           AL = penSim[j, "AL"])  # Assume inital fund equals inital liability.
-                penSim[j, "EAA"] <- switch(init_EAA,
+                                           AL = penSim$AL[j])  # Assume inital fund equals inital liability.
+                penSim$EAA[j] <- switch(init_EAA,
                                            AL = EAA_0,           # Use preset value 
-                                           MA = penSim[j, "MA"]) # Assume inital EAA equals inital market value.
-                penSim[j, "AA"]  <- switch(smooth_method,
+                                           MA = penSim$MA[j]) # Assume inital EAA equals inital market value.
+                penSim$AA[j]  <- switch(smooth_method,
                                            method1 =  with(penSim, MA[j]),  # we may want to allow for a preset initial AA.
                                            method2 =  with(penSim, (1 - w) * EAA[j] + w * MA[j])
                                           )
     } else {
-                penSim[j, "MA"]  <- with(penSim, MA[j - 1] + I.r[j - 1] + C[j - 1] - B[j - 1])
-                penSim[j, "EAA"] <- with(penSim, AA[j - 1] + I.e[j - 1] + C[j - 1] - B[j - 1])
-                penSim[j, "AA"]  <- switch(smooth_method,
+                penSim$MA[j]  <- with(penSim, MA[j - 1] + I.r[j - 1] + C[j - 1] - B[j - 1])
+                penSim$EEA[j] <- with(penSim, AA[j - 1] + I.e[j - 1] + C[j - 1] - B[j - 1])
+                penSim$AA[j]  <- switch(smooth_method,
                                            method1 = with(penSim, MA[j] - sum(s.vector[max(s.year + 2 - j, 1):s.year] * I.dif[(j-min(j, s.year + 1)+1):(j-1)])),
                                            method2 = with(penSim, (1 - w) * EAA[j] + w * MA[j]) 
                                            )
@@ -236,7 +244,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   }
   
   #penSim_results[[k]] <- penSim
-  penSim
+  as.data.frame(penSim)
 }
 
 stopCluster(cl)
@@ -252,7 +260,7 @@ penSim_results <- run_sim()
 
 end_time_loop <- proc.time()
 Time_loop <- end_time_loop - start_time_loop 
-
+Time_loop
 
 
 # x <- matrix(rep(1,10000),1000); colnames(x) = 1:10
