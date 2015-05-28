@@ -6,7 +6,7 @@
 # This program consists of following files:
   # Model_master.R
   # Model_Decrements.R
-  # Model_Salary_Benefit.R
+  # Model_Import_Plan.R
   # Model_IndvLiab.R
   # Model_Population.R
   # Model_AggLiab.R
@@ -53,11 +53,7 @@
   # Funded Ratio
 
 # List of tasks:
-# Module for reading in model inputs
-# Further modulize the model. 
 # More options of initial asset value? eg. % of AL
-
-
 
 
 # Preamble ###############################################################################################
@@ -145,7 +141,7 @@ source("Model_Decrements.R")
 # These tables are based on PA-PSERS and some naive assumptions for imputation.
 # Please do NOT source the script below if external salary and benefit tables are used.   
 # source("Inputs_Salary_Benefit.R")
-source("Model_Salary_Benefit.R")
+source("Model_Import_Plan.R")
 
 
 #*********************************************************************************************************
@@ -161,7 +157,6 @@ i.r[10,] <- 0.00 # Create a loss due to zero return in year 10. For the purpose 
 } else {
   i.r <- with(Global_paramlist, matrix(rnorm(nyear*nsim, mean = ir.mean, sd = ir.sd),nrow = nyear, ncol = nsim))
 }
-
 
 
 #*********************************************************************************************************
