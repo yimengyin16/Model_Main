@@ -1,6 +1,10 @@
+## 5/28/2015
+
+
 # Preamble ###############################################################################################
 
 rm(list = ls())
+gc()
 
 library(knitr)
 library(data.table)
@@ -32,8 +36,11 @@ dev_mode <- FALSE # Enter development mode if true. Parameters and initial popul
 #*********************************************************************************************************
 
 
+filename_RunControl <- "RunControl(6).xlsx"
+
+
 # Import global parameters
-Global_paramlist <- read_excel("RunControl(6).xlsx", sheet="GlobalParams", skip=1) %>% as.list
+Global_paramlist <- read_excel(filename_RunControl, sheet="GlobalParams", skip=1) %>% as.list
 
 
 # Import plan parameters

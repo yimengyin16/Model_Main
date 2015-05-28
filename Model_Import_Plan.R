@@ -239,11 +239,16 @@ dist <- lowess(dist, f= 0.1)$y
 return(dist)
 }
 
-# get_entrantsDist(actives, "average") %>% plot
-# get_entrantsDist(actives, "underfunded") %>% plot
+
 
 entrants_dist <- get_entrantsDist()
 
+
+# dist1 <- get_entrantsDist(actives, "average")
+# dist2 <- get_entrantsDist(actives, "underfunded")
+# 
+# data.frame(ea = paramlist$range_ea, average = dist1, underfunded = dist2) %>% gather(plan, pct, -ea) %>% 
+# ggplot(aes(x = ea, y = pct, color = plan)) + geom_point(size = 3.5) + geom_line(linetype = 3) + theme_bw()
 
 
 

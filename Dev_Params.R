@@ -100,7 +100,8 @@ paramlist <- list(
   ## 6. Market value and actuarial value of assets
   # Set inital asset, market value
   MA_0 = 200,   # market value at 0. If changed, EAA_0 may also need to change. 
-  init_EAA = "MA",  # "MA" for the same value as MA; "EAA" for preset value of inital EAA.
+  init_MA  = "AL",  # "MA" for preset value in MA_0; "AL" for being equal to initial liability 
+  
   
   # Choose asset smoothing method
   smooth_method = "method1", # one of "method1" and "method2"
@@ -112,8 +113,8 @@ paramlist <- list(
   
   # Parameters for asset smoothing method 2 (TPAF)
   # Note: actuarial asset value of current year is a weighted average of expected actuarial asset value and market asset value. 
-  init_MA  = "AL",  # "MA" for preset value; "AL" for being equal to initial liability 
   EAA_0    = 200,   # expected market value at 0. Set to the same value as MA_0 by default.
+  init_EAA = "MA",  # "MA" for the same value as MA; "EAA" for preset value of inital EAA.
   w = 1,            # weight on market value in asset smoothing; no asset smoothing when set to 1. 
   
   

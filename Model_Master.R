@@ -54,7 +54,7 @@
 
 # List of tasks:
 # More options of initial asset value? eg. % of AL
-
+# How to deal with negative asset values and contributions
 
 
 #*********************************************************************************************************
