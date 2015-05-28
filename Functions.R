@@ -272,6 +272,14 @@ assign_parmsList <- function(paramlist, excludes = NULL, ...){
   sapply(varNames, assign_var)
 }
 
+# Better approach: put parameters into a list ####
+get_parmsList <- function(rundf, runname) { # don't exclude anything
+  # Assign the data from the spreadsheet for a single runname to a list. We'll pass the list to the model.
+  runlist <- as.list(rundf[which(rundf$runname==runname), ])
+  return(runlist)
+}
+
+
 
 
 

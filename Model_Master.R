@@ -56,34 +56,6 @@
 # More options of initial asset value? eg. % of AL
 
 
-# Preamble ###############################################################################################
-
-rm(list = ls())
-
-library(knitr)
-library(data.table)
-library(gdata) # read.xls
-library(plyr)
-library(dplyr)
-library(ggplot2)
-library(magrittr)
-library(tidyr) # gather, spread
-library(foreach)
-library(doParallel)
-library(microbenchmark)
-library(data.table)
-library(xlsx)
-library(XLConnect) # slow but convenient because it reads ranges
-#library(corrplot)
-# devtools::install_github("donboyd5/decrements")
-# devtools::install_github("donboyd5/pp.prototypes")
-
-source("Functions.R")
-
-dev_mode <- TRUE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
-
-#*********************************************************************************************************
-
 
 #*********************************************************************************************************
 # 0. Parameters   ####
@@ -93,13 +65,10 @@ if(dev_mode) source("Dev_Params.R") else {
   
   # Define Other parameters that depend on the fundamental parameters just imported. 
   paramlist$range_age <- with(Global_paramlist, min.age:max.age)
-  
-  #paramlist$range.ea  <- c(seq(20, paramlist$r.max, 5), paramlist$r.max) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-  #paramlist$range.ea  <- c(20, 25, 30, 35, 45:paramlist$r.max)           # "Continuous" entry ages after 45
-  paramlist$range.ea  <- c(20:paramlist$r.max)                           # Complete range of entry ages. Most time comsuming. 
+  paramlist$range_ea  <- c(20:(paramlist$r.max - 1))
   
   paramlist$v <- with(paramlist, 1/(1 + i))  # discount factor, just for convenience
-
+  
 }
 
 #*********************************************************************************************************
@@ -155,7 +124,7 @@ i.r <- with(Global_paramlist, matrix(0.08, nrow = nyear, ncol = nsim))
 i.r[10,] <- 0.00 # Create a loss due to zero return in year 10. For the purpose of checking amortization of UAAL
 
 } else {
-  i.r <- with(Global_paramlist, matrix(rnorm(nyear*nsim, mean = ir.mean, sd = ir.sd),nrow = nyear, ncol = nsim))
+  i.r <- with(Global_paramlist, matrix(rnorm(nyear*nsim, mean = paramlist$ir.mean, sd = paramlist$ir.sd),nrow = nyear, ncol = nsim))
 }
 
 
@@ -207,10 +176,7 @@ r1 <- penSim_results[[1]][,var.display]
 kable(r1, digits = 2)
 
 
-# # Conbine results into a data frame. 
-# df <- bind_rows(penSim_results) %>% 
-#       mutate(sim=rep(1:nsim, each=nyear)) %>%
-#       select(sim, year, everything())
+
 
 # Running time of major modules
 Time_liab # liability
@@ -248,4 +214,7 @@ Time_loop # the big loop
 
 
 
-
+# Conbine results into a data frame. 
+df <- bind_rows(penSim_results) %>% 
+      mutate(sim=rep(1:Global_paramlist$nsim, each=Global_paramlist$nyear)) %>%
+      select(sim, year, everything())
