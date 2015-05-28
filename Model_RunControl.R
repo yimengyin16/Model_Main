@@ -23,7 +23,7 @@ library(stringr)
 # devtools::install_github("donboyd5/pp.prototypes")
 
 # source the following file when running the program for the first time. 
-# source("Inputs_Import_Decrements.R")
+# source("Inputs_Import_Winklevoss.R")
 
 source("Functions.R")
 

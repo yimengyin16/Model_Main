@@ -212,9 +212,24 @@ Time_loop # the big loop
 # C_PR: contribution as % of payroll
 
 
-
+#*********************************************************************************************************
+# 6. Writing outputs ####
+#*********************************************************************************************************
 
 # Conbine results into a data frame. 
-df <- bind_rows(penSim_results) %>% 
-      mutate(sim=rep(1:Global_paramlist$nsim, each=Global_paramlist$nyear)) %>%
-      select(sim, year, everything())
+results_df <- bind_rows(penSim_results) %>% 
+              mutate(sim=rep(1:Global_paramlist$nsim, each=Global_paramlist$nyear)) %>%
+              select(sim, year, everything())
+
+outputs_list <- list(results = results_df, paramlist = paramlist, Global_paramlist = Global_paramlist)
+
+filename_outputs <- paste0("Outputs_", paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
+
+save(outputs_list, file = paste0("Outputs/", filename_outputs))
+
+
+gc()
+
+
+
+
