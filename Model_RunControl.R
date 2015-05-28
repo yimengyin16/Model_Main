@@ -19,8 +19,8 @@ library(XLConnect) # slow but convenient because it reads ranges
 library(readxl)
 library(stringr)
 #library(corrplot)
-# devtools::install_github("donboyd5/decrements")
-# devtools::install_github("donboyd5/pp.prototypes")
+#devtools::install_github("donboyd5/decrements")
+#devtools::install_github("donboyd5/pp.prototypes")
 
 # source the following file when running the program for the first time. 
 # source("Inputs_Import_Winklevoss.R")

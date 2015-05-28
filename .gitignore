@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .rda
+
+# ignore output directory
+Outputs/*
