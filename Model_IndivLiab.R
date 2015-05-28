@@ -37,8 +37,13 @@ get_IndivLiab <- function(.salary    = salary,
 
 assign_parmsList(.Global_paramlist, envir = environment())
 assign_parmsList(.paramlist,        envir = environment())
-  
-liab.active <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = range_age) %>%
+
+min.year <- min(1 - (max.age - (r.max - 1)), 1 - (r.max - 1 - min.ea))
+## Track down to the year that is the smaller one of the two below: 
+ # the year a 120-year-old retiree in year 1 entered the workforce at age r.max - 1 (remeber ea = r.max -  is assigned to all inital retirees)
+ # the year a r.max year old active in year 1 enter the workforce at age min.ea 
+
+liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = range_age) %>%
   filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
   mutate(year = start.year + age - ea) %>%  # year index in the simulation)
   left_join(.salary) %>%

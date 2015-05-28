@@ -4,7 +4,7 @@
 .rda
 
 # ignore output directory
-Outputs/
+Outputs/*
 
 # ignore temporary MS files
 ~$*
