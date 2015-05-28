@@ -170,7 +170,7 @@ benefit <- get_benefit()
 
 
 #*************************************************************************************************************
-#                               Generate inital population                                               #####                  
+#                               Generating inital population                                               #####                  
 #*************************************************************************************************************
 
 get_initPop <- function (.actives          = actives,
@@ -203,6 +203,48 @@ get_initPop <- function (.actives          = actives,
 # init_pop$actives
 # init_pop$retirees
 # 
+
+  
+#*************************************************************************************************************
+#                            Infering ditribution of entrants from low yos actives                       #####                  
+#*************************************************************************************************************
+  
+
+get_entrantsDist <- function(.actives          = actives,
+                             .planname_actives = planname_actives,
+                             .paramlist        = paramlist,
+                             .Global_paramlist = Global_paramlist){
+
+assign_parmsList(.Global_paramlist, envir = environment())
+assign_parmsList(.paramlist,        envir = environment())   
+  
+nact <- .actives %>% filter(planname == .planname_actives) %>% select(age, ea, nactives)
+#nact %>% spread(age, nactives)
+  
+nact <- splong(nact, "ea", range_ea) %>% filter(age >= ea) %>% splong("age", range_ea) %>% filter(age >= ea)
+#nact %>% spread(age, nactives)
+
+ent <- nact %>% filter(age - ea <= 4) %>% group_by(ea) %>% summarise(avg_ent = mean(nactives))
+
+neg_ea <- ent[which(ent$avg_ent < 0), "ea"]
+
+if(any(ent$avg_ent < 0))  warning("Negative inferred value(s) in the following entry age(s): " , as.character(neg_ea), "\n",
+                                  "  Nagative value(s) will be coerced to 0.")
+
+ent %<>% mutate(avg_ent = ifelse(avg_ent < 0, 0, avg_ent))
+
+dist <- ent$avg_ent/sum(ent$avg_ent)
+dist <- lowess(dist, f= 0.1)$y
+
+return(dist)
+}
+
+# get_entrantsDist(actives, "average") %>% plot
+# get_entrantsDist(actives, "underfunded") %>% plot
+
+entrants_dist <- get_entrantsDist()
+
+
 
 
 

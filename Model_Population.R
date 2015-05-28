@@ -4,6 +4,7 @@
 
 get_Population <- function(.init_active  = init_active,
                            .init_retiree = init_retiree,
+                           .entrants_dist= entrants_dist,
                            .paramlist    = paramlist,
                            .Global_paramlist = Global_paramlist){
 
@@ -147,7 +148,7 @@ A <- diag(length(range_age) + 1)[-1, -(length(range_age) + 1)]
 
 
 # define function for determining the number of new entrants 
-calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
+calc_entrants <- function(wf0, wf1, delta, dist, no.entrants = FALSE){
   # This function deterimine the number of new entrants based on workforce before and after decrement and workforce 
   # growth rate. 
   # inputs:
@@ -161,7 +162,7 @@ calc_entrants <- function(wf0, wf1, delta, no.entrants = FALSE){
   # working age
   working_age <- min(range_age):(r.max - 1)
   # age distribution of new entrants
-  dist <- rep(1/nrow(wf0), nrow(wf0)) # equally distributed for now. 
+  # dist <- rep(1/nrow(wf0), nrow(wf0)) # equally distributed for now. 
   
   # compute the size of workforce before and after decrement
   size0 <- sum(wf0[,as.character(working_age)], na.rm = TRUE)
@@ -219,7 +220,7 @@ for (j in 1:(nyear - 1)){
   
   # Total inflow and outflow for each status
   out_active   <- active2term + active2disb + active2retired + active2dead 
-  new_entrants <- calc_entrants(wf_active[, , j], wf_active[, , j] - out_active, wf_growth, no.entrants = no_entrance) # new entrants
+  new_entrants <- calc_entrants(wf_active[, , j], wf_active[, , j] - out_active, wf_growth, dist = .entrants_dist, no.entrants = no_entrance) # new entrants
   
   out_term <- term2dead    # This is a 3D array 
   in_term  <- active2term  # This is a matrix
