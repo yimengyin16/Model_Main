@@ -63,8 +63,8 @@ wf_term    <- array(0, wf_dim.term, dimnames = wf_dimnames.term)
 #*************************************************************************************************************
 
 # Setting inital distribution of workforce and retirees.
-wf_active[, , 1]  <- init_active 
-wf_retired[, , 1] <- init_retiree
+wf_active[, , 1]  <- init_pop$actives 
+wf_retired[, , 1] <- init_pop$retirees
 
 
 

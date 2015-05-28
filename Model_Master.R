@@ -80,6 +80,7 @@ library(xlsx)
 library(XLConnect) # slow but convenient because it reads ranges
 #library(corrplot)
 # devtools::install_github("donboyd5/decrements")
+# devtools::install_github("donboyd5/pp.prototypes")
 
 source("Functions.R")
 
@@ -94,48 +95,26 @@ dev_mode <- TRUE # Enter development mode if true. Parameters and initial popula
 
 if(dev_mode) source("Dev_Params.R") else {
   
-# Assign parameters to global environment. 
-assign_parmsList(Global_paramlist)
-assign_parmsList(paramlist)
-
-# Define Other parameters that depend on the fundamental parameters just imported. 
- max.age   <- max(range_age) 
- min.age   <- min(range_age) 
- v <- 1/(1 + i)  # discount factor, just for convenience
-
-## Modify range_ea based on r.max
-range_ea <- unique(c(range_ea[range_ea <= (r.max - 1)], r.max - 1)) # make sure to include r.max - 1
+  # Define Other parameters that depend on the fundamental parameters just imported. 
+  paramlist$range_age <- with(Global_paramlist, min.age:max.age)
+  
+  #paramlist$range.ea  <- c(seq(20, paramlist$r.max, 5), paramlist$r.max) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+  #paramlist$range.ea  <- c(20, 25, 30, 35, 45:paramlist$r.max)           # "Continuous" entry ages after 45
+  paramlist$range.ea  <- c(20:paramlist$r.max)                           # Complete range of entry ages. Most time comsuming. 
+  
+  paramlist$v <- with(paramlist, 1/(1 + i))  # discount factor, just for convenience
 
 }
 
-
 #*********************************************************************************************************
-# 1.1 Inital population  ####
-#*********************************************************************************************************
-
-## Inputs
- # data frames:
- #   - data frame for initial actives
- #   - data frame for initial retirees
- # parameters:
- #   - planname: planname to be selected from the data frames above. From RunControl
- #   - range_age
- #   - range_ea
-
-## Output
- #   - init_active:  matrix, max ea by max age
- #   - init_retiree  matrix, max ea by max age
-
-
-#*********************************************************************************************************
-# 1.2 Importing Decrement tables and Calculating Probabilities ####
+# 1.1 Importing Decrement tables and Calculating Probabilities ####
 #*********************************************************************************************************
 source("Model_Decrements.R")
 # Output: Decrement (data.frame)
 
 
 #*********************************************************************************************************
-# 1.3 Import Salary table and initial retirement benefit table ####
+# 1.2 Import Salary table and initial retirement benefit table ####
 #*********************************************************************************************************
 
 ## Inputs
@@ -170,13 +149,18 @@ source("Model_Salary_Benefit.R")
 
 
 #*********************************************************************************************************
-# 1.4  Actual investment return. ####
+# 1.3  Actual investment return. ####
 #*********************************************************************************************************
 
+if(dev_mode){
 set.seed(1234)
 #i.r <- with(Global_paramlist, matrix(rnorm(nyear*nsim, mean = 0.08, sd = 0.12),nrow = nyear, ncol = nsim)) 
 i.r <- with(Global_paramlist, matrix(0.08, nrow = nyear, ncol = nsim))
 i.r[10,] <- 0.00 # Create a loss due to zero return in year 10. For the purpose of checking amortization of UAAL
+
+} else {
+  i.r <- with(Global_paramlist, matrix(rnorm(nyear*nsim, mean = ir.mean, sd = ir.sd),nrow = nyear, ncol = nsim))
+}
 
 
 
@@ -214,14 +198,14 @@ source("Model_Sim.R")
 options(digits = 2, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
-var.display <- c("year",  "AL",    "MA",    "AA",    "EAA",   "FR",  
+var.display <- c("year",  "AL",    "MA",    "AA",   "FR",  
                  # "ExF",   
                  "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
-                 "ADC", "EEC", "ERC",  "C", "B",     
-                 "I.r" ,   "I.e",  "i",    "i.r",
-                 "PR", "ADC_PR", "C_PR", 
-                 "AM", 
-                 "C_ADC"
+                 "ADC", "EEC", "ERC",  "C", "B"     
+                 # "I.r" ,   "I.e",  "i",    "i.r"
+                 # "PR", "ADC_PR", "C_PR"
+                 # "AM"
+                 # "C_ADC"
                  )
 
 r1 <- penSim_results[[1]][,var.display]

@@ -5,18 +5,24 @@
 Global_paramlist <- list(
 ## Model parameters
 nyear = 100,        # # of years in simulation 
-nsim  = 10000,         # # of sims
-ncore = 8 ,         # # of CPU cores used in parallelled loops
+nsim  = 10,         # # of sims
+ncore = 6 ,         # # of CPU cores used in parallelled loops
 
 
-## Range of age allowed.
-range_age = 20:120,
+#   ## Restrictions on ea and age ranges
+  max.age = 120,
+  min.age = 20,
+  
+  max.ea = 70,
+  min.ea = 20
 
-## Range of entry age allowed. 
-# range_ea  = c(seq(20, 70, 5), 69 ) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
-# range_ea = c(20, 25, 30, 35, 40:70)       # "Continuous" entry ages after 45
-range_ea = 20:70                        # Complete range of entry ages. Most time comsuming. 
-
+# ## Range of age allowed.
+# range_age = 20:120,
+# 
+# ## Range of entry age allowed. 
+# # range_ea  = c(seq(20, 70, 5), 69 ) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+# # range_ea = c(20, 25, 30, 35, 40:70)       # "Continuous" entry ages after 45
+# range_ea = 20:70                        # Complete range of entry ages. Most time comsuming. 
 )
 
 #*********************************************************************************************************
@@ -31,6 +37,10 @@ range_ea = 20:70                        # Complete range of entry ages. Most tim
 # Note: The restrictions above are removed in current version since we use single retirement age and set r.min = r.max.
 
 paramlist <- list(
+  
+  runname = "Devlopment",
+  
+  
   ## 1. Benefit structure
   benfactor = 0.015,  # benefit factor, % of final average salary per year of yos
   fasyears  = 3,      # number of years in the final average salary calculation
@@ -112,29 +122,41 @@ paramlist <- list(
   no_entrance = TRUE,    # No new entrants into the workforce if set "TRUE". Overrides "wf_growth"
   
   
-  ## 8. Parameters for 1.3-1.6
+  ## 8. Parameters for 1.1-1.3
   
-  # Choose initial population to use
-  # Choose decrement tables to use
+  
+  # Choose decrement tables
       tablename_mortality   = "gam1971.hybrid",  #  "rp2000.hybrid.f75",  # "gam1971.hybrid",  # rp2000.hybrid
-      tablename_termination = "Winklevoss"
-  # Choose salary and benefit tables to use
-  # Choose actual investment matrix to use
+      tablename_termination = "Winklevoss",
+
+  # Choose salary scale
+      planname_sscale.hist   = "average",        # "average", "underfunded" 
+      planname_sscale.assume = "average",        # "average", "underfunded"
+
+  # Choose initial population
+      planname_actives  = "average",             # "average", "underfunded" 
+      planname_retirees = "average",             # "average", "underfunded" 
+
+  # Choose actual investment matrix
+      ir.mean = 0.08,
+      ir.sd   = 0
+
+  
 )
 
 
-# Assign parameters to global environment. 
-# assign_parmsList(Global_paramlist)
-# assign_parmsList(paramlist)
-
-
 # Define Other parameters that depend on the fundamental parameters just imported. 
-Global_paramlist$max.age  <- with(Global_paramlist, max(range_age)) 
-Global_paramlist$min.age  <- with(Global_paramlist, min(range_age)) 
+paramlist$range_age <- with(Global_paramlist, min.age:max.age)
+
+#paramlist$range.ea  <- c(seq(20, paramlist$r.max, 5), paramlist$r.max) # Assume new entrants only enter the workforce with interval of 5 years. Note that max entry age must be less than max retirement age.  
+#paramlist$range.ea  <- c(20, 25, 30, 35, 45:paramlist$r.max)           # "Continuous" entry ages after 45
+paramlist$range_ea  <- c(20: (paramlist$r.max-1))                           # Complete range of entry ages. Most time comsuming. 
+  
+
 paramlist$v <- with(paramlist, 1/(1 + i))  # discount factor, just for convenience
 
-## Modify range_ea based on r.max
-Global_paramlist$range_ea <- with(Global_paramlist, unique(c(range_ea[range_ea <= (paramlist$r.max - 1)], paramlist$r.max - 1))) # make sure to include r.max - 1
+# ## Modify range_ea based on r.max
+# Global_paramlist$range_ea <- with(Global_paramlist, unique(c(range_ea[range_ea <= (paramlist$r.max - 1)], paramlist$r.max - 1))) # make sure to include r.max - 1
 
 
 
@@ -160,11 +182,11 @@ if(dev_mode){
   ## The following code is used for convevience when developing new features. 
   # Initial Active
   # WARNING: Ages and entry ages of active members must be less than retirement age. (max retirement age when multiple retirement ages is implemented) 
-range_ea  <- Global_paramlist$range_ea
-range_age <- Global_paramlist$range_age 
+range_ea  <- paramlist$range_ea
+range_age <- paramlist$range_age 
 r.max     <- paramlist$r.max
   
-  init_active <- rbind(c(20, 20, 1), # (entry age,  age, number)
+  init_actives <- rbind(c(20, 20, 1), # (entry age,  age, number)
                        c(20, 40, 1),
                        c(20, r.max - 1, 1),
                        c(45, 45, 1),
@@ -173,18 +195,20 @@ r.max     <- paramlist$r.max
                        c(55, 55, 1),
                        c(r.max - 1, r.max - 1, 1)
   ) %>% as.data.frame
-  colnames(init_active) <- c("ea", "age", "nactives")
-  init_active <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_active) %>% 
+  colnames(init_actives) <- c("ea", "age", "nactives")
+  init_actives <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_actives) %>% 
     spread_("age", "nactives", fill = 0) %>% select(-ea) %>% as.matrix
   
   # Initial Retired 
   # WARNING: Ages and entry ages of retirees must be no less than retirement age. (min retirement age when multiple retirement ages is implemented)
-  init_retiree <- rbind(c(20, r.max, 1),
+  init_retirees <- rbind(c(20, r.max, 1),
                         c(20, 85, 1)
   ) %>% as.data.frame
-  colnames(init_retiree) <- c("ea", "age", "nretirees")                 
-  init_retiree <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_retiree) %>% 
+  colnames(init_retirees) <- c("ea", "age", "nretirees")                 
+  init_retirees <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_retirees) %>% 
     spread_("age", "nretirees", fill = 0) %>% select(-ea) %>% as.matrix
-rm(range_ea, range_age, r.max)
-  
+
+  init_pop = list(actives = init_actives, retirees = init_retirees)  
+
+  rm(range_ea, range_age, r.max, init_actives, init_retirees)
 }

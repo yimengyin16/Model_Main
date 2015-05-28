@@ -87,6 +87,37 @@ for(runid in df$runname) {
 # clean up, and then do some analysis of results
 
 
+devtools::install_github("donboyd5/pp.prototypes")
+library("pp.prototypes")
+library("dplyr")
+library("tidyr")
+library("ggplot2")
 
+data(package="pp.prototypes")
+?actives
+?retirees
+?salgrowth.hist
+?salgrowth.assume
+
+data(actives)
+data(retirees)
+glimpse(actives)
+count(actives, planname)
+count(actives, age)
+count(actives, ea) %>% data.frame
+
+glimpse(retirees)
+count(retirees, planname)
+count(retirees, age)
+
+glimpse(salgrowth.hist)
+qplot(age, sscale.hist.rate, data=salgrowth.hist, colour=planname, geom=c("point", "line"))
+
+data("salgrowth.hist")
+salgrowth.hist
+
+glimpse(salgrowth.assume)
+qplot(age, sscale.assume.rate, data=salgrowth.assume, colour=planname, geom=c("point", "line"))
+salgrowth.assume
 
 
