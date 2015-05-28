@@ -35,8 +35,10 @@ dev_mode <- FALSE # Enter development mode if true. Parameters and initial popul
 
 #*********************************************************************************************************
 
+if(!file.exists("Outputs")) dir.create("Outputs")
 
 filename_RunControl <- "RunControl(6).xlsx"
+
 
 
 # Import global parameters
