@@ -198,9 +198,10 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$EEC[j] <- with(penSim, PR[j] * EEC_rate)
     
     # ADC(j)
-    penSim$ADC[j]    <- with(penSim, NC[j] + SC[j]) 
-    penSim$ADC.ER[j] <- with(penSim, NC[j] + SC[j] - EEC[j])  
- 
+    penSim$ADC[j]    <- with(penSim, max(0, NC[j] + SC[j])) 
+    #penSim$ADC.ER[j] <- with(penSim, ADC[j] - EEC[j])  
+    penSim$ADC.ER[j] <- with(penSim, ifelse(ADC[j] > EEC[j], ADC[j] - EEC[j], 0)) 
+    
     # C(j)
     penSim$ERC[j] <- ifelse(j %in% c(0), 0,  
                    switch(ConPolicy,

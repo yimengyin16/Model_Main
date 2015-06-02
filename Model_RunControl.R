@@ -18,8 +18,8 @@ library(foreach)
 library(doParallel)
 library(microbenchmark)
 library(data.table)
-library(xlsx)
-library(XLConnect) # slow but convenient because it reads ranges
+#library(xlsx)
+# library(XLConnect) # slow but convenient because it reads ranges
 library(readxl)
 library(stringr)
 #library(corrplot)
@@ -31,7 +31,7 @@ library(stringr)
 
 source("Functions.R")
 
-dev_mode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
+devMode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
 
 #*********************************************************************************************************
 

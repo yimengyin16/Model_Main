@@ -179,7 +179,7 @@ paramlist$v <- with(paramlist, 1/(1 + i))  # discount factor, just for convenien
 #   - init_retiree  matrix, max ea by max age
 
 
-if(dev_mode){
+if(devMode){
   ## The following code is used for convevience when developing new features. 
   # Initial Active
   # WARNING: Ages and entry ages of active members must be less than retirement age. (max retirement age when multiple retirement ages is implemented) 
