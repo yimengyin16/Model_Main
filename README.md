@@ -1,8 +1,3 @@
-Learn-PenSim
+Stochastic Simulation Model for Public Pension Plans
 ============
 
-Code in this project is for learning programming techniques for modeling pension plans.
-
-The main learning resources include Winklevoss book and LJAF white papers. 
-
-Notes on git/github operations are also included. 
