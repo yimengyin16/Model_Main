@@ -284,6 +284,18 @@ get_parmsList <- function(rundf, runname) { # don't exclude anything
 
 
 
+trans_cont <- function(cont, run){
+  # Transform the user-defined contribution table to "long" form for the selected "run".
+    # Before transformation: start, duration, pct_ADC;
+    # After transformation:  year, pct_ADC.
+  df_cont <- function(start, duration, pct) data.frame(year = start + 0:(duration - 1), pct_ADC = pct)
+  df <- with(cont %>% filter(runname == run), 
+             mapply(df_cont,
+                    start = start, duration = duration, pct = pct_ADC, SIMPLIFY = FALSE)) %>% 
+    bind_rows
+  return(df)
+}  
+
 
 
 
