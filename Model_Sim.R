@@ -210,6 +210,13 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
                           Fixed   = with(penSim, PR_pct_fixed * PR[j])             # Fixed percent of payroll
       ) 
     )
+    
+    if(j %in% plan_contributions$year) {
+    penSim$ERC[j] <- as.numeric(plan_contributions[j == plan_contributions$year, "pct_ADC"]) * penSim$ERC[j]
+    }
+      
+    
+    
     penSim$C[j] <- with(penSim, EEC[j] + ERC[j])
     
     # C(j) - ADC(j)

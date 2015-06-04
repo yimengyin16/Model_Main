@@ -23,15 +23,24 @@ if(devMode){
   i.r[10,] <- 0.00 # Create a loss due to zero return in year 10. For the purpose of checking amortization of UAAL
   
 } else {
-  set.seed(1234)
-  i.r <- with(paramlist, mapply(gen_returns, 
-                                             nyear = plan_returns$duration, 
-                                             nsim  = Global_paramlist$nsim,
-                                             ir.mean = plan_returns$ir.mean,
-                                             ir.sd = plan_returns$ir.sd,
-                                             SIMPLIFY = (nrow(plan_returns) != 1)
-                                             )) %>% 
-         do.call(rbind, .)
+  
+  if(paramlist$return_type == "simple") i.r <- gen_returns()
+  
+  if(paramlist$return_type == "internal"){
+    
+    if(sum(paramlist$plan_returns$duration) != Global_paramlist$nyear) stop("Length of return series does not match nsim.", call. = FALSE)
+    
+    set.seed(1234)
+    i.r <- with(paramlist, mapply(gen_returns, 
+                                  nyear = plan_returns$duration, 
+                                  nsim  = Global_paramlist$nsim,
+                                  ir.mean = plan_returns$ir.mean,
+                                  ir.sd = plan_returns$ir.sd,
+                                  SIMPLIFY = (nrow(plan_returns) != 1)
+    )) %>% 
+      do.call(rbind, .)
+  }
+   
 }
 
 

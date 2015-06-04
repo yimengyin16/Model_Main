@@ -46,9 +46,19 @@ Global_paramlist <- read_excel(filename_RunControl, sheet="GlobalParams", skip=1
 # Import plan parameters
 plan_params  <- read_excel(filename_RunControl, sheet="RunControl", skip=4) %>% filter(!is.na(runname))
 plan_returns <- read_excel(filename_RunControl, sheet="Returns",    skip=0) %>% filter(!is.na(runname))
+plan_contributions <- read_excel(filename_RunControl, sheet="Contributions", skip=0) %>% filter(!is.na(runname))
 
 paramlist    <- get_parmsList(plan_params, runName)
 paramlist$plan_returns <- plan_returns %>% filter(runname == runName)
+
+
+if(paramlist$exCon){
+df_cont <- function(start, duration, pct) data.frame(year = start + 0:(duration - 1), pct_ADC = pct)
+paramlist$plan_contributions <- with(plan_contributions %>% filter(runname == runName), 
+                                     mapply(df_cont,
+                                            start = start, duration = duration, pct = pct_ADC, SIMPLIFY = FALSE)) %>% 
+                                bind_rows
+} else paramlist$plan_contributions <- list(0)
 
 
 # Rum the model
