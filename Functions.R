@@ -24,13 +24,17 @@ get_tla <- function(px, i, scale = rep(1, length(px))){
   
   for(j in 1:n){
     v   <- 1/(1 + i)^(0:(n - j)) # dicount vector
-    if(j < n) pxr <- cumprod(c(1, px[j:(n - 1)])) else pxr = 1      # survival probability to retirment at age x. Note that participant always survives at the beginning of age x
+    if(j < n) pxr <- cumprod(c(1, px[j:(n - 1)])) else pxr <-  1      # survival probability to retirment at age x. Note that participant always survives at the beginning of age x
     SS  <- scale[j:n]/scale[j]                # scale
-    tla[j] = sum(SS * v * pxr)                # computing annuity value at j
+    tla[j] <-  sum(SS * v * pxr)                # computing annuity value at j
   } 
   return(tla)
 }
-get_tla(rep(0.98, 55), 0.08) # test the function
+
+# microbenchmark(
+# get_tla(rep(0.98, 55), 0.08) # test the function
+# )
+
 
 # 1.2 function calculating temporary annuity values from a fixed entry age y to x (fixed start)
 get_tla2 = function(px, i, sx = rep(1, length(px))){
@@ -59,7 +63,7 @@ get_tla2 = function(px, i, sx = rep(1, length(px))){
     v   <- 1/(1 + i)^(0:(j - 1))                                  # dicount vector
     if(j == 1) pxr <- 1 else pxr <- cumprod(c(1, px[1:(j - 1)]))  # survival probability to retirment at age x. Note that participant always survives at the beginning of age x
     SS  <- sx[1:j]/sx[1]                                          # salary scale
-    tla[j + 1] = sum(SS * v * pxr)                                # computing annuity value at j;
+    tla[j + 1] <-  sum(SS * v * pxr)                                # computing annuity value at j;
   } 
   return(tla) 
 }
@@ -76,9 +80,10 @@ get_tla2a <- function(px, i, sx = rep(1, length(px))){
   return(tla)   
  }
 
-
-get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65))  # test the function
-get_tla2a(rep(0.98, 65), 0.08, rep(1.1, 65))# test the function
+# microbenchmark(
+# get_tla2(rep(0.98, 65), 0.08, rep(1.1, 65)),  # test the function
+# get_tla2a(rep(0.98, 65), 0.08, rep(1.1, 65))# test the function
+# )
 
 # 1.3 PVFB of term costs
 get_PVFB <- function(px, v, TC){ # present values of subsets of TC (fixed end)
@@ -99,6 +104,10 @@ get_PVFB <- function(px, v, TC){ # present values of subsets of TC (fixed end)
   
   return(PVFB)
 }
+
+# microbenchmark(
+# get_PVFB(rep(0.98, 65), 0.08, rep(1.1, 65))
+# )
 
 # 1.4 NC of UC and PUC
 get_NC.UC <- function(px, v, TC){
@@ -124,6 +133,10 @@ get_NC.UC <- function(px, v, TC){
   return(NC)
 }
 
+# microbenchmark(
+# get_NC.UC(rep(0.98, 65), 0.08, rep(1.1, 65))
+# )
+
 # 1.5 AL of PUC
 get_AL.PUC <- function(px, v, TC){
   # This function is a variation of get_PVFB. It is used to calculate AL under PUC methods.
@@ -144,6 +157,10 @@ get_AL.PUC <- function(px, v, TC){
   return(AL)
 }
 
+
+# microbenchmark(
+# get_AL.PUC(rep(0.98, 65), 0.08, rep(1.1, 65))
+# )
 
 
 #**************************************
