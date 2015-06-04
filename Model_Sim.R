@@ -149,22 +149,22 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     
     # MA(j) and EAA(j) 
     if(j == 1) {penSim$MA[j]  <- switch(init_MA,
-                                           MA = MA_0,             # Use preset value
-                                           AL = penSim$AL[j])  # Assume inital fund equals inital liability.
+                                        MA = MA_0,             # Use preset value
+                                        AL = penSim$AL[j])  # Assume inital fund equals inital liability.
                 penSim$EAA[j] <- switch(init_EAA,
-                                           AL = EAA_0,           # Use preset value 
-                                           MA = penSim$MA[j]) # Assume inital EAA equals inital market value.
+                                        AL = EAA_0,           # Use preset value 
+                                        MA = penSim$MA[j]) # Assume inital EAA equals inital market value.
                 penSim$AA[j]  <- switch(smooth_method,
-                                           method1 =  with(penSim, MA[j]),  # we may want to allow for a preset initial AA.
-                                           method2 =  with(penSim, (1 - w) * EAA[j] + w * MA[j])
-                                          )
+                                        method1 =  with(penSim, MA[j]),  # we may want to allow for a preset initial AA.
+                                        method2 =  with(penSim, (1 - w) * EAA[j] + w * MA[j])
+                                        )
     } else {
                 penSim$MA[j]  <- with(penSim, MA[j - 1] + I.r[j - 1] + C[j - 1] - B[j - 1])
                 penSim$EEA[j] <- with(penSim, AA[j - 1] + I.e[j - 1] + C[j - 1] - B[j - 1])
                 penSim$AA[j]  <- switch(smooth_method,
-                                           method1 = with(penSim, MA[j] - sum(s.vector[max(s.year + 2 - j, 1):s.year] * I.dif[(j-min(j, s.year + 1)+1):(j-1)])),
-                                           method2 = with(penSim, (1 - w) * EAA[j] + w * MA[j]) 
-                                           )
+                                        method1 = with(penSim, MA[j] - sum(s.vector[max(s.year + 2 - j, 1):s.year] * I.dif[(j-min(j, s.year + 1)+1):(j-1)])),
+                                        method2 = with(penSim, (1 - w) * EAA[j] + w * MA[j]) 
+                                        )
     }
     
     
@@ -198,9 +198,16 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$EEC[j] <- with(penSim, PR[j] * EEC_rate)
     
     # ADC(j)
-    penSim$ADC[j]    <- with(penSim, max(0, NC[j] + SC[j])) 
-    #penSim$ADC.ER[j] <- with(penSim, ADC[j] - EEC[j])  
-    penSim$ADC.ER[j] <- with(penSim, ifelse(ADC[j] > EEC[j], ADC[j] - EEC[j], 0)) 
+    
+    if(nonNegC){
+      penSim$ADC[j]    <- with(penSim, max(0, NC[j] + SC[j])) 
+      penSim$ADC.ER[j] <- with(penSim, ifelse(ADC[j] > EEC[j], ADC[j] - EEC[j], 0)) 
+    
+      } else {
+      penSim$ADC[j]    <- with(penSim, NC[j] + SC[j]) 
+      penSim$ADC.ER[j] <- with(penSim, ADC[j] - EEC[j])  
+    }
+    
     
     # C(j)
     penSim$ERC[j] <- ifelse(j %in% c(0), 0,  
