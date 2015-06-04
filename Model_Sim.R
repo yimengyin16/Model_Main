@@ -192,7 +192,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     # Supplemental cost in j
     penSim$SC[j] <- switch(amort_type,
                            closed = sum(SC_amort[, j]),
-                           open   = amort_LG(penSim$UAAL[j], i, m, g, end = FALSE, method = amort_method)[1])
+                           open   = amort_LG(penSim$UAAL[j], i, m, infl + prod, end = FALSE, method = amort_method)[1])
     
     #Employee contribution
     penSim$EEC[j] <- with(penSim, PR[j] * EEC_rate)

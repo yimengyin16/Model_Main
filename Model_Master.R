@@ -52,9 +52,10 @@
   # UAAL
   # Funded Ratio
 
-# List of tasks:
-# More options of initial asset value? eg. % of AL
-# How to deal with negative asset values and contributions
+## List of tasks:
+ # More options of initial asset value? eg. % of AL
+ # How to deal with negative asset values and contributions
+ # How to set parameter g in constant percent amortization method. Now infl + prod
 
 
 #*********************************************************************************************************
