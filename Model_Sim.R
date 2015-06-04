@@ -149,13 +149,14 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     
     # MA(j) and EAA(j) 
     if(j == 1) {penSim$MA[j]  <- switch(init_MA,
-                                        MA = MA_0,             # Use preset value
-                                        AL = penSim$AL[j])  # Assume inital fund equals inital liability.
+                                        MA = MA_0,                        # Use preset value
+                                        AL = penSim$AL[j],                # Assume inital fund equals inital liability.
+                                        AL_pct = penSim$AL[j] * MA_0_pct) # Inital MA is a proportion of inital AL
                 penSim$EAA[j] <- switch(init_EAA,
-                                        AL = EAA_0,           # Use preset value 
-                                        MA = penSim$MA[j]) # Assume inital EAA equals inital market value.
+                                        AL = EAA_0,                       # Use preset value 
+                                        MA = penSim$MA[j])                # Assume inital EAA equals inital market value.
                 penSim$AA[j]  <- switch(smooth_method,
-                                        method1 =  with(penSim, MA[j]),  # we may want to allow for a preset initial AA.
+                                        method1 =  with(penSim, MA[j]),   # we may want to allow for a preset initial AA.
                                         method2 =  with(penSim, (1 - w) * EAA[j] + w * MA[j])
                                         )
     } else {

@@ -164,7 +164,7 @@ var.display <- c("year",  "AL",    "MA",    "AA",   "FR",
                  # "C_ADC"
                  )
 
-r1 <- penSim_results[[1]][,var.display]
+r1 <- penSim_results[[4]][,var.display]
 kable(r1, digits = 2)
 
 
