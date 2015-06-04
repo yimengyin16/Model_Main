@@ -18,7 +18,7 @@ library(foreach)
 library(doParallel)
 library(microbenchmark)
 library(data.table)
-#library(xlsx)
+# library(xlsx)
 # library(XLConnect) # slow but convenient because it reads ranges
 library(readxl)
 library(stringr)
@@ -26,8 +26,6 @@ library(stringr)
 #devtools::install_github("donboyd5/decrements")
 #devtools::install_github("donboyd5/pp.prototypes")
 
-# source the following file when running the program for the first time. 
-# source("Inputs_Import_Winklevoss.R")
 
 source("Functions.R")
 
@@ -38,7 +36,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 if(!file.exists("Outputs")) dir.create("Outputs")
 
 filename_RunControl <- "RunControl(6).xlsx"
-
+runName <- "average2"
 
 
 # Import global parameters
@@ -46,8 +44,11 @@ Global_paramlist <- read_excel(filename_RunControl, sheet="GlobalParams", skip=1
 
 
 # Import plan parameters
-plan_params <- read_excel("RunControl(6).xlsx", sheet="RunControl", skip=4) %>% filter(!is.na(runname))
-paramlist   <- get_parmsList(plan_params, "average1")
+plan_params  <- read_excel(filename_RunControl, sheet="RunControl", skip=4) %>% filter(!is.na(runname))
+plan_returns <- read_excel(filename_RunControl, sheet="Returns",    skip=0) %>% filter(!is.na(runname))
+
+paramlist    <- get_parmsList(plan_params, runName)
+paramlist$plan_returns <- plan_returns %>% filter(runname == runName)
 
 
 # Rum the model
