@@ -4,7 +4,7 @@
 #**************************************
 
 # 1.1 function calculating temporary annuity values from age x to retirment age (fixed end)
-get_tla <- function(px, i, scale = rep(1, length(px)), cashflow = rep(1, length(px))){
+get_tla <- function(px, i, scale = rep(1, length(px))){
   # suppose the age corresponding to px runs from a1 to aN, and f = aN + 1 (eg. age 30:64, f = 65)
   # The function computes a..{x, f - x} and s_a..{x, f - x}, x runing from a1 to aN. 
   # The length of px is f - a1 
