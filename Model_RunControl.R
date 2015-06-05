@@ -35,8 +35,8 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 
 
-filename_RunControl <- "RunControl_initRuns.xlsx"
-folder_outputs <- "Outputs_Initial_Runs"
+filename_RunControl <- "RunControl_test.xlsx"
+folder_outputs <- "Outputs"
 
 
 # Import global parameters
@@ -54,8 +54,9 @@ plan_contributions <- read_excel(filename_RunControl, sheet="Contributions", ski
 # Run model for the selected plans
 
 runlist <- plan_params %>% filter(include == TRUE) %>% select(runname) %>% unlist
-runlist <- runlist[runlist == "R1F1"]
+# runlist <- runlist[runlist == "RF1"]
 # runlist <- runlist[runlist == "average1"|runlist == "average3"]
+runlist <- runlist[runlist == "average1"]
 runlist
 
 
@@ -66,9 +67,18 @@ paramlist    <- get_parmsList(plan_params, runName)
 paramlist$plan_returns <- plan_returns %>% filter(runname == runName)
 if(paramlist$exCon) paramlist$plan_contributions <- trans_cont(plan_contributions, runName) else 
                     paramlist$plan_contributions <- list(0) 
+
+# Coerce the number of simulation to 1 when using deterministic investment reuturns.
+if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
+    (paramlist$return_type == "internal" &  all(paramlist$plan_returns$ir.sd == 0))){
   
+  Global_paramlist$nsim <- 1
+  
+}
+
+
 # Run the model
-#source("Model_Master.R", echo = TRUE)
+source("Model_Master.R", echo = TRUE)
 }
 
 

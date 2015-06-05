@@ -164,7 +164,7 @@ var.display <- c("year",  "AL",    "MA",    "AA",   "FR",
                  # "C_ADC"
                  )
 
-r1 <- penSim_results[[4]][,var.display]
+r1 <- penSim_results[[1]][,var.display]
 kable(r1, digits = 2)
 
 
@@ -219,9 +219,9 @@ outputs_list <- list(results = results_df, paramlist = paramlist, Global_paramli
 # Save outputs to specified folder
 if(!file.exists(folder_outputs)) dir.create(folder_outputs)
 
-filename_outputs <- paste0("Outputs_", paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
+filename_outputs <- paste0("Outputs_",  paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
 
-save(outputs_list, file = paste0(folder_outputs, filename_outputs))
+save(outputs_list, file = paste0(folder_outputs,"/", filename_outputs))
 
 
 gc()
