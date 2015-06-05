@@ -215,14 +215,14 @@ results_df <- bind_rows(penSim_results) %>%
 
 outputs_list <- list(results = results_df, paramlist = paramlist, Global_paramlist = Global_paramlist)
 
+
+# Save outputs to specified folder
+if(!file.exists(folder_outputs)) dir.create(folder_outputs)
+
 filename_outputs <- paste0("Outputs_", paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
 
-save(outputs_list, file = paste0("Outputs/", filename_outputs))
+save(outputs_list, file = paste0(folder_outputs, filename_outputs))
 
 
 gc()
-
-
-
-
 
