@@ -119,6 +119,14 @@ s.vector <- seq(0,1,length = s.year + 1)[-(s.year+1)]; s.vector  # a vector cont
 #                                       Simuation  ####
 #*************************************************************************************************************
 
+# AL(j)
+penSim0$AL <- .AggLiab$active[, "ALx.tot"] + .AggLiab$term[, "ALx.tot.v"]
+# NC(j)
+penSim0$NC <- .AggLiab$active[, "NCx.tot"] 
+# B(j)
+penSim0$B  <- .AggLiab$active[, "B.tot"] + .AggLiab$term[, "B.tot.v"]
+# PR(j)
+penSim0$PR <- .AggLiab$active[, "PR.tot"]
 
 
 cl <- makeCluster(ncore) 
@@ -135,19 +143,20 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
   penSim[["i.r"]] <- .i.r[, k]
   
   source("Functions.R")
+
   
   for (j in 1:nyear){
     # j <- 2
     # AL(j) 
     
-    # AL(j)
-    penSim$AL[j] <- .AggLiab$active[j, "ALx.tot"] + .AggLiab$term[j, "ALx.tot.v"]
-    # NC(j)
-    penSim$NC[j] <- .AggLiab$active[j, "NCx.tot"] 
-    # B(j)
-    penSim$B[j]  <- .AggLiab$active[j, "B.tot"] + .AggLiab$term[j, "B.tot.v"]
-    # PR(j)
-    penSim$PR[j] <- .AggLiab$active[j, "PR.tot"]
+#     # AL(j)
+#     penSim$AL[j] <- .AggLiab$active[j, "ALx.tot"] + .AggLiab$term[j, "ALx.tot.v"]
+#     # NC(j)
+#     penSim$NC[j] <- .AggLiab$active[j, "NCx.tot"] 
+#     # B(j)
+#     penSim$B[j]  <- .AggLiab$active[j, "B.tot"] + .AggLiab$term[j, "B.tot.v"]
+#     # PR(j)
+#     penSim$PR[j] <- .AggLiab$active[j, "PR.tot"]
     
     # MA(j) and EAA(j) 
     if(j == 1) {penSim$MA[j]  <- switch(init_MA,
@@ -249,16 +258,6 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$I.dif[j] <- with(penSim, I.r[j] - I.e[j])
      
  
-#     # Funded Ratio
-#     penSim$FR[j] <- with(penSim, 100*AA[j] / exp(log(AL[j]))) # produces NaN when AL is 0.
-#     
-#     # External fund
-#     penSim$ExF[j] <- with(penSim, B[j] - C[j])
-#     
-#     # ADC and contribution as percentage of payroll
-#     penSim$ADC_PR[j] <- with(penSim, ADC[j]/PR[j])
-#     penSim$C_PR[j]   <- with(penSim, C[j]/PR[j])
-    
   }
   
   #penSim_results[[k]] <- penSim
