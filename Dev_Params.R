@@ -84,6 +84,10 @@ paramlist <- list(
   # Fixed:   pay a fixed percent of payroll. If Fixed is chosen, set the parameter PR_pct_fixed.
   EEC_rate     = 0.005,   
   
+  exCon = FALSE,
+  nonNegC = TRUE,
+  EEC_fixed = FALSE,
+  
   # For now the employer and employee contributions are calculated as follows:
   # 1). Calculate ADC = NC + SC
   # 2). Calculate EEC = EEC_rate * Payroll

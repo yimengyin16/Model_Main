@@ -35,7 +35,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 
 
-filename_RunControl <- "RunControl_test.xlsx"
+filename_RunControl <- "RunControl_initRuns.xlsx"
 folder_outputs <- "Outputs"
 
 
@@ -54,9 +54,9 @@ plan_contributions <- read_excel(filename_RunControl, sheet="Contributions", ski
 # Run model for the selected plans
 
 runlist <- plan_params %>% filter(include == TRUE) %>% select(runname) %>% unlist
-# runlist <- runlist[runlist == "RF1"]
+runlist <- runlist[runlist == "R4F1"|runlist == "R4F2"|runlist == "R4F3"]
 # runlist <- runlist[runlist == "average1"|runlist == "average3"]
-runlist <- runlist[runlist == "average3"]
+# runlist <- runlist[runlist == "average3"]
 runlist
 
 

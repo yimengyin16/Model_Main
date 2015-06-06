@@ -206,7 +206,8 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
                            closed = sum(SC_amort[, j]),
                            open   = amort_LG(penSim$UAAL[j], i, m, infl + prod, end = FALSE, method = amort_method)[1])
     
-    #Employee contribution
+    
+    # Employee contribution, based on payroll. May be adjusted later. 
     penSim$EEC[j] <- with(penSim, PR[j] * EEC_rate)
     
     # ADC(j)
@@ -221,7 +222,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     }
     
     
-    # C(j)
+    # ERC
     penSim$ERC[j] <- ifelse(j %in% c(0), 0,  
                    switch(ConPolicy,
                           ADC     = with(penSim, ADC.ER[j]),                          # Full ADC
@@ -235,7 +236,13 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     }
       
     
+    # Adjustment of EEC
+    if(EEC_fixed) penSim$EEC[j] <- with(penSim, EEC[j]) else
+                  penSim$EEC[j] <- with(penSim, ifelse(ADC[j] > EEC[j], EEC[j], ADC[j]))
     
+    
+    
+    # C(j)
     penSim$C[j] <- with(penSim, EEC[j] + ERC[j])
     
     # C(j) - ADC(j)
