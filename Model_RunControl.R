@@ -56,7 +56,7 @@ plan_contributions <- read_excel(filename_RunControl, sheet="Contributions", ski
 runlist <- plan_params %>% filter(include == TRUE) %>% select(runname) %>% unlist
 # runlist <- runlist[runlist == "RF1"]
 # runlist <- runlist[runlist == "average1"|runlist == "average3"]
-runlist <- runlist[runlist == "average1"]
+runlist <- runlist[runlist == "average3"]
 runlist
 
 

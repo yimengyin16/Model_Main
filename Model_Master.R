@@ -53,10 +53,10 @@
   # Funded Ratio
 
 ## List of tasks:
- # More options of initial asset value? eg. % of AL
  # How to deal with negative asset values and contributions
  # How to set parameter g in constant percent amortization method. Now infl + prod
-
+ # More variables to be added to the simulation. 
+ # Some descriptive vaiables can be calculated outside the loop. 
 
 #*********************************************************************************************************
 # 0. Parameters   ####
@@ -154,7 +154,7 @@ source("Model_Sim.R")
 options(digits = 2, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
-var.display <- c("year",  "AL",    "MA",    "AA",   "FR",  
+var.display <- c("year",  "AL",    "MA",    "AA",   "FR", "FR_MA",
                  # "ExF",   
                  "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  "ADC", "EEC", "ERC",  "C", "B",     
@@ -164,7 +164,7 @@ var.display <- c("year",  "AL",    "MA",    "AA",   "FR",
                  # "C_ADC"
                  )
 
-r1 <- penSim_results[[1]][,var.display]
+r1 <- penSim_results %>% filter(sim == 1) %>% select(one_of(var.display))
 kable(r1, digits = 2)
 
 
@@ -208,12 +208,12 @@ Time_loop # the big loop
 # 6. Writing outputs ####
 #*********************************************************************************************************
 
-# Conbine results into a data frame. 
-results_df <- bind_rows(penSim_results) %>% 
-              mutate(sim=rep(1:Global_paramlist$nsim, each=Global_paramlist$nyear)) %>%
-              select(sim, year, everything())
 
-outputs_list <- list(results = results_df, paramlist = paramlist, Global_paramlist = Global_paramlist)
+# results_df <- bind_rows(penSim_results) %>% 
+#               mutate(sim=rep(1:Global_paramlist$nsim, each=Global_paramlist$nyear)) %>%
+#               select(sim, year, everything())
+
+outputs_list <- list(results = penSim_results, paramlist = paramlist, Global_paramlist = Global_paramlist)
 
 
 # Save outputs to specified folder
@@ -225,4 +225,9 @@ save(outputs_list, file = paste0(folder_outputs,"/", filename_outputs))
 
 
 gc()
+
+
+
+
+
 

@@ -1,6 +1,4 @@
-#*************************************************************************************************************
-#                                     Defining variables in simulation ####
-#*************************************************************************************************************
+
 
 run_sim <- function(      .i.r = i.r, 
                           .AggLiab   = AggLiab,
@@ -16,7 +14,11 @@ run_sim <- function(      .i.r = i.r,
   assign_parmsList(.Global_paramlist, envir = environment())
   assign_parmsList(.paramlist,        envir = environment())
 
-  
+
+#*************************************************************************************************************
+#                                     Defining variables in simulation ####
+#*************************************************************************************************************  
+    
 # Now we do the actuarial valuations 
 # In each period, following values will be caculated:
 # AL: Total Actuarial liability, which includes liabilities for active workers and pensioners.
@@ -247,15 +249,15 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     penSim$I.dif[j] <- with(penSim, I.r[j] - I.e[j])
      
  
-    # Funded Ratio
-    penSim$FR[j] <- with(penSim, 100*AA[j] / exp(log(AL[j]))) # produces NaN when AL is 0.
-    
-    # External fund
-    penSim$ExF[j] <- with(penSim, B[j] - C[j])
-    
-    # ADC and contribution as percentage of payroll
-    penSim$ADC_PR[j] <- with(penSim, ADC[j]/PR[j])
-    penSim$C_PR[j]   <- with(penSim, C[j]/PR[j])
+#     # Funded Ratio
+#     penSim$FR[j] <- with(penSim, 100*AA[j] / exp(log(AL[j]))) # produces NaN when AL is 0.
+#     
+#     # External fund
+#     penSim$ExF[j] <- with(penSim, B[j] - C[j])
+#     
+#     # ADC and contribution as percentage of payroll
+#     penSim$ADC_PR[j] <- with(penSim, ADC[j]/PR[j])
+#     penSim$C_PR[j]   <- with(penSim, C[j]/PR[j])
     
   }
   
@@ -265,9 +267,20 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
 
 stopCluster(cl)
 
+# Conbine results into a data frame. 
+penSim_results <- bind_rows(penSim_results) %>% 
+  mutate(sim     = rep(1:nsim, each = nyear),
+         runname = runname,
+         FR      = 100 * AA / exp(log(AL)),
+         FR_MA   = 100 * MA / exp(log(AL)),
+         ADC_PR  = ADC / PR, 
+         C_PR    = C / PR) %>%
+  select(runname, sim, year, everything())
+
 return(penSim_results)
 
 }
+
 
 
 start_time_loop <- proc.time()
