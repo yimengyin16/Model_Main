@@ -223,13 +223,11 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     
     
     # ERC
-    penSim$ERC[j] <- ifelse(j %in% c(0), 0,  
-                   switch(ConPolicy,
-                          ADC     = with(penSim, ADC.ER[j]),                          # Full ADC
-                          ADC_cap = with(penSim, min(ADC.ER[j], PR_pct_cap * PR[j])), # ADC with cap. Cap is a percent of payroll 
-                          Fixed   = with(penSim, PR_pct_fixed * PR[j])             # Fixed percent of payroll
-      ) 
-    )
+    penSim$ERC[j] <- switch(ConPolicy,
+                            ADC     = with(penSim, ADC.ER[j]),                          # Full ADC
+                            ADC_cap = with(penSim, min(ADC.ER[j], PR_pct_cap * PR[j])), # ADC with cap. Cap is a percent of payroll 
+                            Fixed   = with(penSim, PR_pct_fixed * PR[j])             # Fixed percent of payroll
+                            ) 
     
     if(j %in% plan_contributions$year) {
     penSim$ERC[j] <- as.numeric(plan_contributions[j == plan_contributions$year, "pct_ADC"]) * penSim$ERC[j]
@@ -280,7 +278,8 @@ penSim_results <- bind_rows(penSim_results) %>%
          FR      = 100 * AA / exp(log(AL)),
          FR_MA   = 100 * MA / exp(log(AL)),
          ADC_PR  = ADC / PR, 
-         C_PR    = C / PR) %>%
+         C_PR    = C / PR,
+         B_PR    = B / PR) %>%
   select(runname, sim, year, everything())
 
 return(penSim_results)

@@ -155,11 +155,12 @@ options(digits = 2, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c("year",  "AL",    "MA",    "AA",   "FR", "FR_MA",
-                 # "ExF",   
-                 "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
+                 # "ExF",  "EUAAL",   
+                 "UAAL",  "LG",    "NC",    "SC",    
                  "ADC", "EEC", "ERC",  "C", "B",     
-                  "I.r" ,   "I.e",  "i",    "i.r"
-                 # "PR", "ADC_PR", "C_PR"
+                 # "I.r" ,   "I.e",  
+                 "i",    "i.r",
+                  "PR", "B_PR", "C_PR"
                  # "AM"
                  # "C_ADC"
                  )
