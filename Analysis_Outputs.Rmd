@@ -143,7 +143,7 @@ Fixed Return Fixed discount rate and investment return, 7.5% each
 
 
 
-```{r S1, echo = FALSE}
+```{r S1, echo = FALSE, cache = TRUE }
 
 draw_quantiles("R1F1", "FR")
 draw_quantiles("R1F1", "ERC_PR")
@@ -159,7 +159,7 @@ Fixed discount rate 7.5%, fixed investment return 5.5%
 
 
 
-```{r S2, echo = FALSE}
+```{r S2, echo = FALSE, cache = TRUE}
 
 prefix <- "R2F"
 
@@ -186,7 +186,7 @@ for (runname in paste0(prefix, 1:3)){
 Fixed discount rate 7.5%, fixed investment return  9.5%
 
 
-```{r S3, echo = FALSE}
+```{r S3, echo = FALSE, cache = TRUE}
 
 prefix <- "R3F"
 
@@ -213,7 +213,7 @@ for (runname in paste0(prefix, 1:3)){
 Fixed discount rate 7.5%, stochastic investment return arithmetic mean 7.5%, sd 12%
 
 
-```{r S4, echo = FALSE}
+```{r S4, echo = FALSE, cache = TRUE}
 
 prefix <- "R4F"
 
@@ -240,7 +240,7 @@ for (runname in paste0(prefix, 1:3)){
 Fixed Return Fixed discount rate and investment return, 7.5% each, with 5-year period of low returns
 
 
-```{r S5, echo = FALSE}
+```{r S5, echo = FALSE, cache = TRUE}
 
 prefix <- "R5F"
 
@@ -268,7 +268,7 @@ for (runname in paste0(prefix, 1:3)){
 Fixed Return Fixed discount rate and investment return, 7.5% each, with a 5-year period of low employer contributions
 
 
-```{r S6, echo = FALSE}
+```{r S6, echo = FALSE, cache = TRUE}
 
 prefix <- "R6F"
 
