@@ -198,11 +198,49 @@ salgrowth.assume <- ldply(1:length(biglist), function(lnum) return(biglist[[lnum
 
 
 
+i = 0.075
+g = 0.05
+m = 30
+
+amort <- data.frame(debt.boy.bp = numeric(100),debt.boy.ap = numeric(100), debt.eoy = numeric(100), pmt = numeric(100))
+amort$debt.boy.bp[1] <- 100
+
+for (j in 1:nrow(amort)){
+  amort$pmt[j] <- with(amort, gaip(debt.boy.bp[j], i, m, g))
+  amort$debt.boy.ap[j] <- with(amort, debt.boy.bp[j] - pmt[j] )
+  amort$debt.eoy[j] <- with(amort, debt.boy.ap[j] * (1 + i))  
+  if(j != nrow(amort)) amort$debt.boy.bp[j + 1] <- with(amort, debt.eoy[j] )
+}
+
+amort
 
 
 
 
+i = 0.075
+g = 0.05
+m = 30
 
+amort <- data.frame(debt.boy.bp = numeric(m),debt.boy.ap = numeric(m), debt.eoy = numeric(m), pmt = gaip(100, i, m, g)* (g + 1)^(1:m - 1))
+amort$debt.boy.bp[1] <- 100
+
+for (j in 1:nrow(amort)){
+  amort$debt.boy.ap[j] <- with(amort, debt.boy.bp[j] - pmt[j] )
+  amort$debt.eoy[j] <- with(amort, debt.boy.ap[j] * (1 + i))  
+  if(j != nrow(amort)) amort$debt.boy.bp[j + 1] <- with(amort, debt.eoy[j] )
+}
+amort
+
+
+amort <- data.frame(debt.boy.bp = numeric(m),debt.boy.ap = numeric(m), debt.eoy = numeric(m), pmt = rep(pmt(100, i, m), m))
+amort$debt.boy.bp[1] <- 100
+
+for (j in 1:nrow(amort)){
+  amort$debt.boy.ap[j] <- with(amort, debt.boy.bp[j] - pmt[j] )
+  amort$debt.eoy[j] <- with(amort, debt.boy.ap[j] * (1 + i))  
+  if(j != nrow(amort)) amort$debt.boy.bp[j + 1] <- with(amort, debt.eoy[j] )
+}
+amort
 
 
 
