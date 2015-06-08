@@ -3,9 +3,12 @@
 .RData
 .rda
 
+
 # ignore output directory
 Outputs*/*
 
 
 # ignore temporary MS files
 ~$*
+
+*.html
