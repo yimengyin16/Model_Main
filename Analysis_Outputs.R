@@ -5,12 +5,12 @@ library(ggplot2)
 
 rm(list = ls())
 source("Functions.R")
-folder_outputs <- "Outputs_Initial_Runs"
+folder_run <- "IO_Initial_Runs"
 
 
 
 ## Combine selected files into a single list.
-file_select <- dir(folder_outputs, pattern = "06-06")
+file_select <- dir(folder_run, pattern = "06-06")
 
 fn <- function(x) {
        load(paste0(folder_outputs, "/", x))

@@ -5,8 +5,8 @@
 
 
 # ignore output directory
-Outputs*/*
-
+# Outputs*/*
+IO*/*.RData
 
 # ignore temporary MS files
 ~$*

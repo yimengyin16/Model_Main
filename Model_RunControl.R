@@ -34,13 +34,16 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 #*********************************************************************************************************
 
 
-
+folder_run          <- "IO_Initial_Runs_1"
 filename_RunControl <- "RunControl_initRuns.xlsx"
-folder_outputs <- "Outputs_Initial_Runs_2"
 
+
+#*********************************************************************************************************
+# Read in Run Control files ####
+#*********************************************************************************************************
 
 # Import global parameters
-Global_params <- read_excel(filename_RunControl, sheet="GlobalParams", skip=1) 
+Global_params <- read_excel(paste0(folder_run, "/" ,filename_RunControl), sheet="GlobalParams", skip=1) 
 
 
 # Import parameters for all plans
@@ -51,8 +54,11 @@ plan_contributions <- read_excel(filename_RunControl, sheet="Contributions", ski
 
 
 
-# Run model for the selected plans
+#*********************************************************************************************************
+# Read in Run Control files ####
+#*********************************************************************************************************
 
+## select plans
 runlist <- plan_params %>% filter(include == TRUE) %>% select(runname) %>% unlist
 # runlist <- runlist[runlist == "R4F1"|runlist == "R4F1"|runlist == "R4F1"]
 # runlist <- runlist[runlist == "average1"|runlist == "average3"]
@@ -62,18 +68,18 @@ runlist
 
 
 
-
+## Run selected plans 
 
 for (runName in runlist){
 
-# Extract plan parameters 
+## Extract plan parameters 
 paramlist    <- get_parmsList(plan_params, runName)
 paramlist$plan_returns <- plan_returns %>% filter(runname == runName)
 if(paramlist$exCon) paramlist$plan_contributions <- trans_cont(plan_contributions, runName) else 
                     paramlist$plan_contributions <- list(0) 
 
 
-# Extract global parameters and coerce the number of simulation to 1 when using deterministic investment reuturns.
+## Extract global parameters and coerce the number of simulation to 1 when using deterministic investment reuturns.
 Global_paramlist <- Global_params %>% as.list
 if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
     (paramlist$return_type == "internal" &  all(paramlist$plan_returns$ir.sd == 0))){
@@ -82,14 +88,22 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
   
 }
 
-
-# Run the model
+## Run the model
 source("Model_Master.R", echo = TRUE)
 }
 
-Global_paramlist$nsim
 
   
+
+
+
+
+
+
+
+
+
+
 
 
 ## Note on the size of output files

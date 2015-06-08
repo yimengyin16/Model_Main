@@ -277,9 +277,10 @@ penSim_results <- bind_rows(penSim_results) %>%
          runname = runname,
          FR      = 100 * AA / exp(log(AL)),
          FR_MA   = 100 * MA / exp(log(AL)),
-         ADC_PR  = ADC / PR, 
-         C_PR    = C / PR,
-         B_PR    = B / PR) %>%
+         ADC_PR  = 100 * ADC / PR,
+         ERC_PR  = 100 * ERC / PR, 
+         C_PR    = 100 * C / PR,
+         B_PR    = 100 * B / PR) %>%
   select(runname, sim, year, everything())
 
 return(penSim_results)
