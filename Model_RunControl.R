@@ -34,8 +34,11 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 #*********************************************************************************************************
 
 
-folder_run          <- "IO_Initial_Runs_1"
-filename_RunControl <- "RunControl_initRuns.xlsx"
+folder_run          <- "IO_Initial_Runs_2"
+filename_RunControl <- "RunControl_initRuns_2.xlsx"
+
+# folder_run          <- "IO_test"
+# filename_RunControl <- "RunControl_test.xlsx"
 
 
 #*********************************************************************************************************
@@ -43,13 +46,16 @@ filename_RunControl <- "RunControl_initRuns.xlsx"
 #*********************************************************************************************************
 
 # Import global parameters
-Global_params <- read_excel(paste0(folder_run, "/" ,filename_RunControl), sheet="GlobalParams", skip=1) 
+
+path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)
+
+Global_params <- read_excel(path_RunControl, sheet="GlobalParams", skip=1) 
 
 
 # Import parameters for all plans
-plan_params  <- read_excel(filename_RunControl, sheet="RunControl", skip=4) %>% filter(!is.na(runname))
-plan_returns <- read_excel(filename_RunControl, sheet="Returns",    skip=0) %>% filter(!is.na(runname))
-plan_contributions <- read_excel(filename_RunControl, sheet="Contributions", skip=0) %>% filter(!is.na(runname))
+plan_params        <- read_excel(path_RunControl, sheet="RunControl", skip=4) %>% filter(!is.na(runname))
+plan_returns       <- read_excel(path_RunControl, sheet="Returns",    skip=0) %>% filter(!is.na(runname))
+plan_contributions <- read_excel(path_RunControl, sheet="Contributions", skip=0) %>% filter(!is.na(runname))
 
 
 
