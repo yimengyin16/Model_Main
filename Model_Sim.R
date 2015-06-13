@@ -172,7 +172,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
                                         )
     } else {
                 penSim$MA[j]  <- with(penSim, MA[j - 1] + I.r[j - 1] + C[j - 1] - B[j - 1])
-                penSim$EEA[j] <- with(penSim, AA[j - 1] + I.e[j - 1] + C[j - 1] - B[j - 1])
+                penSim$EAA[j] <- with(penSim, AA[j - 1] + I.e[j - 1] + C[j - 1] - B[j - 1])
                 penSim$AA[j]  <- switch(smooth_method,
                                         method1 = with(penSim, MA[j] - sum(s.vector[max(s.year + 2 - j, 1):s.year] * I.dif[(j-min(j, s.year + 1)+1):(j-1)])),
                                         method2 = with(penSim, (1 - w) * EAA[j] + w * MA[j]) 
@@ -277,10 +277,13 @@ penSim_results <- bind_rows(penSim_results) %>%
          runname = runname,
          FR      = 100 * AA / exp(log(AL)),
          FR_MA   = 100 * MA / exp(log(AL)),
+         AL_PR   = 100 * AL / PR, 
          ADC_PR  = 100 * ADC / PR,
+         NC_PR   = 100 * NC / PR,
          ERC_PR  = 100 * ERC / PR, 
          C_PR    = 100 * C / PR,
-         B_PR    = 100 * B / PR) %>%
+         B_PR    = 100 * B / PR,
+         dERC_PR = ERC_PR - lag(ERC_PR)) %>%
   select(runname, sim, year, everything())
 
 return(penSim_results)

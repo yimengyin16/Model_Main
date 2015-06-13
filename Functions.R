@@ -63,7 +63,7 @@ get_tla2 = function(px, i, sx = rep(1, length(px))){
     v   <- 1/(1 + i)^(0:(j - 1))                                  # dicount vector
     if(j == 1) pxr <- 1 else pxr <- cumprod(c(1, px[1:(j - 1)]))  # survival probability to retirment at age x. Note that participant always survives at the beginning of age x
     SS  <- sx[1:j]/sx[1]                                          # salary scale
-    tla[j + 1] <-  sum(SS * v * pxr)                                # computing annuity value at j;
+    tla[j + 1] <-  sum(SS * v * pxr)                              # computing annuity value at j;
   } 
   return(tla) 
 }
@@ -318,9 +318,67 @@ trans_cont <- function(cont, run){
 
 
 
+## Functions for plotting results
+
+get_quantiles <- function( runName,     # character
+                           varName,     # character
+                           data = results_all,
+                           year.max = 100,
+                           qts = c(0.1, 0.25, 0.5, 0.75, 0.9)){
+  
+  #   runName = c("R4F1")     # character
+  #   varName = "FR"     # character
+  #   data = results_all
+  #   year.max = 100
+  #   qts = c(0.1, 0.25, 0.5, 0.75, 0.9)
+  #   
+  
+  df <- data %>% filter(runname %in% runName) %>%  
+    select_("runname",  "sim","year", varName) %>% spread_("year", varName)
+  
+  fn <- function(df) { 
+    df_q <- sapply(select(df, -sim, -runname), function(x) quantile(x, qts, na.rm = TRUE)) %>% as.data.frame
+    
+    df_q %<>% mutate(Quantile = rownames(df_q)) %>% gather(year, Value, -Quantile) %>%
+      
+      mutate(year = f2n(year),
+             Quantile = factor(Quantile)) %>% filter(year <= year.max)
+    
+    df_q %<>% spread(Quantile, Value)
+  }
+  
+  df <- ldply(split(df, df$runname), fn, .id = "runname")
+  
+  return(df)
+  
+}
 
 
 
+draw_quantiles  <- function(runName,     # character
+                            varName,     # character
+                            data = results_all,
+                            year.max = 80,
+                            qts = c(0.1, 0.25, 0.5, 0.75, 0.9),
+                            ylim = NULL){
+  
+  df_q <- get_quantiles(runName = runName, 
+                        varName = varName,
+                        data    = data,
+                        year.max = year.max,
+                        qts = qts)  %>% 
+    gather(Quantile, Value, -runname, -year)
+  
+  plot_q <- 
+    ggplot(df_q, aes(x = year, y = Value, color = Quantile)) + theme_bw() + 
+    geom_point(size = 1.5) + geom_line()+ 
+    labs(y = varName, title = paste0("Quantile plot of ", varName, " in ", runName))
+  
+  if(length(runName) > 1) plot_q <- plot_q + facet_grid(. ~ runname) 
+  if(!is.null(ylim)) plot_q <- plot_q + coord_cartesian(ylim = ylim)
+  
+  plot_q
+}
 
 
 

@@ -20,6 +20,11 @@ library(pp.prototypes)
  # salary:  complete historical and prospect salary by age and ea.
  # benefit: average benefit payment in year 1, by age and ea. 
 
+## for replicating David and Gang's paper
+
+# salgrowth.hist <- salgrowth.hist %>% mutate(sscale.hist.rate = 0.0568)
+
+
 
 #*************************************************************************************************************
 #                                        Create complete salary scale                                    #####                  
@@ -173,6 +178,15 @@ benefit <- get_benefit()
 #                               Generating inital population                                               #####                  
 #*************************************************************************************************************
 
+
+# actives <- actives %>% mutate(nactives = 1)
+# actives 
+
+
+# retirees <- retirees %>% mutate(nretirees = 1)
+# retirees
+
+
 get_initPop <- function (.actives          = actives,
                          .retirees         = retirees,
                          .planname_actives = planname_actives,
@@ -202,14 +216,20 @@ get_initPop <- function (.actives          = actives,
 
 # init_pop$actives
 # init_pop$retirees
-# 
+
+
+# init_pop$actives <- init_pop$actives %>% as.data.frame %>% gather(age, value) %>% 
+#   mutate(value = ifelse(f2n(age) >= 30 & f2n(age) < 65, 1, 0), ea = rep(20:64, 101)) %>% filter(f2n(age) >= ea ) %>% spread(age, value, fill = 0) %>% 
+#   select(-ea) %>% as.matrix
+  
+  
 
   
 #*************************************************************************************************************
 #                            Infering ditribution of entrants from low yos actives                       #####                  
 #*************************************************************************************************************
+ 
   
-
 get_entrantsDist <- function(.actives          = actives,
                              .planname_actives = planname_actives,
                              .paramlist        = paramlist,
@@ -250,6 +270,7 @@ entrants_dist <- get_entrantsDist()
 # data.frame(ea = paramlist$range_ea, average = dist1, underfunded = dist2) %>% gather(plan, pct, -ea) %>% 
 # ggplot(aes(x = ea, y = pct, color = plan)) + geom_point(size = 3.5) + geom_line(linetype = 3) + theme_bw()
 
+entrants_dist
 
 
 
