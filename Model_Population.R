@@ -2,8 +2,7 @@
 # Yimeng Yin
 # 2/3/2015
 
-get_Population <- function(.init_active  = init_active,
-                           .init_retiree = init_retiree,
+get_Population <- function(.init_pop = init_pop,
                            .entrants_dist= entrants_dist,
                            .paramlist    = paramlist,
                            .Global_paramlist = Global_paramlist){
@@ -21,8 +20,8 @@ get_Population <- function(.init_active  = init_active,
  # - no_entrance:      no new entrants into the workforce if set "TRUE". Overrides "wf_growth"
  # - Decrement table:  from Model_Decrements.R  
  # - Initial workforce for each type:
- #    - init_active:  matrix, max ea by max age
- #    - init_retiree  matrix, max ea by max age
+ #    - init_pop$actives:   matrix, max ea by max age
+ #    - init_pop$retirees:  matrix, max ea by max age
 
 
 ## An array is created for each of the 6 status:
@@ -64,8 +63,8 @@ wf_term    <- array(0, wf_dim.term, dimnames = wf_dimnames.term)
 #*************************************************************************************************************
 
 # Setting inital distribution of workforce and retirees.
-wf_active[, , 1]  <- init_pop$actives 
-wf_retired[, , 1] <- init_pop$retirees
+wf_active[, , 1]  <- .init_pop$actives 
+wf_retired[, , 1] <- .init_pop$retirees
 
 
 
@@ -335,7 +334,6 @@ Time_wf <- end_time_wf - start_time_wf
 # x[,,1,] %>% apply(c(1,2), sum)
 
 # wf_term[,,2,1]
-
 
 
 
