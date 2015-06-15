@@ -1,7 +1,6 @@
 # This script import salary and retirement benefit data.
 
-load("Data/example_Salary_benefit.RData")
-library(pp.prototypes)
+
 # load("Data/actives.rda")
 # load("Data/retirees.rda")
 # load("Data/salgrowth.hist.rda")
@@ -19,10 +18,6 @@ library(pp.prototypes)
 ## Outputs
  # salary:  complete historical and prospect salary by age and ea.
  # benefit: average benefit payment in year 1, by age and ea. 
-
-## for replicating David and Gang's paper
-
-# salgrowth.hist <- salgrowth.hist %>% mutate(sscale.hist.rate = 0.0568)
 
 
 
@@ -121,7 +116,7 @@ return(salary)
 }
 
 salary <- get_salary() 
-
+salary
 
 
 # # Check the growth of starting salary before year 1
@@ -231,18 +226,25 @@ get_initPop <- function (.actives          = actives,
  
   
 get_entrantsDist <- function(.actives          = actives,
-                             .planname_actives = planname_actives,
                              .paramlist        = paramlist,
                              .Global_paramlist = Global_paramlist){
 
+#   .actives          = actives
+#   .paramlist        = paramlist
+#   .Global_paramlist = Global_paramlist  
+  
+  
 assign_parmsList(.Global_paramlist, envir = environment())
 assign_parmsList(.paramlist,        envir = environment())   
   
-nact <- .actives %>% filter(planname == .planname_actives) %>% select(age, ea, nactives)
-#nact %>% spread(age, nactives)
+nact <- .actives %>% filter(planname == planname_actives) %>% select(age, ea, nactives)
+# nact %>% spread(age, nactives)
+
   
-nact <- splong(nact, "ea", range_ea) %>% filter(age >= ea) %>% splong("age", range_ea) %>% filter(age >= ea)
-#nact %>% spread(age, nactives)
+nact <- splong(nact, "ea", range_ea) %>% splong("age", range_ea) %>% filter(age >= ea)
+# %>% filter(age >= ea) 
+# nact %>% spread(age, nactives)
+
 
 ent <- nact %>% filter(age - ea <= 4) %>% group_by(ea) %>% summarise(avg_ent = mean(nactives))
 
@@ -270,7 +272,6 @@ entrants_dist <- get_entrantsDist()
 # data.frame(ea = paramlist$range_ea, average = dist1, underfunded = dist2) %>% gather(plan, pct, -ea) %>% 
 # ggplot(aes(x = ea, y = pct, color = plan)) + geom_point(size = 3.5) + geom_line(linetype = 3) + theme_bw()
 
-entrants_dist
 
 
 
