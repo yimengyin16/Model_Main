@@ -22,20 +22,74 @@ library(data.table)
 # library(XLConnect) # slow but convenient because it reads ranges
 library(readxl)
 library(stringr)
-#library(corrplot)
 #devtools::install_github("donboyd5/decrements")
 #devtools::install_github("donboyd5/pp.prototypes")
+
+load("Data/example_Salary_benefit.RData")
+library(decrements)
+library(pp.prototypes)
 
 
 source("Functions.R")
 
 devMode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
 
+
+
+## for replicating David and Gang's paper
+
+dg.rate   <- 0.0568
+init.rate <- 0.0568
+
+act.tot <- 108
+ret.tot <- 54
+
+
+salgrowth.hist   <- salgrowth.hist   %>% mutate(sscale.hist.rate   = dg.rate)
+salgrowth.assume <- salgrowth.assume %>% mutate(sscale.assume.rate = dg.rate)
+
+
+df <- expand.grid(age = 20:64, ea = 20:64) %>% 
+       mutate(planname = "average",
+         nactives = act.tot/n()) %>% 
+         group_by(ea) %>% 
+         mutate(salary = (1 + init.rate)^(0:(length(age) - 1) )) %>% 
+  filter(age >= ea, age %in% 30:64, ea %in% 30:64)
+
+ # x <- df %>% mutate(f = 0.02 * (65-ea) * max(salary)) %>% ungroup %>% filter(age == 64)
+ # x$f %>%  mean # average projected benefit
+ 
+df$salary %>% mean
+
+
+actives %<>% filter(planname != "average" ) %>% rbind(df)
+
+
+df2 <- data.frame(planname = "average", age = 65:90) %>% 
+       mutate(nretirees = ret.tot/n(),
+              benefit   = 2) #  
+df2
+retirees %<>% filter(planname != "average" ) %>% rbind(df2)
+
+retirees
+
+# termination rate
+termination$qxt <- 0
+
+# whether to exclude retirees
+retirees %<>% mutate(nretirees = 1*nretirees) 
+
+
+
+
+
+
+
 #*********************************************************************************************************
 
 
-folder_run          <- "IO_Initial_Runs_2"
-filename_RunControl <- "RunControl_initRuns_2.xlsx"
+folder_run          <- "IO_Initial_Runs_3"
+filename_RunControl <- "RunControl_initRuns_3.xlsx"
 
 # folder_run          <- "IO_test"
 # filename_RunControl <- "RunControl_test.xlsx"
@@ -45,10 +99,10 @@ filename_RunControl <- "RunControl_initRuns_2.xlsx"
 # Read in Run Control files ####
 #*********************************************************************************************************
 
-# Import global parameters
-
 path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)
 
+
+# Import global parameters
 Global_params <- read_excel(path_RunControl, sheet="GlobalParams", skip=1) 
 
 
@@ -66,7 +120,7 @@ plan_contributions <- read_excel(path_RunControl, sheet="Contributions", skip=0)
 
 ## select plans
 runlist <- plan_params %>% filter(include == TRUE) %>% select(runname) %>% unlist
-# runlist <- runlist[runlist == "R4F1"|runlist == "R4F1"|runlist == "R4F1"]
+# runlist <- runlist[runlist == "R4F3"]
 # runlist <- runlist[runlist == "average1"|runlist == "average3"]
 # runlist <- runlist[runlist == "average3"]
 runlist
@@ -78,6 +132,9 @@ runlist
 
 for (runName in runlist){
 
+  
+suppressWarnings(rm(paramlist, Global_paramlist))
+  
 ## Extract plan parameters 
 paramlist    <- get_parmsList(plan_params, runName)
 paramlist$plan_returns <- plan_returns %>% filter(runname == runName)

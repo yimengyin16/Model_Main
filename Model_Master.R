@@ -55,8 +55,9 @@
 ## List of tasks:
  # How to deal with negative asset values and contributions
  # How to set parameter g in constant percent amortization method. Now infl + prod
- # More variables to be added to the simulation. 
- # Some descriptive vaiables can be calculated outside the loop. 
+ # Separate different sources of AL and NC 
+
+
 
 #*********************************************************************************************************
 # 0. Parameters   ####
@@ -121,17 +122,17 @@ source("Model_InvReturns.R")
 
 
 #*********************************************************************************************************
-# 2. Individual actuarial liabilities, normal costs and benenfits ####
+# 2. Population ####
 #*********************************************************************************************************
-source("Model_IndivLiab.R")
+# Simulation of the workforce is done in the file below: 
+source("Model_Population.R")
 gc()
 
 
 #*********************************************************************************************************
-# 3. Workforce ####
+# 3. Individual actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-# Simulation of the workforce is done in the file below: 
-source("Model_Population.R")
+source("Model_IndivLiab.R")
 gc()
 
 
@@ -151,24 +152,40 @@ source("Model_Sim.R")
 # 6. Results ####
 #*********************************************************************************************************
 
-options(digits = 2, scipen = 6)
+options(digits = 4, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
-var.display <- c("year",  "AL",    "MA",    "AA",   "FR", "FR_MA",
-                 # "ExF",  "EUAAL",   
-                 "UAAL",  "LG",    "NC",    "SC",    
-                 "ADC", "EEC", "ERC",  "C", "B",     
-                 # "I.r" ,   "I.e",  
-                 "i",    "i.r",
-                  "PR", "B_PR", "C_PR"
-                 # "AM"
+# select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
+var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
+                 "AL.act_PR", "AL.ret_PR","AL.term_PR", 
+                 "NC.act_PR", "NC.term_PR", 
+                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "PR"#
+                 
+                 # "ExF",   
+                 # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
+                 #  "ADC", "EEC", "ERC",  "C", "B",     
+                 # "I.r" ,   "I.e", 
+                 # "i",    "i.r",
+                 #, "dERC_PR"
+                 # "AM", "PR",
                  # "C_ADC"
-                 )
+)
 
-r1 <- penSim_results %>% filter(sim == 1) %>% select(one_of(var.display))
-kable(r1, digits = 2)
+r1 <- penSim_results %>% filter(sim == 1, year == 1) %>% select(one_of(var.display))
+kable(r1, digits = 3)
 
 
+# x <- liab$active %>% mutate(NC.rate = NCx / sx)
+# x %<>% filter(year== 1, age == 64)
+# x %>% ggplot(aes(x = ea, y = NC.rate )) + geom_point()+ geom_line()
+# x
+# 
+# 
+# ea.pop <- pp.prototypes::actives %>% filter(planname == "average") %>% group_by(ea) %>%  summarise(ea.tot = sum(nactives)) %>% 
+#           mutate(ea.weight = ea.tot/sum(ea.tot))
+# 
+# ea.pop %>% ggplot(aes(ea, ea.weight)) + geom_bar(stat = "identity") 
+# 
 
 
 # Running time of major modules
