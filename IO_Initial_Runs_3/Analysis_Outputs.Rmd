@@ -38,7 +38,7 @@ source("Functions.R")
 ## Combine selected files into a single list.
 
 folder_run <- "IO_Initial_Runs_3"
-file_select <- dir(folder_run, pattern = "06-13")
+file_select <- dir(folder_run, pattern = ".RData")
 
 
 fn <- function(x) {
@@ -50,9 +50,8 @@ lists_all        <- alply(file_select, 1, fn)
 names(lists_all) <- laply(lists_all, function(x) x$paramlist$runname)
 
 ## Combine the results into a single data frame.
-results_all <- ldply(lists_all, function(x) x$results) %>% select(-X1)
+results_all <- ldply(lists_all, function(x) x$results)  %>% select(-X1)
 
-lists_all$R4F2$paramlist$plan_contributions
 
 ```
 
@@ -60,27 +59,12 @@ lists_all$R4F2$paramlist$plan_contributions
 ```{r, include = FALSE, eval= FALSE}
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
-var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
-                "AL_PR", "NC_PR", "C_PR", "ERC_PR", "PR"#
+var.display <- c("year",  "AL",    "AA",   "FR", "NC", "SC", "UAAL",
+                  "AL_PR","UAAL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "PR")
                  
-                 # "ExF",   
-                 # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
-                #  "ADC", "EEC", "ERC",  "C", "B",     
-                 # "I.r" ,   "I.e", 
-                 # "i",    "i.r",
-                 #, "dERC_PR"
-                 # "AM", "PR",
-                 # "C_ADC"
-                 )
 
-r1 <- results_all %>% filter(sim %in% 1, runname == "R4F3", year <=80) %>% select(one_of(var.display)) %>% 
-  mutate(PR_growth = 100 * (PR/lag(PR) - 1) )
+r1 <- results_all %>% filter(sim %in% 1, year  == 1) %>% select(one_of(var.display))
 kable(r1, digits = 2)
-
-#r1$PR_growth
-
-
-
 ```
 
 
@@ -111,11 +95,6 @@ kable(r1, digits = 2)
 - asset smoothing: 5 years;
 - amortization constant percent, 20 years, open
 
-
-
-# Notes
-
-Using rp2000.hybrid
 
 
 # Scenario 1 

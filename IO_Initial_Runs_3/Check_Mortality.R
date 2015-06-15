@@ -10,7 +10,7 @@ library(knitr)
 library(decrements)
 
 
-rm(list = ls())
+# rm(list = ls())
 source("Functions.R")
 
 
