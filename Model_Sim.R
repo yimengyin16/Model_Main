@@ -120,9 +120,18 @@ s.vector <- seq(0,1,length = s.year + 1)[-(s.year+1)]; s.vector  # a vector cont
 #*************************************************************************************************************
 
 # AL(j)
+penSim0$AL.act  <- .AggLiab$active[, "ALx.a.tot"]
+penSim0$AL.ret  <- .AggLiab$active[, "ALx.r.tot"]
+penSim0$AL.term <- .AggLiab$active[, "ALx.v.tot"] + .AggLiab$term[, "ALx.tot.v"]
+penSim0$AL      <- .AggLiab$active[, "ALx.tot"]   + .AggLiab$term[, "ALx.tot.v"]
+
 penSim0$AL <- .AggLiab$active[, "ALx.tot"] + .AggLiab$term[, "ALx.tot.v"]
 # NC(j)
-penSim0$NC <- .AggLiab$active[, "NCx.tot"] 
+
+penSim0$NC.act  <- .AggLiab$active[, "NCx.a.tot"]
+penSim0$NC.term <- .AggLiab$active[, "NCx.v.tot"] 
+penSim0$NC      <- .AggLiab$active[, "NCx.tot"] 
+
 # B(j)
 penSim0$B  <- .AggLiab$active[, "B.tot"] + .AggLiab$term[, "B.tot.v"]
 # PR(j)
@@ -277,9 +286,16 @@ penSim_results <- bind_rows(penSim_results) %>%
          runname = runname,
          FR      = 100 * AA / exp(log(AL)),
          FR_MA   = 100 * MA / exp(log(AL)),
-         AL_PR   = 100 * AL / PR, 
+         UAAL_PR = 100 * UAAL / PR, 
+         AL_PR   = 100 * AL / PR,
+         AL.act_PR    = 100 * AL.act / PR, 
+         AL.ret_PR    = 100 * AL.ret / PR, 
+         AL.term_PR   = 100 * AL.term / PR, 
          ADC_PR  = 100 * ADC / PR,
          NC_PR   = 100 * NC / PR,
+         NC.act_PR    = 100 * NC.act / PR,
+         NC.term_PR   = 100 * NC.term / PR,
+         SC_PR   = 100 * SC / PR, 
          ERC_PR  = 100 * ERC / PR, 
          C_PR    = 100 * C / PR,
          B_PR    = 100 * B / PR,

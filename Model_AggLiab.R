@@ -7,6 +7,11 @@ get_AggLiab <- function(  .liab   = liab,
                           .paramlist = paramlist,
                           .Global_paramlist = Global_paramlist){
 
+#   .liab   = liab 
+#   .pop   = pop
+#   .paramlist = paramlist
+#   .Global_paramlist = Global_paramlist
+#   
   assign_parmsList(.Global_paramlist, envir = environment())
   assign_parmsList(.paramlist,        envir = environment())
   
@@ -36,16 +41,36 @@ get_AggLiab <- function(  .liab   = liab,
   left_join(.liab$active)
 .liab$active[-(1:3)] <- colwise(na2zero)(.liab$active[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
 active.agg <- .liab$active %>%  
-              mutate(ALx.tot = (ALx + ALx.v) * number.a + ALx.r * number.r, 
+              mutate(ALx.a.tot = ALx * number.a,
+                     ALx.v.tot = ALx.v * number.a,
+                     ALx.r.tot = ALx.r * number.r,
+                     ALx.tot   = (ALx + ALx.v) * number.a + ALx.r * number.r, 
+                     
+                     NCx.a.tot = NCx * number.a,
+                     NCx.v.tot = NCx.v * number.a,
                      NCx.tot = (NCx + NCx.v) * number.a,
+                     
                      PR.tot  = sx * number.a,
                      B.tot   = B * number.r) %>% 
               group_by(year) %>% 
-              summarise(ALx.tot = sum(ALx.tot, na.rm = TRUE), 
+              summarise(
+                        ALx.a.tot = sum(ALx.a.tot, na.rm = TRUE),
+                        ALx.v.tot = sum(ALx.v.tot, na.rm = TRUE),
+                        ALx.r.tot = sum(ALx.r.tot, na.rm = TRUE),
+                        ALx.tot = sum(ALx.tot, na.rm = TRUE), 
+                        
+                        NCx.a.tot = sum(NCx.a.tot, na.rm = TRUE),
+                        NCx.v.tot = sum(NCx.v.tot, na.rm = TRUE),
                         NCx.tot = sum(NCx.tot, na.rm = TRUE),
+                        
                         PR.tot  = sum(PR.tot,  na.rm = TRUE),
                         B.tot   = sum(B.tot,   na.rm = TRUE)) %>% 
               as.matrix # extracting elements from matrices is much faster than from data.frame
+
+
+# x <- active.agg %>% filter(year==1)
+# x$ALx.tot %>% which.max
+# x[2070,]
 
 
 # Save 10 seconds by using data.table to merge
