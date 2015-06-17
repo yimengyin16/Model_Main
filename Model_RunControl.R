@@ -18,16 +18,17 @@ library(foreach)
 library(doParallel)
 library(microbenchmark)
 library(data.table)
-# library(xlsx)
-# library(XLConnect) # slow but convenient because it reads ranges
 library(readxl)
 library(stringr)
+# library(xlsx)
+# library(XLConnect) # slow but convenient because it reads ranges
 #devtools::install_github("donboyd5/decrements")
 #devtools::install_github("donboyd5/pp.prototypes")
 
-load("Data/example_Salary_benefit.RData")
-library(decrements)
 library(pp.prototypes)
+library(decrements) # mortality and termination for now
+load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
+# load("Data/example_Salary_benefit.RData")
 
 
 source("Functions.R")
@@ -36,48 +37,49 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 
 
-## for replicating David and Gang's paper
-
-dg.rate   <- 0.0568
-init.rate <- 0.0568
-
-act.tot <- 108
-ret.tot <- 54
-
-
-salgrowth.hist   <- salgrowth.hist   %>% mutate(sscale.hist.rate   = dg.rate)
-salgrowth.assume <- salgrowth.assume %>% mutate(sscale.assume.rate = dg.rate)
-
-
-df <- expand.grid(age = 20:64, ea = 20:64) %>% 
-       mutate(planname = "average",
-         nactives = act.tot/n()) %>% 
-         group_by(ea) %>% 
-         mutate(salary = (1 + init.rate)^(0:(length(age) - 1) )) %>% 
-  filter(age >= ea, age %in% 30:64, ea %in% 30:64)
-
- # x <- df %>% mutate(f = 0.02 * (65-ea) * max(salary)) %>% ungroup %>% filter(age == 64)
- # x$f %>%  mean # average projected benefit
- 
-df$salary %>% mean
-
-
-actives %<>% filter(planname != "average" ) %>% rbind(df)
-
-
-df2 <- data.frame(planname = "average", age = 65:90) %>% 
-       mutate(nretirees = ret.tot/n(),
-              benefit   = 2) #  
-df2
-retirees %<>% filter(planname != "average" ) %>% rbind(df2)
-
-retirees
-
-# termination rate
-termination$qxt <- 0
-
-# whether to exclude retirees
-retirees %<>% mutate(nretirees = 1*nretirees) 
+# ## for replicating David and Gang's paper
+# 
+# # 0.04, 0.045, 0.050, 0.0568, 0.06, 0.065, 0.07 
+# dg.rate   <- 0.0568
+# init.rate <- 0.0568 
+# 
+# act.tot <- 108
+# ret.tot <- 54
+# 
+# 
+# salgrowth.hist   <- salgrowth.hist   %>% mutate(sscale.hist.rate   = dg.rate)
+# salgrowth.assume <- salgrowth.assume %>% mutate(sscale.assume.rate = dg.rate)
+# 
+# 
+# df <- expand.grid(age = 20:64, ea = 20:64) %>% 
+#        mutate(planname = "average",
+#          nactives = act.tot/n()) %>% 
+#          group_by(ea) %>% 
+#          mutate(salary = (1 + init.rate)^(0:(length(age) - 1) )) %>% 
+#   filter(age >= ea, age %in% 30:64, ea %in% 30:64)
+# 
+#  # x <- df %>% mutate(f = 0.02 * (65-ea) * max(salary)) %>% ungroup %>% filter(age == 64)
+#  # x$f %>%  mean # average projected benefit
+#  
+# df$salary %>% mean
+# 
+# 
+# actives %<>% filter(planname != "average" ) %>% rbind(df)
+# 
+# 
+# df2 <- data.frame(planname = "average", age = 65:90) %>% 
+#        mutate(nretirees = ret.tot/n(),
+#               benefit   = 2) #  
+# df2
+# retirees %<>% filter(planname != "average" ) %>% rbind(df2)
+# 
+# retirees
+# 
+# # termination rate
+# termination$qxt <- 0
+# 
+# # whether to exclude retirees
+# retirees %<>% mutate(nretirees = 0*nretirees) 
 
 
 
@@ -132,7 +134,6 @@ runlist
 
 for (runName in runlist){
 
-  
 suppressWarnings(rm(paramlist, Global_paramlist))
   
 ## Extract plan parameters 

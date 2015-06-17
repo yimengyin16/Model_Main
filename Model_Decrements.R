@@ -42,9 +42,6 @@ get_decrements <- function(.paramlist = paramlist,
 assign_parmsList(.Global_paramlist, envir = environment())
 assign_parmsList(.paramlist,        envir = environment())
   
-## Import data
-library(decrements) # mortality and termination for now
-load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
 
 ## From the decrements package
 mort <- mortality   %>% filter(tablename == tablename_mortality)   %>% select(age, qxm)
