@@ -77,6 +77,72 @@ mort %>% filter(tablename %in% table_select) %>%
 
 
 
+#*********************************************************************************************************
+#  Check NC rate  ####
+#*********************************************************************************************************
+
+# Run the following code after running the model with uniform population distribution
+
+NC_rate <- liab$active %>% mutate(NC.rate = NCx / sx) %>%
+           filter(year== 1, age <= 64) %>% # NC rate by ea (NC rates are the same given ea under EAN.CP)
+           left_join(actives %>% filter(planname == "average")) %>% 
+           group_by(ea) %>% 
+           summarise(sal.tot = sum(nactives * salary), NC.rate = max(NC.rate)) %>% 
+           mutate(weight = sal.tot / sum(sal.tot),
+                  growth = "growth7pct")
+
+NC_rate %>% ggplot(aes(x = ea, y = NC.rate )) + geom_point()+ geom_line() + theme_bw() + coord_cartesian(ylim = c(0, 0.2))
+NC_rate %>% select(ea, weight) %>% 
+            ggplot(aes(ea, weight)) + geom_bar(stat = "identity") + theme_bw() + 
+            coord_cartesian(ylim = c(0, 0.22))
+
+# Check if the weighted average NC rate is the same as the model output
+with(NC_rate, sum(NC.rate * weight)) # matched! 
+
+save(NC_rate, file  = "IO_Initial_Runs_3/SalGrowth/salGrowth700.RData")
+# 0.40%: NC rate 8.30%
+# 0.45%: NC rate 8.81%
+# 0.50%: NC rate 9.34%
+# 0.568%: NC rate 10.11%
+# 0.60%: NC rate 10.49%
+# 0.65%: NC rate 11.11%
+# 0.7%: NC rate 11.67%
+
+salgrowth.df <- lapply(dir("IO_Initial_Runs_3/SalGrowth/"), 
+                function(x) {load(paste0("IO_Initial_Runs_3/SalGrowth/",x)); return(NC_rate)}) %>% 
+                bind_rows
+salgrowth.df$growth %<>% factor(levels = c("growth4pct", "growth4.5pct", "growth5pct", "growth5.68pct", "growth6pct"
+                                          , "growth6.5pct", "growth7pct"))
+
+ycoord <- salgrowth.df %>% filter(ea == 20) %>% select(NC.rate) %>% unlist
+ylabel <- c("8.30%", "8.81%", "9.34%", "10.11%", "10.49%", "11.11%", "11.67%")
+
+salgrowth.df %>% ggplot(aes(ea, NC.rate, color = growth)) + geom_point() + geom_line() + theme_bw() + 
+                 scale_color_brewer(palette = "Reds") + coord_cartesian(x = 15:66) +
+                 annotate(geom = "text", x = 20, y = ycoord,
+                 label = ylabel,
+                 hjust = 1.2, vjust = 0, size = 3.5)
+  
+                 
+
+# Run the following code after running the model with the "average" population distribution
+NC_rate <- liab$active %>% mutate(NC.rate = NCx / sx) %>%
+  filter(year== 1, age <= 64, ea == age) 
+ 
+weight <- liab$active %>% 
+          left_join(actives %>% filter(planname == "average")) %>% 
+          group_by(ea) %>% 
+          summarise(sal.tot = sum(nactives * salary, na.rm = TRUE)) %>% 
+          mutate(weight = sal.tot / sum(sal.tot))
+
+NC_rate %<>% left_join(weight)  
+
+NC_rate %>% ggplot(aes(x = ea, y = NC.rate )) + geom_point()+ geom_line() + theme_bw() + coord_cartesian(ylim = c(0, 0.2))
+NC_rate %>% select(ea, weight) %>% 
+            ggplot(aes(ea, weight)) + geom_bar(stat = "identity") + theme_bw() + # NC rate at low entry ages are very low
+            coord_cartesian(ylim = c(0, 0.22))
+
+         
 
 
 

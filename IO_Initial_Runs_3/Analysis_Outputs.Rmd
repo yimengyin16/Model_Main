@@ -11,7 +11,7 @@ output:
 
 
 ```{r mainSet options, echo=FALSE, cache=FALSE}
-options(width=120)
+εoptions(width=120)
 knitr::opts_chunk$set(fig.width=14, fig.height=5, echo=FALSE)
 # Note: when saving maps (ggsave), width=16, height=9 seems to get rid of white space
 
@@ -63,7 +63,7 @@ var.display <- c("year",  "AL",    "AA",   "FR", "NC", "SC", "UAAL",
                   "AL_PR","UAAL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "PR")
                  
 
-r1 <- results_all %>% filter(sim %in% 1, year  == 1) %>% select(one_of(var.display))
+r1 <- results_all %>% filter(sim %in% 1, year  <= 80) %>% select(one_of(var.display))
 kable(r1, digits = 2)
 ```
 
