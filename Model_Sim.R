@@ -280,7 +280,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
 
 stopCluster(cl)
 
-# Conbine results into a data frame. 
+# Combine results into a data frame. 
 penSim_results <- bind_rows(penSim_results) %>% 
   mutate(sim     = rep(1:nsim, each = nyear),
          runname = runname,

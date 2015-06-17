@@ -26,7 +26,7 @@ library(stringr)
 #devtools::install_github("donboyd5/pp.prototypes")
 
 library(pp.prototypes)
-library(decrements) # mortality and termination for now
+library(decrements)               # mortality and termination for now
 load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
 # load("Data/example_Salary_benefit.RData")
 
@@ -93,9 +93,6 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 folder_run          <- "IO_Initial_Runs_3"
 filename_RunControl <- "RunControl_initRuns_3.xlsx"
 
-# folder_run          <- "IO_test"
-# filename_RunControl <- "RunControl_test.xlsx"
-
 
 #*********************************************************************************************************
 # Read in Run Control files ####
@@ -109,8 +106,8 @@ Global_params <- read_excel(path_RunControl, sheet="GlobalParams", skip=1)
 
 
 # Import parameters for all plans
-plan_params        <- read_excel(path_RunControl, sheet="RunControl", skip=4) %>% filter(!is.na(runname))
-plan_returns       <- read_excel(path_RunControl, sheet="Returns",    skip=0) %>% filter(!is.na(runname))
+plan_params        <- read_excel(path_RunControl, sheet="RunControl", skip=4)    %>% filter(!is.na(runname))
+plan_returns       <- read_excel(path_RunControl, sheet="Returns",    skip=0)    %>% filter(!is.na(runname))
 plan_contributions <- read_excel(path_RunControl, sheet="Contributions", skip=0) %>% filter(!is.na(runname))
 
 
@@ -155,33 +152,6 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
 ## Run the model
 source("Model_Master.R", echo = TRUE)
 }
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-## Note on the size of output files
-# load("Outputs/Outputs_average1_06-01-2015.RData")
-# outputs_list$results %>% nrow
-# object.size(outputs_list$results)/(1024*1024)
-# 
-# load("Outputs/Outputs_R6F1_06-04-2015.RData")
-# outputs_list$results %>% nrow
-# object.size(outputs_list$results)/(1024*1024)
-
-# Object size in memory is roughly proportional to the number of sims while file size on disk is not.
-# File size is significantly smaller for runs with fixed returns where all runs have identical values. (only 140+KB for 1000 runs). So the variation  
-# So the .RData file is in a compressed format which compresses all repetitive values. 
 
 
 
