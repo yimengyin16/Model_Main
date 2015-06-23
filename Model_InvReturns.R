@@ -3,14 +3,15 @@
 gen_returns <- function(nyear   = Global_paramlist$nyear,
                         nsim    = Global_paramlist$nsim,
                         ir.mean = paramlist$ir.mean,
-                        ir.sd   = paramlist$ir.sd) {
-  
+                        ir.sd   = paramlist$ir.sd,
+                        seed    = 1234) {
+  set.seed(seed)
   i.r <- matrix(rnorm(nyear*nsim, mean = ir.mean, sd = ir.sd),nrow = nyear, ncol = nsim)
   
   if (all(i.r >= -1)) return(i.r) 
   else {
     warning("A draw is disgarded because it contains value(s) smaller than -1.")
-    gen_returns(nyear = nyear, nsim = nsim, ir.mean = ir.mean, ir.sd = ir.sd)}
+    gen_returns(nyear = nyear, nsim = nsim, ir.mean = ir.mean, ir.sd = ir.sd, seed = seed + 1)}
 }
 
 
@@ -30,7 +31,7 @@ if(devMode){
     
     if(sum(paramlist$plan_returns$duration) != Global_paramlist$nyear) stop("Length of return series does not match nsim.", call. = FALSE)
     
-    set.seed(1234)
+    # set.seed(1234)
     i.r <- with(paramlist, mapply(gen_returns, 
                                   nyear = plan_returns$duration, 
                                   nsim  = Global_paramlist$nsim,
@@ -42,6 +43,3 @@ if(devMode){
   }
    
 }
-
-
-
