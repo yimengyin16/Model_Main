@@ -33,21 +33,3 @@ folder_run <- "IO_Initial_Runs"
 # }
 
 
-
-
-rm(list = ls())
-source("Functions.R")
-folder_outputs <- "Outputs"
-
-load(paste0(folder_outputs, "/", "Outputs_R4F1_06-06-2015.RData"))
-draw_quantiles("R4F1", "FR", outputs_list$results)
-
-
-load(paste0(folder_outputs, "/", "Outputs_R4F2_06-06-2015.RData"))
-draw_quantiles("R4F2", "FR", outputs_list$results)
-
-
-load(paste0(folder_outputs, "/", "Outputs_R4F3_06-06-2015.RData"))
-draw_quantiles("R4F3", "FR", outputs_list$results)
-
-
