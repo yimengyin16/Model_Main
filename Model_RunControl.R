@@ -83,15 +83,10 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 
 
-
-
-
-
 #*********************************************************************************************************
 
-
-folder_run          <- "IO_Initial_Runs_3"
-filename_RunControl <- "RunControl_initRuns_3.xlsx"
+folder_run          <- "IO_DemoRun"
+filename_RunControl <- "DemoRun.xlsx"
 
 
 #*********************************************************************************************************
