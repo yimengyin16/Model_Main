@@ -12,5 +12,3 @@ IO*/*_files
 
 # ignore temporary MS files
 ~$*
-
-# *.html
