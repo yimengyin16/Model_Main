@@ -31,7 +31,7 @@ library(magrittr) # to use %<>%
 
 rm(list = ls())
 source("../Functions.R")
-# source("Functions.R")
+#source("Functions.R")
 
 ```
 
@@ -104,7 +104,7 @@ kable(r1, digits = 2)
 
 ```{r S4, echo = FALSE, cache = F}
 
-Runs <- c("Smoothed", "Typical")
+Runs <- c("Smoothed Policy", "Typical Policy")
 
 (draw_quantiles(Runs, "FR", ylim = c(-5, 200)) + geom_hline(yintercept = 100, color = "black", linetype = 2)) %>% print
 
@@ -117,7 +117,7 @@ draw_quantiles(Runs, "ERC_PR", ylim = c(-2, 20)) %>% print
 ```
 
 
-## Examples of Single Simulations: Path is important 
+## Examples of Single Simulations
 
 
 Runs that ends up with similar funded ratio and contribution rates can experience distinct paths. 
@@ -129,7 +129,7 @@ demoSingle1 <- results_all %>% select(runname, year, sim, FR, ERC_PR) %>% gather
 # results_all %>% select(runname, year, sim, FR, ERC_PR) %>% filter(year == max(year), FR >= 57, FR <= 60)
 
 
-demoSingle1 %>% filter(runname == "Typical") %>% ggplot(aes(x = year, y = value, color = factor(sim) )) + theme_bw() + 
+demoSingle1 %>% filter(runname == "Typical Policy") %>% ggplot(aes(x = year, y = value, color = factor(sim) )) + theme_bw() + 
                facet_wrap( ~ variable, scales = "free_y") +  # coord_cartesian(ylim = c(-5, 200)) +
                geom_line(alpha = 0.6) + geom_point(alpha = 0.6) + 
                labs(title = 'Paths of Funded Ratio and Employer Contribution Rates for Selected Runs ("Typical Funding Policy")') 
@@ -141,10 +141,12 @@ demoSingle1 %>% filter(runname == "Typical") %>% ggplot(aes(x = year, y = value,
 ```
 
 
-Paths of funded ratio and contribution rate under different Funding Policies.
 
-```{r S4_singleSim2, echo = FALSE, cache = F， eval = T}
+```{r S4_singleSim2, echo = FALSE, cache = F， eval = F}
 # Compare funding policy under the same simulation
+
+# Paths of funded ratio and contribution rate under different Funding Policies.
+
 
 demoSingle2 <- results_all %>% select(runname, year, sim, FR, ERC_PR, i.r) %>% 
                gather(variable, value, -runname, -year, - sim) %>% 
@@ -176,10 +178,10 @@ demoSingle2 %>% filter(variable == "ERC_PR") %>% ggplot(aes(x = year, y = value,
 
 
 
-# Geometric mean of returns 
 
 
-```{r geoReturn, echo = FALSE}
+
+```{r geoReturn, echo = FALSE, eval = FALSE}
 
 get_geoReturn <- function(x) prod(1 + x)^(1/length(x)) - 1
 

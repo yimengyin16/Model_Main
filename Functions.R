@@ -259,7 +259,7 @@ na2zero <- function(x){x[is.na(x)] <- 0 ;return(x)}
 f2n <- function(x) as.numeric(levels(x)[x])
 #f2n2 <- function(x) as.numeric(as.character(factor(x))) # much slower than f2n
 
-
+get_geoReturn <- function(x) prod(1 + x)^(1/length(x)) - 1
 
 
 ## spline smoothing 
@@ -379,6 +379,38 @@ draw_quantiles  <- function(runName,     # character
   
   plot_q
 }
+
+
+draw_quantiles2  <- function(runName,     # character
+                            varName,     # character
+                            data = results_all,
+                            year.max = 80,
+                            qts = c(0.1, 0.25, 0.5, 0.75, 0.9),
+                            ylim = NULL){
+  
+  df_q <- get_quantiles(runName = runName, 
+                        varName = varName,
+                        data    = data,
+                        year.max = year.max,
+                        qts = qts)  %>% 
+    gather(Quantile, Value, -runname, -year)
+  
+  plot_q <- 
+    ggplot(df_q, aes(x = year, y = Value, color = Quantile)) + theme_bw() + 
+    geom_point(size = 1.5) + geom_line()+ 
+    labs(y = varName, title = paste0("Quantile plot of ", varName, " in ", runName))
+  
+  if(length(runName) > 1) plot_q <- plot_q + facet_wrap( ~ runname) 
+  if(!is.null(ylim)) plot_q <- plot_q + coord_cartesian(ylim = ylim)
+  
+  plot_q
+}
+
+
+
+
+
+
 
 
 
