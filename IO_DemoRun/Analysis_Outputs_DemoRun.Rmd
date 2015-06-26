@@ -1,6 +1,5 @@
 ---
 title: "Demo Runs of the Simulation Model"
-author: "Yimeng Yin"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: 
   html_document:
