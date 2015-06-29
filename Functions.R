@@ -372,7 +372,8 @@ draw_quantiles  <- function(runName,     # character
   plot_q <- 
     ggplot(df_q, aes(x = year, y = Value, color = Quantile)) + theme_bw() + 
     geom_point(size = 1.5) + geom_line()+ 
-    labs(y = varName, title = paste0("Quantile plot of ", varName))
+    labs(y = varName, title = paste0("Quantile plots of ", varName))
+
   
   if(length(runName) > 1) plot_q <- plot_q + facet_grid(. ~ runname) 
   if(!is.null(ylim)) plot_q <- plot_q + coord_cartesian(ylim = ylim)
