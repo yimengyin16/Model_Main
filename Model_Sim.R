@@ -208,7 +208,7 @@ penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     
     
     # Amortize LG(j)
-    if(amort_type == "closed") SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$AM[j], i, m, g, end = FALSE, method = amort_method)  
+    if(amort_type == "closed") SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$AM[j], i, m, infl + prod, end = FALSE, method = amort_method)  
     
     # Supplemental cost in j
     penSim$SC[j] <- switch(amort_type,

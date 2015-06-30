@@ -85,7 +85,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 #*********************************************************************************************************
 
-folder_run          <- "IO_DemoRun"
+folder_run          <- "IO_M1"
 # folder_run          <- "IO_Prelim"
 
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
