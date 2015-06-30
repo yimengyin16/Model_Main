@@ -177,7 +177,7 @@ pmt <- function(p, i, n, end = FALSE){
   return(pmt)  
 }
 
-# pmt(100, 0.08, 10)
+# pmt(100, 0.08, 1)
 # pmt2(100, 0.08, 10, TRUE)
 # pmt2(-100, 0.08, 10)
 
@@ -192,7 +192,7 @@ gaip <- function(p, i, n, g, end = FALSE){
   return(pmt)
 }
 
-# gaip2(100, 0.08, 10, 0.04)
+# gaip(100, 0.08, 1, 0.04)
 # gaip3(100, 0.08, 10, 0.02, end = TRUE)
 
 
