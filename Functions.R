@@ -361,7 +361,7 @@ draw_quantiles  <- function(runName,     # character
                             year.max = 80,
                             qts = c(0.1, 0.25, 0.5, 0.75, 0.9),
                             ylim = NULL){
-  
+    
   df_q <- get_quantiles(runName = runName, 
                         varName = varName,
                         data    = data,
@@ -377,6 +377,8 @@ draw_quantiles  <- function(runName,     # character
   
   if(length(runName) > 1) plot_q <- plot_q + facet_grid(. ~ runname) 
   if(!is.null(ylim)) plot_q <- plot_q + coord_cartesian(ylim = ylim)
+  if(varName == "FR") plot_q <- plot_q + geom_hline(yintercept = 100, color = "black", linetype = 2)
+  
   
   plot_q
 }
