@@ -125,7 +125,7 @@ penSim0$AL.ret  <- .AggLiab$active[, "ALx.r.tot"]
 penSim0$AL.term <- .AggLiab$active[, "ALx.v.tot"] + .AggLiab$term[, "ALx.tot.v"]
 penSim0$AL      <- .AggLiab$active[, "ALx.tot"]   + .AggLiab$term[, "ALx.tot.v"]
 
-penSim0$AL <- .AggLiab$active[, "ALx.tot"] + .AggLiab$term[, "ALx.tot.v"]
+# penSim0$AL      <- .AggLiab$active[, "ALx.tot"]   + .AggLiab$term[, "ALx.tot.v"]
 # NC(j)
 
 penSim0$NC.act  <- .AggLiab$active[, "NCx.a.tot"]

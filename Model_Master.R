@@ -216,7 +216,11 @@ Time_loop # the big loop
 #*********************************************************************************************************
 
 
-outputs_list <- list(results = penSim_results, paramlist = paramlist, Global_paramlist = Global_paramlist)
+outputs_list <- list(results     = penSim_results,
+                     ind_act_ret = AggLiab$ind_act_ret, 
+                     ind_term    = AggLiab$ind_term,
+                     paramlist = paramlist, 
+                     Global_paramlist = Global_paramlist)
 
 # Save outputs to specified folder
 if(!file.exists(folder_run)) dir.create(folder_run)
@@ -230,5 +234,5 @@ gc()
 
 
 
-
+x <- outputs_list$ind_act_ret
 
