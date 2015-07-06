@@ -255,8 +255,9 @@ if(any(ent$avg_ent < 0))  warning("Negative inferred value(s) in the following e
 
 ent %<>% mutate(avg_ent = ifelse(avg_ent < 0, 0, avg_ent))
 
-dist <- ent$avg_ent/sum(ent$avg_ent)
-dist <- lowess(dist, f= 0.1)$y
+dist <- lowess(ent$avg_ent, f= 0.1)$y
+dist <- dist/sum(dist)
+
 
 return(dist)
 }
