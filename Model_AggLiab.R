@@ -35,10 +35,15 @@ get_AggLiab <- function(  .liab   = liab,
 .pop$term <- data.frame(expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.term = 1:nyear),
                        number.v = as.vector(.pop$term))
 
+# summarize term across termination year. Resulting data frame will join .Liab$active as part of the output. 
+ 
+term_reduced <- .pop$term %>% group_by(year, age) %>% summarise(number.v = sum(number.v, na.rm = TRUE))
+
 
 # Join population data frames and liability data frames. 
 .liab$active <- left_join(.pop$active, .pop$retired) %>% 
-  left_join(.liab$active)
+                left_join(.liab$active) #  %>% 
+                # left_join(term_simple)
 .liab$active[-(1:3)] <- colwise(na2zero)(.liab$active[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
 active.agg <- .liab$active %>%  
               mutate(ALx.a.tot = ALx * number.a,
@@ -90,7 +95,8 @@ term.agg <- .liab$term %>%
             B.tot.v   = sum(B.tot.v  , na.rm = TRUE)) %>% 
             as.matrix
 
-return(list(active = active.agg, term = term.agg))
+return(list(active = active.agg, term = term.agg, ind_act_ret = .liab$active, ind_term = term_reduced))
+
 }
 
 start_time_prep_loop <-  proc.time()
