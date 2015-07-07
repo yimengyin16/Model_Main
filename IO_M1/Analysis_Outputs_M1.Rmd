@@ -31,7 +31,7 @@ library(magrittr) # to use %<>%
 
 rm(list = ls())
 
-run_knitr <- FALSE
+run_knitr <- T
 
 if(run_knitr) source("../Functions.R") else source("Functions.R")
 
@@ -150,7 +150,7 @@ F100-6: full smoothing; 7.5% discount
 BRP1  : 15-year cp;     discount rate 7.5%, 
 BRP2  : 15-year cp;     discount rate 6.4%. 
 
-```{r BRP100_1, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+```{r BRP100_1, echo = FALSE, cache = F , eval = TRUE, fig.width=14, fig.height=5}
 
 prefix <- "M1-F100-"
 
@@ -168,7 +168,7 @@ BRP4  : 15-year cp;     discount rate 7.5%,
 BRP5  : 15-year cp;     discount rate 6.4%. 
 
 
-```{r BRP100_1, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+```{r BRP100_2, echo = FALSE, cache = F , eval = TRUE, fig.width=14, fig.height=5}
 
 prefix <- "M1-F100-"
 
@@ -193,7 +193,7 @@ F100-6: full smoothing; 7.5% discount
 BRP1  : 15-year cp;     discount rate 7.5%, 
 BRP2  : 15-year cp;     discount rate 6.4%
 
-```{r BRP75_1, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+```{r BRP75_1, echo = FALSE, cache = F , eval = TRUE, fig.width=14, fig.height=5}
 
 prefix <- "M1-F75-"
 
@@ -209,7 +209,7 @@ BRP4  : 15-year cp;     discount rate 7.5%,
 BRP5  : 15-year cp;     discount rate 6.4%. 
 
 
-```{r BRP100_1, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+```{r BRP75_2, echo = FALSE, cache = F , eval = TRUE, fig.width=14, fig.height=5}
 
 prefix <- "M1-F75-"
 
