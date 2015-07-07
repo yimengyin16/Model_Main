@@ -31,7 +31,7 @@ library(magrittr) # to use %<>%
 
 rm(list = ls())
 
-run_knitr <- FALSE
+run_knitr <- T
 
 if(run_knitr) source("../Functions.R") else source("Functions.R")
 
@@ -65,82 +65,73 @@ results_all <- ldply(lists_all, function(x) x$results) %>% select(-X1)
 ```{r, include = FALSE, eval= FALSE}
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
-var.display <- c("runname", "year",  "AL",    "MA",    "AA",   "FR", "FR_MA",
+var.display <- c("runname", "year",  "AL",    "MA",    "AA",   "FR", # "FR_MA",
                  # "ExF",   
-                 "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
-                 "ADC", "EEC", "ERC",  "C", "B",     
+                 # "UAAL",  "EUAAL", "LG",    
+                 "NC",    "SC", "ADC", "EEC", "ERC",  "C", "B",     
                  # "I.r" ,   "I.e", 
-                 "i",    "i.r",
+                 # "i",    "i.r",
                  "ADC_PR", "C_PR", "ERC_PR", "PR"# , "dERC_PR"
                  # "AM", "PR",
                  # "C_ADC"
                  )
 
-r1 <- results_all %>% filter(sim %in% 1, year == 1) %>% select(one_of(var.display)) %>% 
-      mutate(PR_growth = 100 * (PR/lag(PR) - 1) )
+r1 <- results_all %>% filter(sim %in% 1, year == 1) %>% select(one_of(var.display)) 
 kable(r1, digits = 2)
 
-# Under 
 
 
 ```
 
 
 
+# ADC rate(also NC rate)
 
+```{r, echo = FALSE, cache = F , eval = TRUE}
 
-# Variables to Examine
-- **FR:** Funded ratio
-- **ERC_PR:** Employer contribution rates
-- **C_PR:** Total contribution rates
-- **B_PR:** Benefit payment rates 
+results_all %>% select(runname, year, ADC_PR) %>% filter(runname %in% paste0(c("EAN_", "PUC_"),"Avg")) %>% 
+  ggplot(aes(year, ADC_PR, color = runname)) + geom_line() + geom_point() + coord_cartesian(ylim = c(3,11))
 
+results_all %>% select(runname, year, ADC_PR) %>% filter(runname %in% paste0(c("EAN_", "PUC_"),"Unif")) %>% 
+  ggplot(aes(year, ADC_PR, color = runname)) + geom_line() + geom_point() + coord_cartesian(ylim = c(3,11))
 
-# Funding Policies:
-**F1:** Highly smoothed
-
-- asset smoothing: 10 years;
-- amortization: constant percent, 30 years, open
-
-
-**F2:** highly unsmoothed
-
-- market assets;
-- amortization: constant dollar, 10 years, closed
-
-
-**F3:** typical
-
-- asset smoothing: 5 years;
-- amortization constant percent, 20 years, open
-
-
-
-# Notes
-
-Using rp2000.hybrid
-
-
-# Scenario 1 
-Fixed Return Fixed discount rate and investment return, 7.5% each
-
-
-
-
-```{r S1, echo = FALSE, cache = F , eval = TRUE}
-
-prefix <- "R1F"
-
-draw_quantiles(paste0(prefix, 1:3), "FR", ylim = c(40, 120)) %>% print
-
-draw_quantiles(paste0(prefix, 1:3), "ERC_PR", ylim = c(-2, 100)) %>% print
-
-draw_quantiles(paste0(prefix, 1:3), "C_PR", ylim = c(-2, 100)) %>% print
-
-draw_quantiles(paste0(prefix, 1:3), "B_PR") %>% print
-
+results_all %>% select(runname, year, ADC_PR) %>% filter(runname %in% paste0(c("EAN_", "PUC_"),"mc")) %>% 
+  ggplot(aes(year, ADC_PR, color = runname)) + geom_line() + geom_point() + coord_cartesian(ylim = c(3,11))
 
 ```
+
+
+# Difference in ADC rate
+
+The difference is not that big. 
+But average distribution does gives the highest difference between PUC and EAN in NC rate,
+while Matkin/Chen gives the lowest. 
+
+```{r, echo = FALSE, cache = F , eval = TRUE}
+
+results_all %>% select(runname, year, ADC_PR) %>% spread(runname, ADC_PR) %>% 
+  mutate(Diff_Avg  = PUC_Avg - EAN_Avg,
+         Diff_Unif = PUC_Unif - EAN_Unif,
+         Diff_mc   = PUC_mc -EAN_mc) %>% 
+  select(year, starts_with("Diff")) %>% 
+  gather(PopDist, Diff, -year) %>% 
+  ggplot(aes(year, Diff, color = PopDist)) + geom_line() + geom_point() + coord_cartesian(ylim = c(0,3))
+```
+
+
+# %Difference in ADC (also in ADC rate)
+
+```{r, echo = FALSE}
+results_all %>% select(runname, year, ADC_PR) %>% spread(runname, ADC_PR) %>% 
+  mutate(DiffPct_Avg  = 100*(PUC_Avg - EAN_Avg)/EAN_Avg ,
+         DiffPct_Unif = 100*(PUC_Unif - EAN_Unif)/EAN_Unif,
+         DiffPct_mc   = 100*(PUC_mc - EAN_mc)/EAN_mc) %>% 
+  select(year, starts_with("Diff")) %>% 
+  gather(PopDist, DiffPct, -year) %>% 
+  ggplot(aes(year, DiffPct, color = PopDist)) + geom_line() + geom_point() + coord_cartesian(ylim = c(0,80))
+
+```
+
 
 
 
