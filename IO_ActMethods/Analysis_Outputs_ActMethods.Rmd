@@ -31,7 +31,7 @@ library(magrittr) # to use %<>%
 
 rm(list = ls())
 
-run_knitr <- T
+run_knitr <- F
 
 if(run_knitr) source("../Functions.R") else source("Functions.R")
 
@@ -79,11 +79,12 @@ var.display <- c("runname", "year",  "AL",    "MA",    "AA",   "FR", # "FR_MA",
 r1 <- results_all %>% filter(sim %in% 1, year == 1) %>% select(one_of(var.display)) 
 kable(r1, digits = 2)
 
-
-
 ```
 
 
+Next stpes:
+Need to do a cell-by-cell analysis to better understand the relationship between EAN and PUC, and their interaction
+with salary scale.
 
 # ADC rate(also NC rate)
 
@@ -129,6 +130,56 @@ results_all %>% select(runname, year, ADC_PR) %>% spread(runname, ADC_PR) %>%
   select(year, starts_with("Diff")) %>% 
   gather(PopDist, DiffPct, -year) %>% 
   ggplot(aes(year, DiffPct, color = PopDist)) + geom_line() + geom_point() + coord_cartesian(ylim = c(0,80))
+
+```
+
+
+
+# ADC rate(also NC rate) (no Entrants)
+
+```{r, echo = FALSE, cache = F , eval = TRUE}
+
+results_all %>% select(runname, year, ADC_PR) %>% filter(runname %in% paste0(c("EAN_", "PUC_"),"Avg_ne")) %>% 
+  ggplot(aes(year, ADC_PR, color = runname)) + geom_line() + geom_point() + coord_cartesian(ylim = c(0,30))
+
+results_all %>% select(runname, year, ADC_PR) %>% filter(runname %in% paste0(c("EAN_", "PUC_"),"Unif_ne")) %>% 
+  ggplot(aes(year, ADC_PR, color = runname)) + geom_line() + geom_point() + coord_cartesian(ylim = c(0,30))
+
+results_all %>% select(runname, year, ADC_PR) %>% filter(runname %in% paste0(c("EAN_", "PUC_"),"mc_ne")) %>% 
+  ggplot(aes(year, ADC_PR, color = runname)) + geom_line() + geom_point() + coord_cartesian(ylim = c(0,30))
+
+```
+
+
+
+# Difference in ADC rate (no Entrants)
+
+The difference is not that big. 
+But average distribution does gives the highest difference between PUC and EAN in NC rate,
+while Matkin/Chen gives the lowest. 
+
+```{r, echo = FALSE, cache = F , eval = TRUE}
+
+results_all %>% select(runname, year, ADC_PR) %>% spread(runname, ADC_PR) %>% 
+  mutate(Diff_Avg_ne  = PUC_Avg_ne - EAN_Avg_ne,
+         Diff_Unif_ne = PUC_Unif_ne - EAN_Unif_ne,
+         Diff_mc_ne   = PUC_mc_ne -EAN_mc_ne ) %>% 
+  select(year, starts_with("Diff")) %>% 
+  gather(PopDist, Diff, -year) %>% 
+  ggplot(aes(year, Diff, color = PopDist)) + geom_line() + geom_point() + coord_cartesian(ylim = c(0,20))
+```
+
+
+# %Difference in ADC (also in ADC rate) (no Entrants)
+
+```{r, echo = FALSE}
+results_all %>% select(runname, year, ADC_PR) %>% spread(runname, ADC_PR) %>% 
+  mutate(DiffPct_Avg_ne  = 100*(PUC_Avg_ne - EAN_Avg_ne)/EAN_Avg_ne ,
+         DiffPct_Unif_ne = 100*(PUC_Unif_ne - EAN_Unif_ne)/EAN_Unif_ne,
+         DiffPct_mc_ne   = 100*(PUC_mc_ne - EAN_mc_ne)/EAN_mc_ne) %>% 
+  select(year, starts_with("Diff")) %>% 
+  gather(PopDist, DiffPct, -year) %>% 
+  ggplot(aes(year, DiffPct, color = PopDist)) + geom_line() + geom_point() + coord_cartesian(ylim = c(0,1500))
 
 ```
 
