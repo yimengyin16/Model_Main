@@ -1,0 +1,384 @@
+---
+title: "Exploratory Analysis of Model Outputs"
+author: "Yimeng Yin"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+
+```{r mainSet options, echo=FALSE, cache=FALSE}
+
+# options(width=120)
+knitr::opts_chunk$set(fig.width=14, fig.height=5, echo=FALSE)
+# # Note: when saving maps (ggsave), width=16, height=9 seems to get rid of white space
+
+```
+
+
+
+
+```{r Preamble, echo = FALSE, include  = FALSE}
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(magrittr) # to use %<>%
+
+rm(list = ls())
+
+run_knitr <- T
+
+if(run_knitr) source("../Functions.R") else source("Functions.R")
+
+
+```
+
+
+```{r Read, echo=FALSE, include = FALSE}
+## Combine selected files into a single list.
+
+if(run_knitr) folder_run <- "../IO_CheckRules" else folder_run <- "IO_CheckRules"
+
+file_select <- dir(folder_run, pattern = ".RData")
+
+fn <- function(x) {
+       load(paste0(folder_run, "/", x))
+       outputs_list
+  }
+
+lists_all        <- alply(file_select, 1, fn)
+names(lists_all) <- laply(lists_all, function(x) x$paramlist$runname)
+
+## Combine the results into a single data frame.
+results_all <- ldply(lists_all, function(x) x$results) %>% select(-X1)
+
+```
+
+
+
+
+```{r, echo = FALSE, include = FALSE, eval= TRUE}
+
+# select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
+var.display <- c("year",  "AL",    "MA",    "AA",   "FR", # "FR_MA",  # "ExF",   
+                 "UAAL",  # "EUAAL", "LG",
+                 "NC","SC", "ADC", "EEC", "ERC",  "C",
+                 # "I.r" ,   "I.e", 
+                 # "i",    "i.r",
+                 "ADC_PR", "C_PR", "ERC_PR", "PR","B", "i.r"# , "dERC_PR"
+                 
+                 # "AM", "PR",
+                 # "C_ADC"
+                 )
+
+# r1 <- results_all %>% filter(sim %in% 2, runname == "R50hs") %>% select(one_of(var.display)) %>% 
+#   mutate(PR_growth = 100 * (PR/lag(PR) - 1) )
+# kable(r1, digits = 2)
+
+```
+
+
+
+
+
+# Variables to Examine
+- **FR:** Funded ratio
+- **ERC_PR:** Employer contribution rate
+- **C_PR:** Total contribution rate
+- **NC_PR:** Normal cost rate 
+
+
+# Scenario 1 
+Rxx
+Single cell 20 - 60, No new entrants, deteriministic return, starting off fully funded. 
+
+```{r, echo = FALSE, cache = F , eval = TRUE, warning = FALSE}
+
+prefix <- "R"
+
+draw_quantiles(paste0(prefix, seq(20,60,10)), "FR", ylim = c(60, 120)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10)), "C_PR", ylim = c(-0.5, 15)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10)), "ERC_PR", ylim = c(-0.5, 15)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10)), "NC_PR", ylim = c(-1, 15)) %>% print
+
+# draw_quantiles(paste0(prefix, seq(20,60,10)), "B_PR") %>% print
+
+```
+
+
+Table for Entry Age 20
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R20") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 30
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R30") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 40
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R40") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 50
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R50") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 60
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R60") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+
+
+
+# Scenario 2 
+Rxxh
+Single cell 20 - 60, with new entrants, deteriministic return, starting off fully funded. 
+
+```{r, echo = FALSE, cache = F , eval = TRUE, warning = FALSE}
+
+prefix <- "R"
+sufix <- "h"
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "FR", ylim = c(40, 120)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "ERC_PR", ylim = c(-0.5, 15)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "C_PR", ylim = c(-0.5, 15)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "NC_PR", ylim = c(-1, 15)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "B_PR") %>% print
+
+```
+
+Table for Entry Age 20
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R20h") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 30
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R30h") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 40
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R40h") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 50
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R50h") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 60
+```{r}
+results_all %>% filter(sim %in% 1, runname == "R60h") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+
+
+# Scenario 3 
+Rxxhs
+Single cell 20 - 60, with new entrants, stochastic return, starting off fully funded, no restriction 
+
+```{r, echo = FALSE, cache = F , eval = TRUE, warning = FALSE}
+
+prefix <- "R"
+sufix <- "hs"
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "FR", ylim = c(20, 150)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "ERC_PR", ylim = c(-10, 15)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "C_PR", ylim = c(-15, 20)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "NC_PR", ylim = c(-1, 15)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "B_PR") %>% print
+
+```
+
+
+
+Plots for simulation 3. 
+
+```{r, warning = FALSE}
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), sufix)) %>% select(runname, year, FR) %>% 
+  ggplot(aes(x = year, y = FR)) + geom_line() + geom_point() + facet_grid(. ~ runname)
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), sufix)) %>% select(runname, year, C_PR) %>% 
+  ggplot(aes(x = year, y = C_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname)
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), sufix)) %>% select(runname, year, ERC_PR) %>% 
+  ggplot(aes(x = year, y = ERC_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname)
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), sufix)) %>% select(runname, year, NC_PR) %>% 
+  ggplot(aes(x = year, y = NC_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname)
+
+```
+
+
+
+Table for Entry Age 20
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R20hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 30
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R30hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 40
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R40hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 50
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R50hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 60
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R60hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+
+
+
+# Scenario 4
+Rxxhsr
+Single cell 20 - 60, with new entrants, stochastic return, starting off fully funded, with non-negative restriction on contribution
+
+```{r, echo = FALSE, cache = F , eval = TRUE, warning = FALSE}
+
+prefix <- "R"
+sufix <- "hsr"
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "FR", ylim = c(20, 150)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "ERC_PR", ylim = c(-10, 20)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "C_PR", ylim = c(-15, 15)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "NC_PR", ylim = c(-1, 15)) %>% print
+
+draw_quantiles(paste0(prefix, seq(20,60,10), sufix), "B_PR") %>% print
+
+```
+
+
+
+Plots for simulation 3. 
+
+```{r, warning = FALSE}
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), sufix)) %>% select(runname, year, FR) %>% 
+  ggplot(aes(x = year, y = FR)) + geom_line() + geom_point() + facet_grid(. ~ runname)
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), sufix)) %>% select(runname, year, C_PR) %>% 
+  ggplot(aes(x = year, y = C_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname)
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), sufix)) %>% select(runname, year, ERC_PR) %>% 
+  ggplot(aes(x = year, y = ERC_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname)
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), sufix)) %>% select(runname, year, NC_PR) %>% 
+  ggplot(aes(x = year, y = NC_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname)
+
+```
+
+
+
+Table for Entry Age 20
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R20hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 30
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R30hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 40
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R40hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 50
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R50hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+Table for Entry Age 60
+```{r}
+results_all %>% filter(sim %in% 3, runname == "R60hs") %>% select(one_of(var.display)) %>% kable(digits = 2)
+```
+
+
+
+# Comparing scenarios with and without restriction
+
+Funded Ratio: with and without non-negative restriction
+```{r, warning = FALSE}
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), "hs")) %>% select(runname, year, FR) %>% 
+  ggplot(aes(x = year, y = FR)) + geom_line() + geom_point() + facet_grid(. ~ runname) + labs(title = "FR WITHOUT restriction") + 
+  coord_cartesian(ylim = c(0,300))
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), "hsr")) %>% select(runname, year, FR) %>% 
+  ggplot(aes(x = year, y = FR)) + geom_line() + geom_point() + facet_grid(. ~ runname) + labs(title = "FR WITH restriction") +
+  coord_cartesian(ylim = c(0,300))
+
+```
+
+
+ERC rate: with and without non-negative restriction
+```{r, warning = FALSE}
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), "hs")) %>% select(runname, year, ERC_PR) %>% 
+  ggplot(aes(x = year, y = ERC_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname) + labs(title = "ERC rate WITHOUT restriction") + 
+  coord_cartesian(ylim = c(-15,10))
+
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), "hsr")) %>% select(runname, year, ERC_PR) %>% 
+  ggplot(aes(x = year, y = ERC_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname) + labs(title = "ERC rate WITH restriction") +
+  coord_cartesian(ylim = c(-15,10))
+
+
+```
+
+Total contribution rate: with and without non-negative restriction
+```{r, warning = FALSE}
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), "hs")) %>% select(runname, year, C_PR) %>% 
+  ggplot(aes(x = year, y = C_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname) + labs(title = "Total Contribution rate WITHOUT restriction") + 
+  coord_cartesian(ylim = c(-15,15))
+  
+
+results_all %>% filter(sim %in% 3, year<=80, runname %in% paste0(prefix, seq(20,60,10), "hsr")) %>% select(runname, year, C_PR) %>% 
+  ggplot(aes(x = year, y = C_PR)) + geom_line() + geom_point() + facet_grid(. ~ runname) + labs(title = "Total Contribution rate WITH restriction") +
+  coord_cartesian(ylim = c(-15,15))
+
+```
+
+
+
+
+
+
+
+
+

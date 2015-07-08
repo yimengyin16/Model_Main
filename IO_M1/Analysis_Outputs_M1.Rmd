@@ -146,9 +146,9 @@ draw_quantiles(paste0(prefix, 6:8), "ERC_PR", ylim = c(-2, 35)) %>% print
 
 
 Under stochastic return: mean = 7.5%, SD = 12%
-- F100-6: full smoothing; 7.5% discount
-- BRP1  : 15-year cp;     discount rate 7.5%, 
-- BRP2  : 15-year cp;     discount rate 6.4%. 
+F100-6: full smoothing; 7.5% discount
+BRP1  : 15-year cp;     discount rate 7.5%, 
+BRP2  : 15-year cp;     discount rate 6.4%. 
 
 ```{r BRP100_1, echo = FALSE, cache = F , eval = TRUE, fig.width=14, fig.height=5}
 
@@ -163,10 +163,9 @@ draw_quantiles(paste0(prefix, c("6", "BRP1", "BRP2")), "ERC_PR", ylim = c(-2, 35
 
 
 Under stochastic return: mean = 6.4%, SD = 8%
-
-- BRP3  : Full smoothing; discount rate 7.5%, 
-- BRP4  : 15-year cp;     discount rate 7.5%, 
-- BRP5  : 15-year cp;     discount rate 6.4%. 
+BRP3  : Full smoothing; discount rate 7.5%, 
+BRP4  : 15-year cp;     discount rate 7.5%, 
+BRP5  : 15-year cp;     discount rate 6.4%. 
 
 
 ```{r BRP100_2, echo = FALSE, cache = F , eval = TRUE, fig.width=14, fig.height=5}
@@ -190,10 +189,9 @@ draw_quantiles(paste0(prefix, c("BRP2", "BRP4")), "ERC_PR", ylim = c(-2, 35)) %>
 
 
 Under stochastic return: mean = 7.5%, SD = 12%
-
-- F100-6: full smoothing; 7.5% discount
-- BRP1  : 15-year cp;     discount rate 7.5%, 
-- BRP2  : 15-year cp;     discount rate 6.4%
+F100-6: full smoothing; 7.5% discount
+BRP1  : 15-year cp;     discount rate 7.5%, 
+BRP2  : 15-year cp;     discount rate 6.4%
 
 ```{r BRP75_1, echo = FALSE, cache = F , eval = TRUE, fig.width=14, fig.height=5}
 
@@ -206,10 +204,9 @@ draw_quantiles(paste0(prefix, c("6", "BRP1", "BRP2")), "ERC_PR", ylim = c(-2, 35
 
 
 Under stochastic return: mean = 6.4%, SD = 8%
-
-- BRP3  : Full smoothing; discount rate 7.5%, 
-- BRP4  : 15-year cp;     discount rate 7.5%, 
-- BRP5  : 15-year cp;     discount rate 6.4%. 
+BRP3  : Full smoothing; discount rate 7.5%, 
+BRP4  : 15-year cp;     discount rate 7.5%, 
+BRP5  : 15-year cp;     discount rate 6.4%. 
 
 
 ```{r BRP75_2, echo = FALSE, cache = F , eval = TRUE, fig.width=14, fig.height=5}
