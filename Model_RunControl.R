@@ -82,7 +82,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 # retirees %<>% mutate(nretirees = 0*nretirees) 
 
 
-# "Uniform for average"
+# # "Uniform for average"
 # da <- actives %>% group_by(planname) %>% summarize(mean = mean(nactives))
 # actives %<>% mutate(nactives = as.numeric(da[1,"mean"]))  
 # # with(actives,sum(age*nactives)/sum(nactives))
