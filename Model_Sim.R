@@ -188,6 +188,8 @@ run_sim <- function(      .i.r = i.r,
         )
       }
       
+      # do we need do consider interest when using asset smoothing method1? 
+      
       
       # UAAL(j)
       penSim$UAAL[j] <- with(penSim, AL[j] - AA[j]) 

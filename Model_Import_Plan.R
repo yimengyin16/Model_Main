@@ -82,6 +82,10 @@ sal <- rbind(sal, sal.start)
 sal <- sal[!duplicated(sal[c("age","ea")]),]
 # sal %>% spread(age, salary)
 
+
+# DIRTY TRICK to correct negative salary in "youngplan"
+if(.planname_actives == "youngplan") sal %<>%  mutate(salary =  ifelse(salary <= 0, salary[age == 62], salary ))
+
 if(any(sign(sal$salary) != 1)) stop("Negative value(s) in imputed starting salary.")
 
 return(sal)
@@ -90,6 +94,8 @@ return(sal)
 
 init_sal <- fill_startSal()
 init_sal  
+
+actives %>% filter(planname == "youngplan")
 
 #*************************************************************************************************************
 #                                        Create complete salary history                                  #####                  
@@ -111,6 +117,7 @@ salary <- .SS.all %>% left_join(.init_sal) %>%
   mutate(sx = ifelse(start.year <= 1, salary[year == 1]* scale, 
                      salary[age == ea]* scale)) %>% 
   select(start.year, ea, age, year, sx)
+
 
 return(salary)
 }
@@ -168,9 +175,8 @@ return(benefit)
 benefit <- get_benefit()
 
 
-
 #*************************************************************************************************************
-#                               Generating inital population                                               #####                  
+#                               Generating inital population                                             #####                  
 #*************************************************************************************************************
 
 
@@ -261,8 +267,6 @@ dist <- dist/sum(dist)
 
 return(dist)
 }
-
-
 
 entrants_dist <- get_entrantsDist()
 

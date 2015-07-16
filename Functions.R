@@ -196,6 +196,7 @@ gaip <- function(p, i, n, g, end = FALSE){
 # gaip3(100, 0.08, 10, 0.02, end = TRUE)
 
 
+
 # Constant dollar amortization method
 amort_cd <- function(p, i, m, end = FALSE) rep(pmt(p, i, m, end), m)
 

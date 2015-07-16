@@ -150,7 +150,6 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
     (paramlist$return_type == "internal" &  all(paramlist$plan_returns$ir.sd == 0))){
   
   Global_paramlist$nsim <- 1
-  
 }
 
 ## Run the model
