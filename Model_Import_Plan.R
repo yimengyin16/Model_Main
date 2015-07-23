@@ -232,51 +232,62 @@ get_initPop <- function (.actives          = actives,
  
   
 get_entrantsDist <- function(.actives          = actives,
-                             .paramlist        = paramlist,
-                             .Global_paramlist = Global_paramlist){
+                             .planname         = paramlist$planname_actives,
+                             .range_ea          = paramlist$range_ea,
+                             #.paramlist        = paramlist,
+                             .Global_paramlist = Global_paramlist,
+                             simple = FALSE){
 
 #   .actives          = actives
 #   .paramlist        = paramlist
 #   .Global_paramlist = Global_paramlist  
-  
+#   
   
 assign_parmsList(.Global_paramlist, envir = environment())
-assign_parmsList(.paramlist,        envir = environment())   
+#assign_parmsList(.paramlist,        envir = environment())   
   
-nact <- .actives %>% filter(planname == planname_actives) %>% select(age, ea, nactives)
-# nact %>% spread(age, nactives)
+nact <- .actives %>% filter(planname == .planname) %>% select(age, ea, nactives)
+#nact %>% spread(age, nactives)
 
-  
-nact <- splong(nact, "ea", range_ea) %>% splong("age", range_ea) %>% filter(age >= ea)
-# %>% filter(age >= ea) 
-# nact %>% spread(age, nactives)
+nact1 <- nact %>% filter(age - ea <= 4) %>% group_by(ea) %>% summarise(avg_ent = mean(nactives)) %>% right_join(data.frame(ea = .range_ea))
+while(any(is.na(nact1$avg_ent))) nact1 %<>% mutate(avg_ent = ifelse(is.na(avg_ent), lag(avg_ent) , avg_ent))
+# nact1
+
+nact <- splong(nact, "ea", .range_ea) %>% splong("age", .range_ea) %>% filter(age >= ea)
+#nact <- splong(nact, "ea", range_ea) %>% filter(age >= ea)
+nact %>% spread(age, nactives)
 
 
 ent <- nact %>% filter(age - ea <= 4) %>% group_by(ea) %>% summarise(avg_ent = mean(nactives))
 
 neg_ea <- ent[which(ent$avg_ent < 0), "ea"]
 
-if(any(ent$avg_ent < 0))  warning("Negative inferred value(s) in the following entry age(s): " , as.character(neg_ea), "\n",
-                                  "  Nagative value(s) will be coerced to 0.")
+if(any(ent$avg_ent < 0)){warning("Negative inferred value(s) in the following entry age(s): " , as.character(neg_ea), "\n",
+                                  "  Simple imputation rule is applied")
+                         ent <- nact1                          
+  }
 
-ent %<>% mutate(avg_ent = ifelse(avg_ent < 0, 0, avg_ent))
+# ent %<>% mutate(avg_ent = ifelse(avg_ent < 0, 0, avg_ent))
+
+if(simple) ent <- nact1
 
 dist <- lowess(ent$avg_ent, f= 0.1)$y
 dist <- dist/sum(dist)
-
 
 return(dist)
 }
 
 entrants_dist <- get_entrantsDist()
 
+# entrants_dist
 
 # dist1 <- get_entrantsDist(actives, "average")
 # dist2 <- get_entrantsDist(actives, "underfunded")
-# 
+# get_entrantsDist(actives, "youngplan")
+ 
 # data.frame(ea = paramlist$range_ea, average = dist1, underfunded = dist2) %>% gather(plan, pct, -ea) %>% 
 # ggplot(aes(x = ea, y = pct, color = plan)) + geom_point(size = 3.5) + geom_line(linetype = 3) + theme_bw()
-
+# plot(entrants_dist)
 
 
 

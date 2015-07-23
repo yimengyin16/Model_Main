@@ -68,9 +68,10 @@ results_all %<>% group_by(runname, sim) %>%
                  mutate(dFR = FR - lag(FR),
                         dFR_MA = FR_MA - lag(FR_MA),
                         dC_PR = C_PR - lag(C_PR),
-                        dERC_PR = ERC_PR - lag(ERC_PR)) %>% 
+                        dERC_PR = ERC_PR - lag(ERC_PR),
+                        dPR = (PR - lag(PR))/ PR,
+                        MA_PR = MA / PR) %>% 
                  ungroup
-
 
 ```
 
@@ -136,9 +137,10 @@ draw_quantiles(paste0(prefix, c(0:3, "3c")), "ERC_PR", ylim = c(-2, 35))$plot %>
 
 
 # Amortization period with cp payment
-draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "FR_MA",    ylim = c(0, 250))$plot  
-draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "C_PR",   ylim = c(-2, 35))$plot
-
+draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "FR_MA",    ylim = c(0, 250))$plot + 
+  labs(y = "%", title = "Quantile Plots of Funded Ratio(Based on Market Asset Value)")
+draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "C_PR",   ylim = c(-2, 35))$plot +
+  labs(y = "%", title = "Quantile Plots of Contribution Rate")
 draw_quantiles("A1F075_6" , "FR_MA", ylim = c(0, 250))$df %>% filter(Quantile == "50%")
 
 
@@ -502,9 +504,11 @@ draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "FR_MA", ylim = c(0, 250),  
 draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "C_PR", ylim = c(-2, 35),   year.max = 15)$plot %>% print
 draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "ERC_PR", ylim = c(-2, 35), year.max = 15)$plot %>% print
 
-draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "FR", ylim = c(0, 125),     year.max = 20)$plot %>% print
-draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "FR_MA", ylim = c(0, 125),  year.max = 20)$plot %>% print
-draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "C_PR", ylim = c(-2, 20),   year.max = 20)$plot %>% print
+draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "FR", ylim = c(0, 125),     year.max = 20)$plot +
+  labs(y = "%", title = "Quantile Plots of Funded Ratio(Based on Market Asset Value)")
+  draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "FR_MA", ylim = c(0, 125),  year.max = 20)$plot %>% print
+draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "C_PR", ylim = c(-2, 20),   year.max = 20)$plot +
+  labs(y = "%", title = "Quantile Plots of Total Contribution Rate")
 draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "ERC_PR", ylim = c(-2, 20), year.max = 20)$plot %>% print
 
 # 80-year view
@@ -606,8 +610,10 @@ draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "ERC_PR", ylim = c(-2, 35))$plot  
 
 
 prefix <- "B2F075_"
-draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "FR", ylim = c(0, 250))$plot  %>% print
-draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "C_PR", ylim = c(-2, 35))$plot  %>% print
+draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "FR_MA", ylim = c(0, 250))$plot + 
+   labs(y = "%", title = "Quantile Plots of Funded Ratio Based on Market Asset Value")
+draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "C_PR", ylim = c(-2, 35))$plot + 
+  labs(y = "%", title = "Quantile Plots of Total Total Contribution Rate")
 draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "ERC_PR", ylim = c(-2, 35))$plot  %>% print
 
 
@@ -653,9 +659,11 @@ draw_quantiles(paste0(prefix, c(0, 1)), "ERC_PR", ylim = c(-2, 35))$plot %>% pri
 
 
 prefix <- "B1F075_"
-draw_quantiles(paste0(prefix, c(0, 1)), "FR", ylim = c(0, 250))$plot %>% print
-draw_quantiles(paste0(prefix, c(0, 1)), "C_PR", ylim = c(-2, 35))$plot %>% print
-draw_quantiles(paste0(prefix, c(0, 1)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+draw_quantiles(paste0(prefix, c(0, 1)), "FR_MA", ylim = c(0, 250))$plot +
+   labs(y = "%", title = "Quantile Plots of Funded Ratio(Based on Market Asset Value)")
+draw_quantiles(paste0(prefix, c(0, 1)), "C_PR", ylim = c(-2, 35))$plot +
+   labs(y = "%", title = "Quantile Plots of Total Total Contribution Rate")
+draw_quantiles(paste0(prefix, c(0, 1)), "ERC_PR", ylim = c(-2, 35))$plot 
 
 ```
 

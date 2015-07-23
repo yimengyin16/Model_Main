@@ -90,11 +90,15 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 # dr <- retirees %>% group_by(planname) %>% summarize(mean = mean(nretirees))
 # retirees %<>% mutate(nretirees = as.numeric(dr[1,"mean"]))
 
+# retirees %<>% mutate(nretirees = 0)
+
+actives %<>% mutate(nactives = ifelse(age == 20&ea == 20, nactives, 0))
+
 
 
 #*********************************************************************************************************
 
-folder_run          <- "IO_M1"
+folder_run          <- "IO_M2.1"
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
 
@@ -147,7 +151,8 @@ if(paramlist$exCon) paramlist$plan_contributions <- trans_cont(plan_contribution
 ## Extract global parameters and coerce the number of simulation to 1 when using deterministic investment reuturns.
 Global_paramlist <- Global_params %>% as.list
 if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
-    (paramlist$return_type == "internal" &  all(paramlist$plan_returns$ir.sd == 0))){
+    (paramlist$return_type == "internal" &  all(paramlist$plan_returns$ir.sd == 0))|
+    (paramlist$return_type == "external")){
   
   Global_paramlist$nsim <- 1
 }

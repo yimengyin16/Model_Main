@@ -41,5 +41,7 @@ if(devMode){
     )) %>% 
       do.call(rbind, .)
   }
+  
+  if(paramlist$return_type == "external") source(paste0(folder_run, "/getReturn.R"))
    
 }

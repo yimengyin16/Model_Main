@@ -102,7 +102,10 @@ run_sim <- function(      .i.r = i.r,
            i.r  = 0,
            PR   = 0,
            ADC_PR = 0,
-           C_PR = 0)
+           C_PR = 0,
+           nactives  = 0,
+           nretirees = 0,
+           nterms    = 0)
   penSim0 <- as.list(penSim0)
   
   # matrix representation of amortization: better visualization but large size, used in this excercise
@@ -137,6 +140,10 @@ run_sim <- function(      .i.r = i.r,
   # PR(j)
   penSim0$PR <- .AggLiab$active[, "PR.tot"]
   
+  # nactives, nretirees, nterms
+  penSim0$nactives  <- .AggLiab$active[, "nactives"]
+  penSim0$nretirees <- .AggLiab$active[, "nretirees"]
+  penSim0$nterms    <- .AggLiab$term[,   "nterms"]
   
   cl <- makeCluster(ncore) 
   registerDoParallel(cl)
@@ -317,8 +324,7 @@ run_sim <- function(      .i.r = i.r,
            SC_PR   = 100 * SC / PR, 
            ERC_PR  = 100 * ERC / PR, 
            C_PR    = 100 * C / PR,
-           B_PR    = 100 * B / PR,
-           dERC_PR = ERC_PR - lag(ERC_PR)) %>%
+           B_PR    = 100 * B / PR) %>%
     select(runname, sim, year, everything())
   
   return(penSim_results)
