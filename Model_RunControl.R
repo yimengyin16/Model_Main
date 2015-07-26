@@ -1,7 +1,9 @@
 ## 5/28/2015
 
 
-# Preamble ###############################################################################################
+#*********************************************************************************************************
+#                      Preamble ####
+#*********************************************************************************************************
 
 rm(list = ls())
 gc()
@@ -37,7 +39,11 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 
 
-## for replicating David and Gang's paper
+#*********************************************************************************************************
+#                      Changes for Special Purposes ####
+#*********************************************************************************************************
+
+## 1. For replicating David and Gang's paper
 
 # # 0.04, 0.045, 0.050, 0.0568, 0.06, 0.065, 0.07 
 # dg.rate   <- 0.0568
@@ -82,7 +88,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 # retirees %<>% mutate(nretirees = 0*nretirees) 
 
 
-# # "Uniform for average"
+# 2. "Uniform for average"
 # da <- actives %>% group_by(planname) %>% summarize(mean = mean(nactives))
 # actives %<>% mutate(nactives = as.numeric(da[1,"mean"]))  
 # # with(actives,sum(age*nactives)/sum(nactives))
@@ -90,21 +96,22 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 # dr <- retirees %>% group_by(planname) %>% summarize(mean = mean(nretirees))
 # retirees %<>% mutate(nretirees = as.numeric(dr[1,"mean"]))
 
+
+
+# 3. No retirees  
 # retirees %<>% mutate(nretirees = 0)
 
-# actives %<>% mutate(nactives = ifelse(age == 20&ea == 20, nactives, 0))
+# 4. Only keep a specific age-ea cell of actives
+# actives %<>% mutate(nactives = ifelse(age == 20 & ea == 20, nactives, 0))
 
-
-
-#*********************************************************************************************************
-
-folder_run          <- "IO_M2.1"
-filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
 
 #*********************************************************************************************************
 # Read in Run Control files ####
 #*********************************************************************************************************
+
+folder_run          <- "IO_M2.1"
+filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
 path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)
 

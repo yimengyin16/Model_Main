@@ -216,12 +216,12 @@ amort_sl <- function(p, i, m, end = FALSE){
   }
     
 # Test the functions
-amort_cd(100, 0.08, 10, F)
-amort_cp(100, 0.08, 10, 0.05, F)
-amort_sl(100, 0.08, 10, F)
+# amort_cd(100, 0.08, 10, F)
+# amort_cp(100, 0.08, 10, 0.05, F)
+# amort_sl(100, 0.08, 10, F)
+
 
 # Function for choosing amortization methods
-
 amort_LG <- function(p, i, m, g, end = FALSE, method = "cd"){
   # amortize the gain/loss using specified amortization method
   switch(method,
@@ -396,7 +396,7 @@ draw_quantiles  <- function(runName,     # character
 
 
 draw_quantiles2  <- function(runName,     # character
-                            varName,     # character
+                            varName,      # character
                             data = results_all,
                             year.max = 80,
                             qts = c(0.1, 0.25, 0.5, 0.75, 0.9),
