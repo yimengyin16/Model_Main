@@ -226,7 +226,8 @@ outputs_list <- list(results     = penSim_results,
 # Save outputs to specified folder
 if(!file.exists(folder_run)) dir.create(folder_run)
 
-filename_outputs <- paste0("Outputs_",  paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
+# filename_outputs <- paste0("Outputs_",  paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
+filename_outputs <- paste0("Outputs_",  paramlist$runname, ".RData")
 
 save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
