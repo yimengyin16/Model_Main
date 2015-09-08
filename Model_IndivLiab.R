@@ -42,15 +42,13 @@ assign_parmsList(Global_paramlist, envir = environment())
 assign_parmsList(paramlist,        envir = environment())
 
 
-
-
 min.year <- min(1 - (max.age - (r.max - 1)), 1 - (r.max - 1 - min.ea))
 ## Track down to the year that is the smaller one of the two below: 
- # the year a 120-year-old retiree in year 1 entered the workforce at age r.max - 1 (remeber ea = r.max -  is assigned to all inital retirees)
+ # the year a 120-year-old retiree in year 1 entered the workforce at age r.max - 1 (remeber ea = r.max - 1 is assigned to all inital retirees)
  # the year a r.max year old active in year 1 enter the workforce at age min.ea 
 
 liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = range_age) %>%
-  filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
+  filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. (delet those who never reach year 1.) 
   mutate(year = start.year + age - ea) %>%  # year index in the simulation)
   left_join(.salary) %>%
   left_join(.benefit) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
@@ -64,8 +62,8 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
     n  = pmin(yos, fasyears),                          # years used to compute fas
     fas= ifelse(yos < fasyears, Sx/n, (Sx - lag(Sx, fasyears))/n), # final average salary
     fas= ifelse(age == min(age), 0, fas),
-    COLA.scale = (1 + cola)^(age - min(age)),          # later we can specify other kinds of COLA scale.
-    Bx = benfactor * yos * fas,                        # accrued benefits payable at age r.max
+    COLA.scale = (1 + cola)^(age - min(age)),          # later we can specify other kinds of COLA scale. Note that these are NOT COLA factors. They are used to derive COLA factors for different retirement ages.
+    Bx = benfactor * yos * fas,                        # accrued benefits
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
     B.init = ifelse(start.year < 1 & age >= r.max, benefit[which(!is.na(benefit))] * COLA.scale/COLA.scale[which(!is.na(benefit))], 0), # Calculte future benefits of initial retirees.
