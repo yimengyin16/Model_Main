@@ -8,13 +8,12 @@ nyear = 100,        # # of years in simulation
 nsim  = 10,         # # of sims
 ncore = 6 ,         # # of CPU cores used in parallelled loops
 
+## Restrictions on ea and age ranges
+min.age = 20,
+max.age = 120,
 
-#   ## Restrictions on ea and age ranges
-  max.age = 120,
-  min.age = 20,
-  
-  max.ea = 70,
-  min.ea = 20
+min.ea = 20,
+max.ea = 70
 
 # ## Range of age allowed.
 # range_age = 20:120,
@@ -38,8 +37,8 @@ ncore = 6 ,         # # of CPU cores used in parallelled loops
 
 paramlist <- list(
   
-  runname = "Devlopment",
-  
+  runname = "Development",
+  rundesc = "Development", 
   
   ## 1. Benefit structure
   benfactor = 0.015,  # benefit factor, % of final average salary per year of yos

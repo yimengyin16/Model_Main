@@ -35,8 +35,14 @@ get_IndivLiab <- function(.salary    = salary,
 # Notes:
   # variables relevant to COLA: B, ax, ALx.r
 
-assign_parmsList(.Global_paramlist, envir = environment())
-assign_parmsList(.paramlist,        envir = environment())
+# assign_parmsList(.Global_paramlist, envir = environment())
+# assign_parmsList(.paramlist,        envir = environment())
+
+assign_parmsList(Global_paramlist, envir = environment())
+assign_parmsList(paramlist,        envir = environment())
+
+
+
 
 min.year <- min(1 - (max.age - (r.max - 1)), 1 - (r.max - 1 - min.ea))
 ## Track down to the year that is the smaller one of the two below: 

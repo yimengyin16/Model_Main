@@ -1,0 +1,158 @@
+---
+title: "Exploratory Analysis of Model Outputs"
+author: "Yimeng Yin"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+
+```{r mainSet options, echo=FALSE, cache=FALSE}
+
+# options(width=140)
+# knitr::opts_chunk$set(fig.width=16, fig.height=5, echo=FALSE)
+# # Note: when saving maps (ggsave), width=16, height=9 seems to get rid of white space
+
+```
+
+
+```{r Preamble, echo = FALSE, include  = FALSE}
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(magrittr) # to use %<>%
+library(zoo)
+library(grid)
+
+rm(list = ls())
+
+run_knitr <- F # Set to FALSE if you are going to run the code manually.
+
+if(run_knitr) source("../Functions.R") else source("Functions.R")
+
+```
+
+
+```{r, echo=FALSE, include = FALSE}
+## Combine selected files into a single list.
+
+if(run_knitr) folder_run <- "../IO_M2.1history" else folder_run <- "IO_M2.1history"
+
+file_select <- dir(folder_run, pattern = ".RData")
+
+fn <- function(x) {
+       load(paste0(folder_run, "/", x))
+       outputs_list
+  }
+
+lists_all        <- alply(file_select, 1, fn)
+names(lists_all) <- laply(lists_all, function(x) x$paramlist$runname)
+
+## Combine the results into a single data frame.
+results_all <- ldply(lists_all, function(x) x$results) %>% select(-X1)
+results_all
+
+df_inputs <- read_excel("IO_M2.1history/RepeatingHistoryScenarioData(5).xlsx", sheet="RData", skip=1) %>% 
+             filter(!is.na(i.r)) %>% select(-i.r)
+
+results_all %<>% left_join(df_inputs) 
+
+
+
+```
+
+
+```{r Read, echo=FALSE, include = FALSE}
+results_all %<>% group_by(runname, sim) %>% 
+                 mutate(dFR = FR - lag(FR),
+                        dFR_MA = FR_MA - lag(FR_MA),
+                        dC_PR = C_PR - lag(C_PR),
+                        dERC_PR = ERC_PR - lag(ERC_PR),
+                        dPR = (PR - lag(PR))/ PR,
+                        MA_PR = MA / PR,
+                        abratio =  nactives/nretirees,
+                        MA_B  = MA / B,
+                        C_rgdp = C / rgdp,
+                        ERC_rgdp = ERC / rgdp,
+                        C_ttax = C / ttax,
+                        ERC_ttax = ERC / ttax,
+                        ERC_ttax1 = ERC_ttax/ ERC_ttax[1],
+                        ERC1 = ERC / ERC[1]) %>% 
+                 ungroup
+
+```
+
+
+## Demographics, 100% Initial Funding, no workforce growth
+
+Columns:
+1.	Average
+2.	Young Plan
+3.	Old Plan
+4.	High abratio
+5.	Underfunded Teachers
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "A1"
+
+draw_quantiles(paste0(prefix), "FR_MA",    ylim = c(0, 250))$plot
+draw_quantiles(paste0(prefix), "C_PR")$plot
+draw_quantiles(paste0(prefix), "ERC_PR")$plot
+draw_quantiles(paste0(prefix), "ERC_rgdp")$plot
+draw_quantiles(paste0(prefix), "ERC_ttax")$plot
+draw_quantiles(paste0(prefix), "C_ttax")$plot
+draw_quantiles(paste0(prefix), "ERC_ttax1")$plot
+draw_quantiles(paste0(prefix), "ttax")$plot
+draw_quantiles(paste0(prefix), "ERC")$plot
+draw_quantiles(paste0(prefix), "ERC1")$plot
+
+
+draw_quantiles(paste0(prefix), "FR_MA", ylim = c(0, 100))$plot + theme(legend.position="none") +  
+  ggtitle("Funded Ratio") + labs(y = "Funded Ratio (%)")
+
+draw_quantiles(paste0(prefix), "C", ylim = c(0, 1e7))$plot + theme(legend.position="none") + ggtitle("Total Contribution") + 
+  labs(y = "Total Contribution")
+  
+draw_quantiles(paste0(prefix), "C_PR", ylim = c(-0.5, 18))$plot + theme(legend.position="none")+ 
+  ggtitle("Total Contribution Rate(%)") + 
+  labs(y = "Total Contribution Rate")
+  
+draw_quantiles(paste0(prefix), "C_ttax", ylim = c(0, 0.7* 1e7))$plot + theme(legend.position="none") + 
+  ggtitle("Ratio of Total Contribution to Total Tax Index") + 
+  labs(y = "Ratio")
+  
+
+
+results_all %>% select(year, FR_MA, C, C_PR, C_ttax) %>% kable
+
+
+
+
+# DF100_FR$df %>% glimpse()
+# DF100_C_PR$df
+# DF100_ERC_PR$plot
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

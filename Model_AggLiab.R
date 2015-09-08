@@ -69,7 +69,11 @@ active.agg <- .liab$active %>%
                         NCx.tot = sum(NCx.tot, na.rm = TRUE),
                         
                         PR.tot  = sum(PR.tot,  na.rm = TRUE),
-                        B.tot   = sum(B.tot,   na.rm = TRUE)) %>% 
+                        B.tot   = sum(B.tot,   na.rm = TRUE),
+                        
+                        nactives  = sum(number.a,  na.rm = TRUE),
+                        nretirees = sum(number.r, na.rm = TRUE)
+                        ) %>% 
               as.matrix # extracting elements from matrices is much faster than from data.frame
 
 
@@ -91,8 +95,9 @@ term.agg <- .liab$term %>%
             mutate(ALx.tot.v = ALx.v * number.v,
                    B.tot.v   = B.v  * number.v) %>% 
             group_by(year) %>% 
-            summarise(ALx.tot.v = sum(ALx.tot.v, na.rm = TRUE),
-            B.tot.v   = sum(B.tot.v  , na.rm = TRUE)) %>% 
+            summarise(ALx.tot.v   = sum(ALx.tot.v, na.rm = TRUE),
+                      B.tot.v     = sum(B.tot.v  , na.rm = TRUE),
+                      nterms      = sum(number.v  , na.rm = TRUE)) %>% 
             as.matrix
 
 return(list(active = active.agg, term = term.agg, ind_act_ret = .liab$active, ind_term = term_reduced))

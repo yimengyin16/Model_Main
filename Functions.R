@@ -196,6 +196,7 @@ gaip <- function(p, i, n, g, end = FALSE){
 # gaip3(100, 0.08, 10, 0.02, end = TRUE)
 
 
+
 # Constant dollar amortization method
 amort_cd <- function(p, i, m, end = FALSE) rep(pmt(p, i, m, end), m)
 
@@ -215,12 +216,12 @@ amort_sl <- function(p, i, m, end = FALSE){
   }
     
 # Test the functions
-amort_cd(100, 0.08, 10, F)
-amort_cp(100, 0.08, 10, 0.05, F)
-amort_sl(100, 0.08, 10, F)
+# amort_cd(100, 0.08, 10, F)
+# amort_cp(100, 0.08, 10, 0.05, F)
+# amort_sl(100, 0.08, 10, F)
+
 
 # Function for choosing amortization methods
-
 amort_LG <- function(p, i, m, g, end = FALSE, method = "cd"){
   # amortize the gain/loss using specified amortization method
   switch(method,
@@ -360,32 +361,42 @@ draw_quantiles  <- function(runName,     # character
                             data = results_all,
                             year.max = 80,
                             qts = c(0.1, 0.25, 0.5, 0.75, 0.9),
-                            ylim = NULL){
-    
+                            ylim = NULL,
+                            EEC_line = 5){
+  
+
+  col1 <- colorRampPalette(c("darkgreen","yellowgreen", "dodgerblue4", "orangered", "red4"))
+  
+  if (varName %in% c("C_PR","ERC_PR")) color_values <- rev(col1(length(qts))) else
+                                       color_values <- col1(length(qts))
+  
   df_q <- get_quantiles(runName = runName, 
                         varName = varName,
                         data    = data,
                         year.max = year.max,
                         qts = qts)  %>% 
-    gather(Quantile, Value, -runname, -year)
+    gather(Quantile, Value, -runname, -year) %>% 
+    mutate(Quantile = factor(Quantile, levels = paste0(sort(qts, decreasing = TRUE) * 100, "%")))
+    
   
   plot_q <- 
     ggplot(df_q, aes(x = year, y = Value, color = Quantile)) + theme_bw() + 
     geom_point(size = 1.5) + geom_line()+ 
-    labs(y = varName, title = paste0("Quantile plots of ", varName))
-
+    labs(y = varName, title = paste0("Quantile plots of ", varName)) + 
+    scale_color_manual(values = color_values)
+  
   
   if(length(runName) > 1) plot_q <- plot_q + facet_grid(. ~ runname) 
-  if(!is.null(ylim)) plot_q <- plot_q + coord_cartesian(ylim = ylim)
-  if(varName == "FR") plot_q <- plot_q + geom_hline(yintercept = 100, color = "black", linetype = 2)
-  
-  
-  plot_q
+  if(!is.null(ylim))    plot_q <- plot_q + coord_cartesian(ylim = ylim)
+  if(varName == "FR")   plot_q <- plot_q + geom_hline(yintercept = 100,     color = "black", linetype = 2)
+  if(varName == "C_PR") plot_q <- plot_q + geom_hline(yintercept = EEC_line,color = "black", linetype = 2)
+
+  list(df = df_q, plot = plot_q)
 }
 
 
 draw_quantiles2  <- function(runName,     # character
-                            varName,     # character
+                            varName,      # character
                             data = results_all,
                             year.max = 80,
                             qts = c(0.1, 0.25, 0.5, 0.75, 0.9),

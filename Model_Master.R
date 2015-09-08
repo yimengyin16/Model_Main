@@ -220,19 +220,17 @@ outputs_list <- list(results     = penSim_results,
                      ind_act_ret = AggLiab$ind_act_ret, 
                      ind_term    = AggLiab$ind_term,
                      paramlist = paramlist, 
-                     Global_paramlist = Global_paramlist)
+                     Global_paramlist = Global_paramlist,
+                     entrant_dist = entrants_dist)
 
 # Save outputs to specified folder
 if(!file.exists(folder_run)) dir.create(folder_run)
 
-filename_outputs <- paste0("Outputs_",  paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
+# filename_outputs <- paste0("Outputs_",  paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
+filename_outputs <- paste0("Outputs_",  paramlist$runname, ".RData")
 
 save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
 gc()
 
-
-
-
-x <- outputs_list$ind_act_ret
 
