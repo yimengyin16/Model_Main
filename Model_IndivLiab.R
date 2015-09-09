@@ -65,7 +65,7 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
     COLA.scale = (1 + cola)^(age - min(age)),          # later we can specify other kinds of COLA scale. Note that these are NOT COLA factors. They are used to derive COLA factors for different retirement ages.
     Bx = benfactor * yos * fas,                        # accrued benefits
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
-    B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
+    B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!! Need to be moved to the dataframe for retirees.
     B.init = ifelse(start.year < 1 & age >= r.max, benefit[which(!is.na(benefit))] * COLA.scale/COLA.scale[which(!is.na(benefit))], 0), # Calculte future benefits of initial retirees.
     B  = rowSums(cbind(B, B.init), na.rm = TRUE),
 
@@ -174,9 +174,9 @@ liab.term %<>% as.data.frame %>%
          #year.term = year - (age - age.term),
          B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
          ALx.v = ifelse(age < r.max, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
-                                  B.v * ax)  
+                                     B.v * ax)  
          ) %>% 
-  ungroup %>% 
+  ungroup  %>% 
   select(-start.year, -age.term, -Bx.v, -ax, -COLA.scale, -pxRm) %>% 
   filter(year %in% 1:nyear)
 # liab.term[c("B.v", "ALx.v")] <- colwise(na2zero)(liab.term[c("B.v", "ALx.v")])
