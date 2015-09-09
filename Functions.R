@@ -257,7 +257,14 @@ memory<-function(maxnobjs=5){
 
 na2zero <- function(x){x[is.na(x)] <- 0 ;return(x)}
 
-f2n <- function(x) as.numeric(levels(x)[x])
+f2n <- function(x) {
+  if(is.numeric(x)|is.integer(x)) x else
+    if(!is.factor(x)) stop("Not a factor") else
+    as.numeric(levels(x)[x])
+}
+  
+  
+  
 #f2n2 <- function(x) as.numeric(as.character(factor(x))) # much slower than f2n
 
 get_geoReturn <- function(x) prod(1 + x)^(1/length(x)) - 1
