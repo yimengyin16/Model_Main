@@ -77,11 +77,11 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
     #B  = rowSums(cbind(B, B.init), na.rm = TRUE),
 
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at max.age for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age max.age. 
-    axR = c(get_tla(pxT[age < r.max],i), rep(0, max.age - r.max + 1)),                        # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
-    axRs= c(get_tla(pxT[age < r.max],i, sx[age < r.max]), rep(0, max.age - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
-    
-    axr = c(get_tla(pxT[age < r.min],i), rep(0, max.age - r.min + 1)),                      # Similar to axR, but based on r.min.  For calculation of term benefits when costs are spread up to r.min.        
-    axrs= c(get_tla(pxT[age < r.min],i, sx[age<r.min]), rep(0, max.age - r.min + 1)),       # Similar to axRs, but based on r.min. For calculation of term benefits when costs are spread up to r.min.
+    axR = c(get_tla(pxT[age < r.max], i), rep(0, max.age - r.max + 1)),                        # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
+    axRs= c(get_tla(pxT[age < r.max], i, sx[age < r.max]), rep(0, max.age - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
+  
+    axr = ifelse(ea >= r.min, 0, c(get_tla(pxT[age < r.min], i), rep(0, max.age - r.min + 1))),                 # Similar to axR, but based on r.min.  For calculation of term benefits when costs are spread up to r.min.        
+    axrs= ifelse(ea >= r.min, 0, c(get_tla(pxT[age < r.min], i, sx[age<r.min]), rep(0, max.age - r.min + 1))),  # Similar to axRs, but based on r.min. For calculation of term benefits when costs are spread up to r.min.
     
     ayx = c(get_tla2(pxT[age <= r.max], i), rep(0, max.age - r.max)),                     # need to make up the length of the vector up to age max.age
     ayxs= c(get_tla2(pxT[age <= r.max], i,  sx[age <= r.max]), rep(0, max.age - r.max))   # need to make up the length of the vector up to age max.age
@@ -94,7 +94,7 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
 
 # Calculate normal costs and liabilities of retirement benefits with multiple retirement ages  
 liab.active %<>%   
-  mutate(gx.r  = ifelse(age %in% r.min:r.max, 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits
+  mutate(gx.r  = ifelse(age %in% r.min:r.max, 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits. Early retirement has a penalty factor on benefit. 
          TCx.r = gx.r * Bx * qxr.a * ax,  # term cost of retirement
          PVFBx.r = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
          
@@ -114,13 +114,15 @@ liab.active %<>%
          
          # NC and AL of EAN.CP
          NCx.EAN.CP = ifelse(age < r.max, sx * PVFBx.r[age == min(age)]/(sx[age == min(age)] * ayxs[age == r.max]), 0),
-         ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * axRs,
-         ALx.r      = ifelse(age < r.max, 0, ax * B)  # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods  # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
+         ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * axRs
+         
+         # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
+         # ALx.r      = ifelse(age < r.max, 0, ax * B)  # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods  
   ) 
 
 
 # Calculate normal costs and liabilities of deferred retirement benefits
-# Vested terms begins to receive deferred retirement benefit at r.max.
+# Vested terms begin to receive deferred retirement benefit at r.max.
 # Notes on deferred retirement benefits for vested terms. 
   # 1. Note that the PVFB and AL are different at age r.min - 1. This is very different from the case for retirement benefits with single retirement age, where PVFB = AL for EAN actuarial methods
   #    at age r.manx
@@ -155,9 +157,13 @@ liab.active %<>%
 
 # Calculate AL and benefit payment for retirees having retired at different ages. 
 
-liab.retiree <- 
+liab.retiree <- expand.grid(start.year = c(1 - (.benefit$age - 64), 1:nyear),
+                            ea         = range_ea[range_ea < r.max],
+                            age        = range_age,
+                            age.retire = r.min:r.max) %>% 
+                filter(age >= ea, age.retire >= ea)
 
-
+  
 
 
    
