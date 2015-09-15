@@ -37,11 +37,11 @@ get_IndivLiab <- function(.salary    = salary,
 
 
 # Run the section below when developing new features.   
-  .salary    <-  salary 
-  .benefit   <-  benefit 
-  .decrement <-  decrement
-  .paramlist <-  paramlist
-  .Global_paramlist <-  Global_paramlist  
+  # .salary    <-  salary 
+  # .benefit   <-  benefit 
+  # .decrement <-  decrement
+  # .paramlist <-  paramlist
+  # .Global_paramlist <-  Global_paramlist  
   
 
 assign_parmsList(.Global_paramlist, envir = environment())
@@ -72,9 +72,9 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     
     # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!! Need to be moved to the dataframe for retirees. 
-    #B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit 
-    #B.init = ifelse(start.year < 1 & age >= r.max, benefit[which(!is.na(benefit))] * COLA.scale/COLA.scale[which(!is.na(benefit))], 0), # Calculte future benefits of initial retirees.
-    #B  = rowSums(cbind(B, B.init), na.rm = TRUE),
+    B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit
+    B.init = ifelse(start.year < 1 & age >= r.max, benefit[which(!is.na(benefit))] * COLA.scale/COLA.scale[which(!is.na(benefit))], 0), # Calculte future benefits of initial retirees.
+    B  = rowSums(cbind(B, B.init), na.rm = TRUE),
 
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at max.age for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age max.age. 
     axR = c(get_tla(pxT[age < r.max],i), rep(0, max.age - r.max + 1)),                        # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
@@ -151,11 +151,6 @@ liab.active %<>%
          ) %>% 
   ungroup %>% select(start.year, year, ea, age, everything()) 
 
-
-
-# Calculate AL and benefit payment for retirees having retired at different ages. 
-
-liab.retiree <- 
 
 
 
