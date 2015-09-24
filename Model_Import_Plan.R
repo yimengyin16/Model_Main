@@ -244,7 +244,10 @@ get_entrantsDist <- function(.actives          = actives,
 #   .actives          = actives
 #   .paramlist        = paramlist
 #   .Global_paramlist = Global_paramlist  
-  
+#   .planname = "youngplan"
+#   simpe = TRUE
+#   .range_ea = paramlist$range_ea
+    
 assign_parmsList(.Global_paramlist, envir = environment())
 #assign_parmsList(.paramlist,        envir = environment())   
   
@@ -292,6 +295,13 @@ entrants_dist <- get_entrantsDist()
 # data.frame(ea = paramlist$range_ea, average = dist1, underfunded = dist2) %>% gather(plan, pct, -ea) %>% 
 # ggplot(aes(x = ea, y = pct, color = plan)) + geom_point(size = 3.5) + geom_line(linetype = 3) + theme_bw()
 # plot(entrants_dist)
+
+Name <- "youngplan"
+Name <- "oldplan"
+actives %>% filter(planname == Name) %>% summarise(tot = sum(nactives))
+actives %>% filter(planname == Name, age > 60) %>% summarise(tot = sum(nactives))
+
+
 
 
 

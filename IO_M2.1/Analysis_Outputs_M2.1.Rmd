@@ -104,17 +104,17 @@ planName <- "average"
 
 actives %<>% mutate(yos = age - ea) 
 
-df_age <- actives %>% filter(planname == planName) %>% group_by(age) %>% 
+df_age <- actives %>% filter(planname == planName, age < 60) %>% group_by(age) %>% 
           summarize(nactives_age = sum(nactives)) %>% mutate(pct_age =100* nactives_age / sum(nactives_age)) 
 
-df_ea <-  actives %>% filter(planname == planName) %>% group_by(ea)  %>% 
+df_ea <-  actives %>% filter(planname == planName, age < 60) %>% group_by(ea)  %>% 
           summarize(nactives_ea = sum(nactives))  %>% mutate(pct_ea =100* nactives_ea / sum(nactives_ea)) %>% rename(age = ea)
 
-df_yos <- actives %>% filter(planname == planName) %>% group_by(yos) %>% summarize(nactives_yos = sum(nactives)) %>% mutate(pct_yos =100* nactives_yos / sum(nactives_yos))
+df_yos <- actives %>% filter(planname == planName, age < 60) %>% group_by(yos) %>% summarize(nactives_yos = sum(nactives)) %>% mutate(pct_yos =100* nactives_yos / sum(nactives_yos))
+
+df_dist <- data.frame(age = 20:59, pct_ent = 100*get_entrantsDist(actives, planName, simple = TRUE))
 
 
-
-df_dist <- data.frame(age = 20:64, pct_ent = 100*get_entrantsDist(actives, planName, simple = TRUE))
 
 df_age  %>% ggplot(aes(x = age,  y = pct_age)) + geom_bar(stat = "identity") + theme_bw() + 
             labs(title = "Age Distribution of actives", y = "%")
@@ -124,7 +124,6 @@ df_yos  %>% ggplot(aes(x = yos,  y = pct_yos)) + geom_bar(stat = "identity") + t
 
 df_ea  %>% ggplot(aes(x = age,  y = pct_ea)) + geom_bar(stat = "identity") + theme_bw() + 
             labs(title = "Entry Age Distribution of actives", y = "%")
-
 
 df_dist %>% ggplot(aes(x = age,  y = pct_ent)) + geom_bar(stat = "identity") + theme_bw() + 
             labs(title = "Age Distribution of New Entrants", y = "%")
