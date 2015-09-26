@@ -37,11 +37,11 @@ get_IndivLiab <- function(.salary    = salary,
 
 
 # Run the section below when developing new features.   
-  # .salary    <-  salary 
-  # .benefit   <-  benefit 
-  # .decrement <-  decrement
-  # .paramlist <-  paramlist
-  # .Global_paramlist <-  Global_paramlist  
+  .salary    <-  salary 
+  .benefit   <-  benefit 
+  .decrement <-  decrement
+  .paramlist <-  paramlist
+  .Global_paramlist <-  Global_paramlist  
   
 
 assign_parmsList(.Global_paramlist, envir = environment())
@@ -161,7 +161,8 @@ liab.active %<>%
 liab.retiree <- rbind(
                 # grids for initial retirees in year 1
                 expand.grid(ea         = r.min - 1,
-                            age.retire = r.min,
+                            age.retire = .benefit$age, # This ensures that year of retirement is year 1. 
+                            #age.retire = r.min,
                             start.year = 1 - (.benefit$age - (r.min - 1)),
                             age        = range_age[range_age >= r.min]) %>% 
                             filter(age >= ea + 1 - start.year),

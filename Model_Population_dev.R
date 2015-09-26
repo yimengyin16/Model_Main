@@ -7,7 +7,6 @@ get_Population <- function(.init_pop = init_pop,
                            .paramlist    = paramlist,
                            .Global_paramlist = Global_paramlist){
 
-
 ## Issues
  # growth of workforce(controlled by growth rate or pre-defined path of growth.)
 
@@ -30,6 +29,13 @@ get_Population <- function(.init_pop = init_pop,
  #  (4)Disabled   (dim = 3) later will be expanded to dim = 4, with additional dim being year.disb
  #  (5)Dead       (dim = 3) We do not really need an array for dead, what's needed is only the total number of dead.  
 
+# Run the section below when developing new features.   
+  .init_pop         = init_pop
+  .entrants_dist    = entrants_dist
+  .paramlist        = paramlist
+  .Global_paramlist = Global_paramlist
+  
+  
   
 assign_parmsList(.Global_paramlist, envir = environment())
 assign_parmsList(.paramlist,        envir = environment())  
@@ -51,18 +57,15 @@ wf_dimnames.term <- list(range_ea, range_age, 1:nyear, 1:nyear)
 
 
 # # The array of retirees has 4 dimensions: ea x age x year x year of retirement
-# wf_dim.retire      <- c(length(range_ea), length(range_age), nyear, nyear)
-# wf_dimnames.retire <- list(range_ea, range_age, 1:nyear, 1:nyear)
-
-
+wf_dim.retiree      <- c(length(range_ea), length(range_age), nyear, nyear)
+wf_dimnames.retiree <- list(range_ea, range_age, 1:nyear, 1:nyear)
 
 
 wf_active  <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_disb    <- array(0, wf_dim, dimnames = wf_dimnames) 
-wf_retired <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_dead    <- array(0, wf_dim, dimnames = wf_dimnames)
-wf_term    <- array(0, wf_dim.term, dimnames = wf_dimnames.term)
-
+wf_term    <- array(0, wf_dim.term,    dimnames = wf_dimnames.term)
+wf_retired <- array(0, wf_dim.retiree, dimnames = wf_dimnames.retiree)
 
 #*************************************************************************************************************
 #                                     Setting initial population  ####
@@ -342,6 +345,10 @@ Time_wf <- end_time_wf - start_time_wf
 # wf_term[,,2,1]
 
 
-
-
+x <- data.frame(age = 40:120)
+x %>% mutate(ea = 39,
+             year.retire = 1,
+             year = 1,
+             start.year = 1 - (age - 39),
+             age.retire = age) 
 
