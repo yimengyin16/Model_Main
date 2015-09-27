@@ -37,11 +37,11 @@ get_IndivLiab <- function(.salary    = salary,
 
 
 # Run the section below when developing new features.   
-  .salary    <-  salary 
-  .benefit   <-  benefit 
-  .decrement <-  decrement
-  .paramlist <-  paramlist
-  .Global_paramlist <-  Global_paramlist  
+#   .salary    <-  salary 
+#   .benefit   <-  benefit 
+#   .decrement <-  decrement
+#   .paramlist <-  paramlist
+#   .Global_paramlist <-  Global_paramlist  
   
 
 assign_parmsList(.Global_paramlist, envir = environment())

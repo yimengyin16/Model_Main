@@ -126,27 +126,27 @@ source("Model_InvReturns.R")
 #*********************************************************************************************************
 # 2. Population ####
 #*********************************************************************************************************
-source("Model_Population.R")
+source("Model_Population_dev.R")
 gc()
 
 
 #*********************************************************************************************************
 # 3. Individual actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-source("Model_IndivLiab.R")
+source("Model_IndivLiab_dev.R")
 gc()
 
 
 #*********************************************************************************************************
 # 4. Aggregate actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-source("Model_AggLiab.R")
+source("Model_AggLiab_dev.R")
 gc()
 
 #*********************************************************************************************************
 # 5.  Simulation ####
 #*********************************************************************************************************
-source("Model_Sim.R")
+source("Model_Sim_dev.R")
 
 
 #*********************************************************************************************************
@@ -157,21 +157,21 @@ options(digits = 4, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
-                 "AL.act_PR", "AL.ret_PR","AL.term_PR", 
-                 "NC.act_PR", "NC.term_PR", 
-                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "PR"#
+                 #"AL.act_PR", "AL.ret_PR","AL.term_PR", 
+                 #"NC.act_PR", "NC.term_PR", 
+                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "PR",#
                  
                  # "ExF",   
                  # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  #  "ADC", "EEC", "ERC",  "C", "B",     
-                 # "I.r" ,   "I.e", 
-                 # "i",    "i.r",
+                 # "I.r" ,   "I.e"
+                  "i",    "i.r"
                  #, "dERC_PR"
                  # "AM", "PR",
                  # "C_ADC"
 )
 
-r1 <- penSim_results %>% filter(sim == 1, year == 1) %>% select(one_of(var.display))
+r1 <- penSim_results %>% filter(sim == 1, year %in% 1:30) %>% select(one_of(var.display))
 kable(r1, digits = 3)
 
 
