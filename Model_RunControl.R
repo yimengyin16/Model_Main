@@ -99,10 +99,11 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 
 # 3. No retirees  
-# retirees %<>% mutate(nretirees = 0)
+retirees %<>% mutate(nretirees = 0)
 
 # 4. Only keep a specific age-ea cell of actives
-# actives %<>% mutate(nactives = ifelse(age == 20 & ea == 20, nactives, 0))
+actives %<>% mutate(nactives = ifelse(age == 20 & ea == 20, 1, 0))
+# actives %<>% mutate(nactives = 0)
 
 
 

@@ -68,7 +68,9 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
   group_by(ea) 
 
 decrement$qxr <- na2zero(decrement$qxr)
-decrement$qxr <- ifelse(decrement$age == r.max, 1, 0) # Single retirement age. 
+decrement$qxr <- ifelse(decrement$age == 65, 1, ifelse(decrement$age == 64, 0.5, 0)) # Single retirement age.
+decrement$qxt <- 0
+
 
 
 ## define decrements for status and calculte survival probabilities. 

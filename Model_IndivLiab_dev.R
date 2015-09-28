@@ -188,7 +188,7 @@ liab.retiree %<>% as.data.frame %>%
                   group_by(start.year, ea, age.retire) %>% 
                   mutate(year.retire = start.year + age.retire - ea,
                          B.r   = ifelse(year.retire < 2, benefit[year == 1] * COLA.scale / COLA.scale[year == 1],           # Benefits for initial retirees
-                                                       Bx[age == age.retire] * COLA.scale / COLA.scale[age == age.retire]), # Benefits for new retirees
+                                                      Bx[age == age.retire] * COLA.scale / COLA.scale[age == age.retire]),  # Benefits for new retirees
                          ALx.r = B.r * ax  # Liability for remaining retirement benefits.                                                       
                          ) %>% 
                   ungroup %>% 
@@ -268,5 +268,7 @@ Time_liab
 # y <- "a"
 # rename_(x, "A" = y )
 
+liab$active %>% filter(year == 46, ea == 20, age %in% 64:65 )
+liab$retiree %>% filter(year == 46, ea == 20, age %in% 65:65, year.retire == 46)
 
 

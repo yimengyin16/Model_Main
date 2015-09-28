@@ -103,8 +103,8 @@ decrement_wf <- sapply(decrement, function(x){x[is.na(x)] <- 0; return(x)}) %>% 
 
 decrement_wf %<>% group_by(ea) %>%  
                   mutate(qxr.a = ifelse(age == r.max - 1,
-                         1 - qxt.a - qxm.a - qxd.a, 
-                         lead(qxr.a)*(1 - qxt.a - qxm.a - qxd.a)))
+                                        1 - qxt.a - qxm.a - qxd.a, 
+                                        lead(qxr.a)*(1 - qxt.a - qxm.a - qxd.a)))
 
 # decrement_wf %>% filter(age == 64)
 
