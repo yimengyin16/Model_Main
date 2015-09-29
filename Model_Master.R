@@ -159,7 +159,7 @@ options(digits = 4, scipen = 6)
 var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  #"AL.act_PR", "AL.ret_PR","AL.term_PR", 
                  #"NC.act_PR", "NC.term_PR", 
-                 #"AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "PR",#
+                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "PR",#
                  
                  # "ExF",   
                   "UAAL",  "EUAAL", "LG",    "NC",    "SC",    

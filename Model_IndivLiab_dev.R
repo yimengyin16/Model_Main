@@ -94,9 +94,10 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
 
 # Calculate normal costs and liabilities of retirement benefits with multiple retirement ages  
 liab.active %<>%   
-  mutate(gx.r  = ifelse(age %in% r.min:r.max, 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits. Early retirement has a penalty factor on benefit. 
+  mutate(gx.r  = ifelse(age %in% r.min:r.max, 1, 0), #  1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits. Early retirement has a penalty factor on benefit. 
          TCx.r = gx.r * Bx * qxr.a * ax,  # term cost of retirement
-         PVFBx.r = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
+         PVFBx.r  = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
+         # PVFBx.r2 = c(get_PVFB_r(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
          
          ## NC and AL of UC
          # TCx.r1 = gx.r * qxe * ax,  # term cost of $1's benefit
@@ -105,7 +106,7 @@ liab.active %<>%
          
          # NC and AL of PUC
          TCx.rPUC = ifelse(age == min(age), 0, (Bx / (age - min(age)) * gx.r * qxr.a * ax)), # Note that this is not really term cost 
-         NCx.PUC = c(get_NC.UC(pxT[age <= r.max], v, TCx.rPUC[age <= r.max]), rep(0, max.age - r.max)),
+         NCx.PUC = c(get_NC.UC(pxT[age <= r.max], v, TCx.rPUC[age <= r.max]),  rep(0, max.age - r.max)),
          ALx.PUC = c(get_AL.PUC(pxT[age <= r.max], v, TCx.rPUC[age <= r.max]), rep(0, max.age - r.max)),
          
          # NC and AL of EAN.CD
@@ -125,7 +126,7 @@ liab.active %<>%
 # Vested terms begin to receive deferred retirement benefit at r.max.
 # Notes on deferred retirement benefits for vested terms. 
   # 1. Note that the PVFB and AL are different at age r.min - 1. This is very different from the case for retirement benefits with single retirement age, where PVFB = AL for EAN actuarial methods
-  #    at age r.manx
+  #    at age r.max
   # 2. During each year with a positive probability of termination, a proportion of the active member liability will be shifted to vested term liabilities as active members quit their jobs. At each
   #    new period, changes in the liability side are: reduction in PVFB, increase in AL for terminated and increase in -PVFNC(by NC). Note the first two parts cancel out, so the 
   #    increase in liability side is equal to NC. If the amount of NC is fully contributed to the asset side, the balance sheet will remain balance. 
@@ -180,7 +181,7 @@ liab.retiree <- rbind(
                 data.table(key = "start.year,ea,age.retire,age")
 
 liab.retiree <- merge(liab.retiree,
-                   select(liab.active, start.year, year, ea, age, Bx, ax, COLA.scale, benefit) %>% data.table(key = "ea,age,start.year"), 
+                   select(liab.active, start.year, year, ea, age, Bx, ax, COLA.scale, benefit, gx.r) %>% data.table(key = "ea,age,start.year"), 
                    all.x = TRUE, by = c("ea", "age","start.year")) %>% 
                    arrange(start.year, ea, age.retire)
 
@@ -188,8 +189,8 @@ liab.retiree %<>% as.data.frame %>%
                   group_by(start.year, ea, age.retire) %>% 
                   mutate(year.retire = start.year + age.retire - ea,
                          B.r   = ifelse(year.retire < 2, benefit[year == 1] * COLA.scale / COLA.scale[year == 1],           # Benefits for initial retirees
-                                                      Bx[age == age.retire] * COLA.scale / COLA.scale[age == age.retire]),  # Benefits for new retirees
-                         ALx.r = B.r * ax  # Liability for remaining retirement benefits.                                                       
+                                                      (gx.r * Bx)[age == age.retire] * COLA.scale / COLA.scale[age == age.retire]),  # Benefits for new retirees
+                         ALx.r = ifelse(year.retire == year, 0, B.r * ax)  # Liability for remaining retirement benefits. Liabiltiy in the first year is already included in liability for actives.                                                      
                          ) %>% 
                   ungroup %>% 
                   select(year, ea, age, year.retire, B.r, ALx.r)
@@ -210,8 +211,8 @@ liab.term %<>% as.data.frame %>%
   mutate(year.term = year[age == age.term],
          #year.term = year - (age - age.term),
          B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
-         ALx.v = ifelse(age < r.max, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
-                                     B.v * ax)  
+         ALx.v = ifelse(age <  r.max, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
+                                      B.v * ax)  
          ) %>% 
   ungroup  %>% 
   select(-start.year, -age.term, -Bx.v, -ax, -COLA.scale, -pxRm) %>% 

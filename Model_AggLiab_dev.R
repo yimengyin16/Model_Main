@@ -9,10 +9,10 @@ get_AggLiab <- function(  .liab   = liab,
 
   
   # Run the section below when developing new features.  
-#   .liab   = liab
-#   .pop   = pop
-#   .paramlist = paramlist
-#   .Global_paramlist = Global_paramlist
+  .liab   = liab
+  .pop   = pop
+  .paramlist = paramlist
+  .Global_paramlist = Global_paramlist
 
    
   assign_parmsList(.Global_paramlist, envir = environment())
@@ -35,36 +35,39 @@ get_AggLiab <- function(  .liab   = liab,
 .pop$retired <- data.frame(expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.retire = 1:nyear),
                            number.r = as.vector(.pop$retired))
 
+new_retirees <- .pop$retired %>% filter(year ==  year.retire) %>% rename(number.newr = number.r)
+
+
+
+
 .pop$term <- data.frame(expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.term = 1:nyear),
                        number.v = as.vector(.pop$term))
 
 
 
 
+
 # summarize term across termination year. Resulting data frame will join .Liab$active as part of the output. 
  term_reduced <- .pop$term %>% group_by(year, age) %>% summarise(number.v = sum(number.v, na.rm = TRUE))
-
-
  
- 
+# .liab$active %>% filter(year == 46, ea == 20) 
  
 ## Liabilities and NCs for actives
 # Join population data frames and liability data frames. 
-.liab$active <- left_join(.pop$active, .liab$active) 
+.liab$active <- left_join(.pop$active, .liab$active) %>% left_join(new_retirees)
 .liab$active[-(1:3)] <- colwise(na2zero)(.liab$active[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
 
 active.agg <- .liab$active %>%  
-              mutate(ALx.a.tot = ALx * number.a,
+              mutate(ALx.a.tot = ALx * (number.a + number.newr),  # New retirees should be included when calculating liabilities
                      ALx.v.tot = ALx.v * number.a,
-                     # ALx.r.tot = ALx.r * number.r,
-                     ALx.av.tot   = (ALx + ALx.v) * number.a, # + ALx.r * number.r, 
+                     ALx.av.tot   = ALx.a.tot + ALx.v.tot,
                      
-                     NCx.a.tot = NCx * number.a,
+                     NCx.a.tot = NCx * (number.a),
                      NCx.v.tot = NCx.v * number.a,
-                     NCx.av.tot = (NCx + NCx.v) * number.a,
+                     NCx.av.tot = NCx.a.tot + NCx.v.tot,
                      
                      PR.tot  = sx * number.a
-                     #B.tot   = B * number.r
+
                      ) %>% 
               group_by(year) %>% 
               summarise(

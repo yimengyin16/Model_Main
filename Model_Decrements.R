@@ -67,9 +67,20 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
   filter(age >= ea) %>%
   group_by(ea) 
 
+
 decrement$qxr <- na2zero(decrement$qxr)
-decrement$qxr <- ifelse(decrement$age == 65, 1, ifelse(decrement$age == 64, 0.5, 0)) # Single retirement age.
-decrement$qxt <- 0
+
+# Motifying decrement talbes, mainly for development purposes.
+# decrement$qxr <- ifelse(decrement$age == 65, 1, ifelse(decrement$age == 64, 0.3, 
+#                                                        ifelse(decrement$age == 63, 0.3, 0)
+#                                                        )) # Single retirement age.
+
+# decrement$qxr <- ifelse(decrement$age == 65, 1, ifelse(decrement$age == 64, 0.3, 0))
+
+# decrement$qxr <- ifelse(decrement$age == 65, 1, 0)
+
+
+decrement$qxt <- 0 # no terminations 
 
 
 
