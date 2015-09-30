@@ -159,7 +159,8 @@ options(digits = 4, scipen = 6)
 var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  #"AL.act_PR", "AL.ret_PR","AL.term_PR", 
                  #"NC.act_PR", "NC.term_PR", 
-                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "PR",#
+                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", 
+                 # "PR",#
                  
                  # "ExF",   
                   "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
@@ -172,7 +173,7 @@ var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  # "C_ADC"
 )
 
-r1 <- penSim_results %>% filter(sim == 1, year %in% 1:80) %>% select(one_of(var.display))
+r1 <- penSim_results %>% filter(sim == 1, year %in% 1:105) %>% select(one_of(var.display))
 kable(r1, digits = 3)
 
 

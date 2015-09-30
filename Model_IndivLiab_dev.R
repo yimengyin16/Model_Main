@@ -37,11 +37,11 @@ get_IndivLiab <- function(.salary    = salary,
 
 
 # Run the section below when developing new features.   
-#   .salary    <-  salary 
-#   .benefit   <-  benefit 
-#   .decrement <-  decrement
-#   .paramlist <-  paramlist
-#   .Global_paramlist <-  Global_paramlist  
+  .salary    <-  salary 
+  .benefit   <-  benefit 
+  .decrement <-  decrement
+  .paramlist <-  paramlist
+  .Global_paramlist <-  Global_paramlist  
   
 
 assign_parmsList(.Global_paramlist, envir = environment())
@@ -94,10 +94,12 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
 
 # Calculate normal costs and liabilities of retirement benefits with multiple retirement ages  
 liab.active %<>%   
-  mutate(gx.r  = ifelse(age %in% r.min:r.max, 1, 0), #  1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits. Early retirement has a penalty factor on benefit. 
-         TCx.r = gx.r * Bx * qxr.a * ax,  # term cost of retirement
+  mutate(gx.r  = ifelse(age %in% (r.min):(r.max), 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits. Early retirement has a penalty factor on benefit. 
+         Bx.r  = gx.r * Bx,  # This is the benefit level if the employee starts to CLAIM benefit at age x, not internally retire at age x. 
+         TCx.r = lead(Bx.r) * qxr.a * lead(ax) * v,  # term cost of retirement at the internal retirement age x (start to claim benefit at age x + 1)
+         # TCx.r = Bx.r * qxr.a * ax,
          PVFBx.r  = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
-         # PVFBx.r2 = c(get_PVFB_r(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
+         #PVFBx.r2 = c(get_PVFB_r(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
          
          ## NC and AL of UC
          # TCx.r1 = gx.r * qxe * ax,  # term cost of $1's benefit
@@ -115,11 +117,16 @@ liab.active %<>%
          
          # NC and AL of EAN.CP
          NCx.EAN.CP = ifelse(age < r.max, sx * PVFBx.r[age == min(age)]/(sx[age == min(age)] * ayxs[age == r.max]), 0),
-         ALx.EAN.CP = PVFBx.r - NCx.EAN.CP * axRs
+         PVFNC.EAN.CP = NCx.EAN.CP * axRs,
+         ALx.EAN.CP = PVFBx.r - PVFNC.EAN.CP
          
          # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
          # ALx.r      = ifelse(age < r.max, 0, ax * B)  # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods  
   ) 
+
+# x <- liab.active %>% filter(start.year == 1, ea == 20)
+
+
 
 
 # Calculate normal costs and liabilities of deferred retirement benefits
@@ -190,10 +197,14 @@ liab.retiree %<>% as.data.frame %>%
                   mutate(year.retire = start.year + age.retire - ea,
                          B.r   = ifelse(year.retire < 2, benefit[year == 1] * COLA.scale / COLA.scale[year == 1],           # Benefits for initial retirees
                                                       (gx.r * Bx)[age == age.retire] * COLA.scale / COLA.scale[age == age.retire]),  # Benefits for new retirees
-                         ALx.r = ifelse(year.retire == year, 0, B.r * ax)  # Liability for remaining retirement benefits. Liabiltiy in the first year is already included in liability for actives.                                                      
+                         ALx.r = B.r * ax  # Liability for remaining retirement benefits. Liabiltiy in the first year is already included in liability for actives.                                                      
                          ) %>% 
                   ungroup %>% 
-                  select(year, ea, age, year.retire, B.r, ALx.r)
+                  #select(start.year, year, ea, age, year.retire, age.retire,  B.r, ALx.r, ax, Bx, COLA.scale)
+                  select(year, ea, age, year.retire,  B.r, ALx.r)
+
+#y <- liab.retiree %>% filter(start.year == 1, ea == 20, age.retire == 63)
+
 
 
 # Calculate AL and benefit payment for vested terms terminating at different ages.
@@ -227,7 +238,7 @@ NCx.method   <- paste0("NCx.", actuarial_method)
 ALx.v.method <- paste0("ALx.", actuarial_method, ".v")
 NCx.v.method <- paste0("NCx.", actuarial_method, ".v")
 
-var.names <- c("sx", ALx.method, NCx.method, ALx.v.method, NCx.v.method)
+var.names <- c("sx", ALx.method, NCx.method, ALx.v.method, NCx.v.method, "PVFBx.r")
 liab.active %<>% 
   filter(year %in% 1:nyear) %>%
   select(year, ea, age, one_of(var.names)) %>%
@@ -270,6 +281,30 @@ Time_liab
 # rename_(x, "A" = y )
 
 liab$active %>% filter(year == 46, ea == 20, age %in% 64:65 )
-liab$retiree %>% filter(year == 46, ea == 20, age %in% 65:65, year.retire == 46)
 
+liab$retiree %>% filter(year %in% 43:44, ea == 20, age %in% 62:63, year.retire == 43)
+
+pop$retired[,,43,43] %>% sum
+pop$retired[,,44,43] %>% sum
+
+
+35635*0.8487
+35991*0.8431
+
+35635*11.832
+
+421634 * 0.8487 # ALx 357841 vs 355318
+
+(357841-355318)*1.075
+
+# Now look at how the liability is calculated in liab$active
+liab$active %>% filter(year %in% 43:44, ea == 20, age %in% 62:63)
+# AL = 418657
+418657*0.8487
+ # AL is calculated as PVFB - PVFNC. 
+ # The liability would match if AL is only calculated as PVFB:
+   # 421634 * 0.8487 = 357841
+ # But there is non-negative normal cost 
+   
+   
 

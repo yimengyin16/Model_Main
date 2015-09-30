@@ -101,10 +101,10 @@ decrement_wf <- sapply(decrement, function(x){x[is.na(x)] <- 0; return(x)}) %>% 
     # which means all active members who survive all other risks at (r.max - 1) will enter the status "retired" for sure at age r.max (and collect the benefit regardless 
     # whether they will die at r.max)      
 
-decrement_wf %<>% group_by(ea) %>%  
-                  mutate(qxr.a = ifelse(age == r.max - 1,
-                                        1 - qxt.a - qxm.a - qxd.a, 
-                                        lead(qxr.a)*(1 - qxt.a - qxm.a - qxd.a)))
+# decrement_wf %<>% group_by(ea) %>%  
+#                   mutate(qxr.a = ifelse(age == r.max - 1,
+#                                         1 - qxt.a - qxm.a - qxd.a, 
+#                                         lead(qxr.a)*(1 - qxt.a - qxm.a - qxd.a)))
 
 # decrement_wf %>% filter(age == 64)
 

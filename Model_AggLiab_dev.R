@@ -9,10 +9,10 @@ get_AggLiab <- function(  .liab   = liab,
 
   
   # Run the section below when developing new features.  
-  .liab   = liab
-  .pop   = pop
-  .paramlist = paramlist
-  .Global_paramlist = Global_paramlist
+#   .liab   = liab
+#   .pop   = pop
+#   .paramlist = paramlist
+#   .Global_paramlist = Global_paramlist
 
    
   assign_parmsList(.Global_paramlist, envir = environment())
@@ -54,13 +54,13 @@ new_retirees <- .pop$retired %>% filter(year ==  year.retire) %>% rename(number.
  
 ## Liabilities and NCs for actives
 # Join population data frames and liability data frames. 
-.liab$active <- left_join(.pop$active, .liab$active) %>% left_join(new_retirees)
+.liab$active <- left_join(.pop$active, .liab$active) # %>% left_join(new_retirees)
 .liab$active[-(1:3)] <- colwise(na2zero)(.liab$active[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
 
 active.agg <- .liab$active %>%  
-              mutate(ALx.a.tot = ALx * (number.a + number.newr),  # New retirees should be included when calculating liabilities
+              mutate(ALx.a.tot = ALx * (number.a),  # New retirees should be included when calculating liabilities
                      ALx.v.tot = ALx.v * number.a,
-                     ALx.av.tot   = ALx.a.tot + ALx.v.tot,
+                     ALx.av.tot  = ALx.a.tot + ALx.v.tot,
                      
                      NCx.a.tot = NCx * (number.a),
                      NCx.v.tot = NCx.v * number.a,
@@ -89,6 +89,7 @@ active.agg <- .liab$active %>%
               as.matrix # extracting elements from matrices is much faster than from data.frame
 
 
+
 ## Liabilities and benefits for retirees
 
 .liab$retiree  <- data.table(.liab$retiree, key = "ea,age,year,year.retire")
@@ -103,8 +104,7 @@ retiree.agg <- .liab$retiree %>%
   group_by(year) %>% 
   summarise(ALx.tot.r   = sum(ALx.tot.r, na.rm = TRUE),
             B.tot.r     = sum(B.tot.r  , na.rm = TRUE),
-            nretirees   = sum(number.r , na.rm = TRUE)) %>% 
-  as.matrix
+            nretirees   = sum(number.r , na.rm = TRUE))  %>% as.matrix
 
 
 
@@ -138,4 +138,9 @@ AggLiab <- get_AggLiab()
 
 end_time_prep_loop <-  proc.time()
 Time_prep_loop <- end_time_prep_loop - start_time_prep_loop
+
+AggLiab$active %>% data.frame %>% filter(year %in% 43:46) %>% mutate(ind.AL = ALx.tot.active/nactives)
+AggLiab$retiree %>% data.frame %>% filter(year %in% 43:46) %>% mutate(ind.AL = ALx.tot.r/nretirees)
+
+
 
