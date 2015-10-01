@@ -99,8 +99,7 @@ liab.active %<>%
          TCx.r = lead(Bx.r) * qxr.a * lead(ax) * v,  # term cost of retirement at the internal retirement age x (start to claim benefit at age x + 1)
          # TCx.r = Bx.r * qxr.a * ax,
          PVFBx.r  = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
-         #PVFBx.r2 = c(get_PVFB_r(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
-         
+
          ## NC and AL of UC
          # TCx.r1 = gx.r * qxe * ax,  # term cost of $1's benefit
          # NCx.UC = bx * c(get_NC.UC(pxT[age <= r.max], v, TCx.r1[age <= r.max]), rep(0, 45)),
@@ -120,8 +119,6 @@ liab.active %<>%
          PVFNC.EAN.CP = NCx.EAN.CP * axRs,
          ALx.EAN.CP = PVFBx.r - PVFNC.EAN.CP
          
-         # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
-         # ALx.r      = ifelse(age < r.max, 0, ax * B)  # Remaining liability(PV of unpaid benefit) for retirees, identical for all methods  
   ) 
 
 # x <- liab.active %>% filter(start.year == 1, ea == 20)

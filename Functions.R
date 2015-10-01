@@ -106,31 +106,6 @@ get_PVFB <- function(px, v, TC){ # present values of subsets of TC (fixed end)
 }
 
 
-# 1.3' PVFB of retirement benefit with multiple retirement ages
-get_PVFB_r <- function(px, v, TC){ # present values of subsets of TC (fixed end)
-  # This function compute the total present value of TC[j:n] at the beginning of time j, with j running from 1 to n. 
-  # The function can be used to calculate PVFB of term costs of retirement benefits with multiple retirement ages. 
-  # Note that the only difference from get_PVFB is that the value of current year is exluded. 
-  
-  
-  # Inputs
-  # px: numeric vector of length n. Probability of survival at time 1 through n
-  # v : numeric. discount factor 1/(1 + i)
-  # TC: numeric vector of length n. A series of term costs. Term costs are valued at the begninning of period. 
-  # Returns
-  # PVFBs of fixed end contracting windows of TC. 
-  
-  n <- length(px)
-  
-  PVFB <- sapply(seq_len(n), function(j) ifelse(j == n, TC[j], sum( (cumprod(c(1, (px[j:(n - 1)] * v))) * TC[j:n])[-1] )  ))
-  
-  return(PVFB)
-}
-
-
-
-
-
 # microbenchmark(
 # get_PVFB(rep(0.98, 65), 0.08, rep(1.1, 65))
 # )
