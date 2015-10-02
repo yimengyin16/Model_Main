@@ -157,9 +157,9 @@ options(digits = 4, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
-                 #"AL.act_PR", "AL.ret_PR","AL.term_PR", 
-                 #"NC.act_PR", "NC.term_PR", 
-                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", 
+                 "AL.act_PR", "AL.ret_PR","AL.term_PR", 
+                 "NC.act_PR", "NC.term_PR", 
+                 #"AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", 
                  # "PR",#
                  
                  # "ExF",   
@@ -175,7 +175,6 @@ var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
 
 r1 <- penSim_results %>% filter(sim == 1, year %in% 1:105) %>% select(one_of(var.display))
 kable(r1, digits = 3)
-
 
 
 
