@@ -99,8 +99,8 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
 liab.active %<>%   
   mutate(#gx.r  = ifelse(age %in% (r.min):(r.max), 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits. Early retirement has a penalty factor on benefit. 
          
-         # gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1 - 12 * (r.full - age) * 0.0025, 0) ),
-         gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1, 0) ),
+         gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1 - 12 * (r.full - age) * 0.0025, 0) ),
+         # gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1, 0) ),
          
          Bx.r  = gx.r * Bx,  # This is the benefit level if the employee starts to CLAIM benefit at age x, not internally retire at age x. 
          TCx.r = lead(Bx.r) * qxr.a * lead(ax) * v,  # term cost of retirement at the internal retirement age x (start to claim benefit at age x + 1)

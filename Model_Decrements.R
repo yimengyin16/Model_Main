@@ -80,7 +80,7 @@ decrement$qxr <- na2zero(decrement$qxr)
 
 # decrement$qxr <- ifelse(decrement$age == 65, 1, ifelse(decrement$age == 64, 0.3, 0))
 
-# decrement$qxr <- ifelse(decrement$age == 60, 1, 0)
+# decrement$qxr <- ifelse(decrement$age == 65, 1, 0)
 
 # decrement$qxt <- 0 # no terminations 
 #*************************************************************************************************************

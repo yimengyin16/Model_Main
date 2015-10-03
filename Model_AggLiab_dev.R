@@ -14,7 +14,6 @@ get_AggLiab <- function(  .liab   = liab,
 #   .paramlist = paramlist
 #   .Global_paramlist = Global_paramlist
 
-   
   assign_parmsList(.Global_paramlist, envir = environment())
   assign_parmsList(.paramlist,        envir = environment())
   
@@ -58,11 +57,11 @@ new_retirees <- .pop$retired %>% filter(year ==  year.retire) %>% rename(number.
 .liab$active[-(1:3)] <- colwise(na2zero)(.liab$active[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
 
 active.agg <- .liab$active %>%  
-              mutate(ALx.a.tot = ALx * (number.a),  # New retirees should be included when calculating liabilities
+              mutate(ALx.a.tot = ALx * number.a,  # New retirees should be included when calculating liabilities
                      ALx.v.tot = ALx.v * number.a,
                      ALx.av.tot  = ALx.a.tot + ALx.v.tot,
                      
-                     NCx.a.tot = NCx * (number.a),
+                     NCx.a.tot = NCx * number.a,
                      NCx.v.tot = NCx.v * number.a,
                      NCx.av.tot = NCx.a.tot + NCx.v.tot,
                      
