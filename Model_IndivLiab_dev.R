@@ -80,12 +80,12 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
     axR = c(get_tla(pxT[age < r.max], i), rep(0, max.age - r.max + 1)),                        # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
     axRs= c(get_tla(pxT[age < r.max], i, sx[age < r.max]), rep(0, max.age - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
   
-    axr = ifelse(ea >= r.min, 0, c(get_tla(pxT[age < r.min], i), rep(0, max.age - r.min + 1))),                 # Similar to axR, but based on r.min.  For calculation of term benefits when costs are spread up to r.min.        
-    axrs= ifelse(ea >= r.min, 0, c(get_tla(pxT[age < r.min], i, sx[age<r.min]), rep(0, max.age - r.min + 1))),  # Similar to axRs, but based on r.min. For calculation of term benefits when costs are spread up to r.min.
+#   axr = ifelse(ea >= r.min, 0, c(get_tla(pxT[age < r.min], i), rep(0, max.age - r.min + 1))),                 # Similar to axR, but based on r.min.  For calculation of term benefits when costs are spread up to r.min.        
+#   axrs= ifelse(ea >= r.min, 0, c(get_tla(pxT[age < r.min], i, sx[age<r.min]), rep(0, max.age - r.min + 1))),  # Similar to axRs, but based on r.min. For calculation of term benefits when costs are spread up to r.min.
     
-#     axr = ifelse(ea >= r.full, 0, c(get_tla(pxT[age < r.full], i), rep(0, max.age - r.full + 1))),                 # Similar to axR, but based on r.min.  For calculation of term benefits when costs are spread up to r.min.        
-#     axrs= ifelse(ea >= r.full, 0, c(get_tla(pxT[age < r.full], i, sx[age<r.full]), rep(0, max.age - r.full + 1))),  # Similar to axRs, but based on r.min. For calculation of term benefits when costs are spread up to r.min.
-#     
+    axr = ifelse(ea >= r.full, 0, c(get_tla(pxT[age < r.full], i), rep(0, max.age - r.full + 1))),                 # Similar to axR, but based on r.min.  For calculation of term benefits when costs are spread up to r.min.        
+    axrs= ifelse(ea >= r.full, 0, c(get_tla(pxT[age < r.full], i, sx[age<r.full]), rep(0, max.age - r.full + 1))),  # Similar to axRs, but based on r.min. For calculation of term benefits when costs are spread up to r.min.
+     
     ayx = c(get_tla2(pxT[age <= r.max], i), rep(0, max.age - r.max)),                     # need to make up the length of the vector up to age max.age
     ayxs= c(get_tla2(pxT[age <= r.max], i,  sx[age <= r.max]), rep(0, max.age - r.max))   # need to make up the length of the vector up to age max.age
   )
@@ -99,8 +99,9 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
 liab.active %<>%   
   mutate(#gx.r  = ifelse(age %in% (r.min):(r.max), 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits. Early retirement has a penalty factor on benefit. 
          
-         gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1 - 12 * (r.full - age) * 0.0025, 0) ),
-    
+         # gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1 - 12 * (r.full - age) * 0.0025, 0) ),
+         gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1, 0) ),
+         
          Bx.r  = gx.r * Bx,  # This is the benefit level if the employee starts to CLAIM benefit at age x, not internally retire at age x. 
          TCx.r = lead(Bx.r) * qxr.a * lead(ax) * v,  # term cost of retirement at the internal retirement age x (start to claim benefit at age x + 1)
          # TCx.r = Bx.r * qxr.a * ax,
@@ -286,32 +287,32 @@ Time_liab
 # y <- "a"
 # rename_(x, "A" = y )
 
-liab$active %>% filter(year == 46, ea == 20, age %in% 64:65 )
-
-liab$retiree %>% filter(year %in% 43:44, ea == 20, age %in% 62:63, year.retire == 43)
-
-pop$retired[,,43,43] %>% sum
-pop$retired[,,44,43] %>% sum
-
-
-35635*0.8487
-35991*0.8431
-
-35635*11.832
-
-421634 * 0.8487 # ALx 357841 vs 355318
-
-(357841-355318)*1.075
-
-# Now look at how the liability is calculated in liab$active
-liab$active %>% filter(year %in% 43:44, ea == 20, age %in% 62:63)
-# AL = 418657
-418657*0.8487
- # AL is calculated as PVFB - PVFNC. 
- # The liability would match if AL is only calculated as PVFB:
-   # 421634 * 0.8487 = 357841
- # But there is non-negative normal cost 
-
-x <- liab$active
-   
+# liab$active %>% filter(year == 46, ea == 20, age %in% 64:65 )
+# 
+# liab$retiree %>% filter(year %in% 43:44, ea == 20, age %in% 62:63, year.retire == 43)
+# 
+# pop$retired[,,43,43] %>% sum
+# pop$retired[,,44,43] %>% sum
+# 
+# 
+# 35635*0.8487
+# 35991*0.8431
+# 
+# 35635*11.832
+# 
+# 421634 * 0.8487 # ALx 357841 vs 355318
+# 
+# (357841-355318)*1.075
+# 
+# # Now look at how the liability is calculated in liab$active
+# liab$active %>% filter(year %in% 43:44, ea == 20, age %in% 62:63)
+# # AL = 418657
+# 418657*0.8487
+#  # AL is calculated as PVFB - PVFNC. 
+#  # The liability would match if AL is only calculated as PVFB:
+#    # 421634 * 0.8487 = 357841
+#  # But there is non-negative normal cost 
+# 
+# x <- liab$active
+#    
 
