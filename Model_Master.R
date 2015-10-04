@@ -234,4 +234,7 @@ save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
 gc()
 
+outputs_list$entrant_dist
+
+
 
