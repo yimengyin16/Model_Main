@@ -142,4 +142,4 @@ AggLiab$active %>% data.frame %>% filter(year %in% 43:46) %>% mutate(ind.AL = AL
 AggLiab$retiree %>% data.frame %>% filter(year %in% 43:46) %>% mutate(ind.AL = ALx.tot.r/nretirees)
 
 
-
+AggLiab$retiree

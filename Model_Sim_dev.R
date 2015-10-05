@@ -151,12 +151,12 @@ run_sim <- function(      .i.r = i.r,
   #penSim_results <- list()
   #for(k in 1:nsim){
   
-  penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
+  penSim_results <- foreach(k = -1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     # k <- 1
     # initialize
     penSim <- penSim0
     SC_amort <- SC_amort0 
-    penSim[["i.r"]] <- .i.r[, k]
+    penSim[["i.r"]] <- .i.r[, as.character(k)]
     
     source("Functions.R")
     
@@ -308,7 +308,7 @@ run_sim <- function(      .i.r = i.r,
   
   # Combine results into a data frame. 
   penSim_results <- bind_rows(penSim_results) %>% 
-    mutate(sim     = rep(1:nsim, each = nyear),
+    mutate(sim     = rep(-1:nsim, each = nyear),
            runname = runname,
            FR      = 100 * AA / exp(log(AL)),
            FR_MA   = 100 * MA / exp(log(AL)),
@@ -376,9 +376,6 @@ Time_loop
 # x[1, "ALx.tot"],
 # x[1, 2], # fastest
 # liab_tot_active$ALx.tot[1] , times = 10000)
-
-
-
 
 
 
