@@ -203,11 +203,15 @@ liab.retiree <- merge(liab.retiree,
                    arrange(start.year, ea, age.retire)
 
 
-liab.retiree %<>% as.data.frame  %>% #   filter(ea %in% 21) %>% ungroup() %>%  
-                  group_by(start.year, age.retire, ea) %>% 
+liab.retiree %<>% as.data.frame  %>%  # filter(start.year == -41, ea %in% 20:21, age.retire == 65) %>% 
+                                      # filter(ea %in% 21) %>% 
+                  # group_by(start.year, age.retire, ea) %>% 
+                  group_by(start.year, ea, age.retire) %>%  
                   mutate(
                          year.retire = start.year + age.retire - ea,
-                         B.r   = ifelse(year.retire < 2, benefit[year == 1] * COLA.scale / COLA.scale[year == 1],           # Benefits for initial retirees
+                         Bx = ifelse(is.na(Bx), 0, Bx),
+                         B.r   = ifelse(year.retire < 2, 
+                                        benefit[year == 1] * COLA.scale / COLA.scale[year == 1],                          # Benefits for initial retirees
                                         (gx.r * Bx)[age == age.retire] * COLA.scale / COLA.scale[age == age.retire] ),    # Benefits for new retirees
 #                          x = Bx * 2,
 #                          y = cumsum(gx.r),
@@ -218,16 +222,30 @@ liab.retiree %<>% as.data.frame  %>% #   filter(ea %in% 21) %>% ungroup() %>%
                   select(start.year, year, ea, age, year.retire, age.retire,  B.r, ALx.r, ax, Bx, COLA.scale, gx.r)
                   #select(year, ea, age, year.retire,  B.r, ALx.r)
 
+# young plan 
+#  liab.retiree %>% filter( ea %in% 21, age.retire == 65, year.retire == 3)
+#  
+#  liab.retiree %>% data.frame %>% mutate(x = Bx * gx.r, y = cumsum(gx.r)) %>% filter(ea == 21)
+#  liab.retiree %>% data.frame %>% filter(ea == 21) %>% mutate(B.r = (gx.r * Bx)[age == age.retire] * COLA.scale / COLA.scale[age == age.retire]) %>% filter(ea == 21)
+#  
+#  liab.retiree %>% mutate(x = Bx * gx.r, y = cumsum(gx.r)) %>% filter(ea == 21)
+#  liab.retiree %>% filter(ea == 21) %>% mutate(x = Bx * gx.r, y = cumsum(gx.r))
+#  
+#  liab.retiree %>% na2zero %>% group_by(start.year, ea, age.retire) %>% mutate(x = Bx * gx.r, y = cumsum(gx.r)) %>% filter(ea == 21) 
+#  liab.retiree %>% group_by(ea) %>% na2zero %>% mutate(x = Bx * gx.r, y = cumsum(gx.r)) %>% filter(ea == 21)
+#  
 # 
+#  data.frame()
+ 
+ 
+# underfunded plan
 # liab.retiree %>% filter( ea %in% 20, age.retire == 64, year.retire == 3)
 
-# liab.retiree %<>% group_by(start.year, ea, age.retire) %>% mutate(x = Bx * gx.r, y = cumsum(gx.r), z = cumsum(Bx), z1 = z *2) 
-# liab.retiree %>% mutate(x = Bx * gx.r, y = cumsum(gx.r), z = Bx[year == year.retire]) 
 
 
+######################################
 
-
-
+## young plan
 
 # start.year, ea, age.retire
 # [41, 20:21, 65]: 0 
@@ -239,13 +257,15 @@ liab.retiree %<>% as.data.frame  %>% #   filter(ea %in% 21) %>% ungroup() %>%
 # [. , 20:22, 65]:OK
 
 
-# x = Bx + Bx: NA
-# x =  Bx: Bx
+## underfunded plan
 
-# Problem: zero ALx.r when with start year smaller than -41 or ea smaller than 21.  
 
-# y %<>% mutate(B.r = (gx.r * Bx)[age == age.retire] * COLA.scale / COLA.scale[age == age.retire],
-#               ALx.r = B.r * ax)
+#*************************************
+
+
+
+
+
 
 
 # Calculate AL and benefit payment for vested terms terminating at different ages.

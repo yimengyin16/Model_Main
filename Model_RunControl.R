@@ -99,15 +99,16 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 
 # 3. No retirees  
- retirees %<>% mutate(nretirees = 0)
+#  retirees %<>% mutate(nretirees = 0)
 
 # 4. Only keep a specific age-ea cell of actives
 #  actives %<>% mutate(nactives = ifelse(ea %in% 20 & age %in% 62, 1, 0))
 # actives %<>% mutate(nactives = 1)
-actives %>% filter(planname == "underfunded")
+# actives %>% filter(planname == "underfunded")
 
+# 5. Full set of entry ages and ages. 
 # actives <- expand.grid(ea = 20:64, age = 20:64) %>% filter(age >= ea) %>% mutate(planname = "average", nactives = 1, salary = 1 )
-#rm(actives)
+
 
 
 #*********************************************************************************************************
