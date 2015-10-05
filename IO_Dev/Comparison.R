@@ -1,4 +1,8 @@
 
+# Note:
+ # Need to modify the termination rates when compared with single retirement age with r.min = r.max = 65
+
+
 
 options(digits = 4, scipen = 6)
 
@@ -24,25 +28,25 @@ var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
 
 # average plan
 load("./IO_Dev/Outputs_O1.RData")
-outputs_list$results %>% filter(sim == 1, year %in% 1:10) %>% select(one_of(var.display))
+outputs_list$results %>% as.data.frame %>%filter(sim == 1, year %in% 1:30) %>% select(one_of(var.display))
 
 load("./IO_Dev/Outputs_S1.RData")
-outputs_list$results %>% filter(sim == 1, year %in% 1:10) %>% select(one_of(var.display))
+outputs_list$results %>% as.data.frame %>% filter(sim == 1, year %in% 1:30) %>% select(one_of(var.display))
 
 load("./IO_Dev/Outputs_M1.RData")
-outputs_list$results %>% filter(sim == 1, year %in% 1:10) %>% select(one_of(var.display))
+outputs_list$results %>% as.data.frame %>%filter(sim == 1, year %in% 1:30) %>% select(one_of(var.display))
 
 
 
 # young plan
 load("./IO_Dev/Outputs_O2.RData")
-outputs_list$results %>% filter(sim == 1, year %in% 1:10) %>% select(one_of(var.display))
+outputs_list$results %>% as.data.frame %>% filter(sim == 1, year %in% 1:30) %>% select(one_of(var.display))
 
 load("./IO_Dev/Outputs_S2.RData")
-outputs_list$results %>% filter(sim == 1, year %in% 1:10) %>% select(one_of(var.display))
+outputs_list$results %>% as.data.frame %>% filter(sim == 1, year %in% 1:30) %>% select(one_of(var.display))
 
 load("./IO_Dev/Outputs_M2.RData")
-outputs_list$results %>% filter(sim == 1, year %in% 1:10) %>% select(one_of(var.display))
+outputs_list$results %>% as.data.frame %>% filter(sim == 1, year %in% 1:30) %>% select(one_of(var.display))
 
 
 

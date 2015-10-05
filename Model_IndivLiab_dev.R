@@ -216,7 +216,7 @@ liab.retiree %<>% as.data.frame  %>%  # filter(start.year == -41, ea %in% 20:21,
 #                          x = Bx * 2,
 #                          y = cumsum(gx.r),
 #                          z = Bx[year == year.retire],
-                         ALx.r = B.r * ax  # Liability for remaining retirement benefits. Liabiltiy in the first year is already included in liability for actives.                                                      
+                         ALx.r = B.r * ax  # Liability for remaining retirement benefits.                                                      
                          ) %>%
                   ungroup  %>% 
                   select(start.year, year, ea, age, year.retire, age.retire,  B.r, ALx.r, ax, Bx, COLA.scale, gx.r)

@@ -145,7 +145,6 @@ runlist <- plan_params %>% filter(include == TRUE) %>% select(runname) %>% unlis
 runlist
 
 
-
 ## Run selected plans 
 
 for (runName in runlist){
