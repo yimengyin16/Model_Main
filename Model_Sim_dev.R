@@ -270,10 +270,7 @@ run_sim <- function(      .i.r = i.r,
         penSim$ERC[j] <- as.numeric(plan_contributions[j == plan_contributions$year, "pct_ADC"]) * penSim$ERC[j]
       }
       
-      
-      
-      
-      
+
       
       # C(j)
       penSim$C[j] <- with(penSim, EEC[j] + ERC[j])
