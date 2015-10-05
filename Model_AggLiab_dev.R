@@ -26,17 +26,9 @@ get_AggLiab <- function(  .liab   = liab,
   gather(age, number.a, -ea, -year) %>% 
   mutate(year = f2n(year), age = f2n(age))
 
-# .pop$retired <- adply(.pop$retired, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
-#   rename(year = X1) %>% 
-#   gather(age, number.r, -ea, -year) %>% 
-#   mutate(year = f2n(year), age = f2n(age))
 
 .pop$retired <- data.frame(expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.retire = 1:nyear),
                            number.r = as.vector(.pop$retired))
-
-new_retirees <- .pop$retired %>% filter(year ==  year.retire) %>% rename(number.newr = number.r)
-
-
 
 
 .pop$term <- data.frame(expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.term = 1:nyear),
@@ -44,12 +36,11 @@ new_retirees <- .pop$retired %>% filter(year ==  year.retire) %>% rename(number.
 
 
 
-
-
 # summarize term across termination year. Resulting data frame will join .Liab$active as part of the output. 
  term_reduced <- .pop$term %>% group_by(year, age) %>% summarise(number.v = sum(number.v, na.rm = TRUE))
  
-# .liab$active %>% filter(year == 46, ea == 20) 
+
+ 
  
 ## Liabilities and NCs for actives
 # Join population data frames and liability data frames. 
@@ -72,18 +63,15 @@ active.agg <- .liab$active %>%
               summarise(
                         ALx.a.tot = sum(ALx.a.tot, na.rm = TRUE),
                         ALx.v.tot = sum(ALx.v.tot, na.rm = TRUE),
-                        # ALx.r.tot = sum(ALx.r.tot, na.rm = TRUE),
                         ALx.tot.active = sum(ALx.av.tot, na.rm = TRUE), 
                         
                         NCx.a.tot = sum(NCx.a.tot, na.rm = TRUE),
                         NCx.v.tot = sum(NCx.v.tot, na.rm = TRUE),
-                        NCx.tot = sum(NCx.av.tot, na.rm = TRUE),
+                        NCx.tot   = sum(NCx.av.tot, na.rm = TRUE),
                         
-                        PR.tot  = sum(PR.tot,  na.rm = TRUE),
-                        #B.tot   = sum(B.tot,   na.rm = TRUE),
+                        PR.tot    = sum(PR.tot,  na.rm = TRUE),
                         
                         nactives  = sum(number.a,  na.rm = TRUE)
-                        # nretirees = sum(number.r, na.rm = TRUE)
                         ) %>% 
               as.matrix # extracting elements from matrices is much faster than from data.frame
 
@@ -126,6 +114,8 @@ term.agg <- .liab$term %>%
                       B.tot.v     = sum(B.tot.v  , na.rm = TRUE),
                       nterms      = sum(number.v  , na.rm = TRUE)) %>% 
             as.matrix
+
+
 
 return(list(active = active.agg, retiree = retiree.agg,  term = term.agg,   ind_act_ret = .liab$active, ind_term = term_reduced))
 

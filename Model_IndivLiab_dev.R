@@ -99,7 +99,7 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
 liab.active %<>%   
   mutate(#gx.r  = ifelse(age %in% (r.min):(r.max), 1 - 12 * (r.max - age) * 0.0025 , 0), # reduction factor for early retirement benefits. Early retirement has a penalty factor on benefit. 
          
-         gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1 - 12 * (r.full - age) * 0.0025, 0) ),
+         gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1 - (r.full - age) * 0.03, 0) ),
          # gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1, 0) ),
          
          Bx.r  = gx.r * Bx,  # This is the benefit level if the employee starts to CLAIM benefit at age x, not internally retire at age x. 
@@ -205,7 +205,6 @@ liab.retiree <- merge(liab.retiree,
 
 liab.retiree %<>% as.data.frame  %>%  # filter(start.year == -41, ea %in% 20:21, age.retire == 65) %>% 
                                       # filter(ea %in% 21) %>% 
-                  # group_by(start.year, age.retire, ea) %>% 
                   group_by(start.year, ea, age.retire) %>%  
                   mutate(
                          year.retire = start.year + age.retire - ea,
@@ -213,9 +212,6 @@ liab.retiree %<>% as.data.frame  %>%  # filter(start.year == -41, ea %in% 20:21,
                          B.r   = ifelse(year.retire < 2, 
                                         benefit[year == 1] * COLA.scale / COLA.scale[year == 1],                          # Benefits for initial retirees
                                         (gx.r * Bx)[age == age.retire] * COLA.scale / COLA.scale[age == age.retire] ),    # Benefits for new retirees
-#                          x = Bx * 2,
-#                          y = cumsum(gx.r),
-#                          z = Bx[year == year.retire],
                          ALx.r = B.r * ax  # Liability for remaining retirement benefits.                                                      
                          ) %>%
                   ungroup  %>% 

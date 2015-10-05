@@ -165,14 +165,7 @@ run_sim <- function(      .i.r = i.r,
       # j <- 2
       # AL(j) 
       
-      #     # AL(j)
-      #     penSim$AL[j] <- .AggLiab$active[j, "ALx.tot"] + .AggLiab$term[j, "ALx.tot.v"]
-      #     # NC(j)
-      #     penSim$NC[j] <- .AggLiab$active[j, "NCx.tot"] 
-      #     # B(j)
-      #     penSim$B[j]  <- .AggLiab$active[j, "B.tot"] + .AggLiab$term[j, "B.tot.v"]
-      #     # PR(j)
-      #     penSim$PR[j] <- .AggLiab$active[j, "PR.tot"]
+      
       
       # MA(j) and EAA(j) 
       if(j == 1) {penSim$MA[j]  <- switch(init_MA,
