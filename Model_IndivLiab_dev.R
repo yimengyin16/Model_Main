@@ -37,11 +37,11 @@ get_IndivLiab <- function(.salary    = salary,
 
 
 # Run the section below when developing new features.   
-  .salary    <-  salary 
-  .benefit   <-  benefit 
-  .decrement <-  decrement
-  .paramlist <-  paramlist
-  .Global_paramlist <-  Global_paramlist  
+  # .salary    <-  salary 
+  # .benefit   <-  benefit 
+  # .decrement <-  decrement
+  # .paramlist <-  paramlist
+  # .Global_paramlist <-  Global_paramlist  
   
   
 assign_parmsList(.Global_paramlist, envir = environment())
@@ -181,7 +181,7 @@ liab.retiree <- rbind(
                             start.year = 1 - (.benefit$age - (r.min - 1)),
                             age        = range_age[range_age >= r.min]) %>%
                             # mutate(year.retire = start.year + age.retire - ea) %>%  
-                            filter(age >= ea + 1 - start.year), 
+                            filter(age >= ea + 1 - start.year),  
                             
                 # grids for who retire after year 1.
                 expand.grid(ea         = range_ea[range_ea < r.max],
@@ -193,9 +193,12 @@ liab.retiree <- rbind(
                                    age.retire >= ea,
                                    age >= age.retire,
                                    start.year + (age.retire - ea) >= 2, # retire after year 2
-                                   start.year + age - ea >= 2)
-                 ) %>%  
-                data.table(key = "start.year,ea,age.retire,age")
+                                   start.year + age - ea >= 2) 
+                 ) %>%
+                data.table(key = "start.year,ea,age.retire,age") 
+
+liab.retiree <- liab.retiree[!duplicated(liab.retiree %>% select(start.year, ea, age, age.retire ))]
+
 
 liab.retiree <- merge(liab.retiree,
                    select(liab.active, start.year, year, ea, age, Bx, ax, COLA.scale, benefit, gx.r) %>% data.table(key = "ea,age,start.year"), 
@@ -203,21 +206,23 @@ liab.retiree <- merge(liab.retiree,
                    arrange(start.year, ea, age.retire)
 
 
-liab.retiree %>% as.data.frame  %>%  # filter(start.year == -41, ea %in% 20:21, age.retire == 65) %>% 
-                                      # filter(ea %in% 21) %>% 
+liab.retiree %<>% as.data.frame  %>% # filter(start.year == -41, ea == 21, age.retire == 65) %>% 
+                                     # filter(ea == 54) %>% 
                   group_by(start.year, ea, age.retire) %>%  
                   mutate(
                          year.retire = start.year + age.retire - ea,
                          Bx = ifelse(is.na(Bx), 0, Bx),
-                         B.r   = ifelse(year.retire < 2, 
+                         B.r   = ifelse(year.retire < 2,
                                         benefit[year == 1] * COLA.scale / COLA.scale[year == 1],                          # Benefits for initial retirees
                                         (gx.r * Bx)[age == age.retire] * COLA.scale / COLA.scale[age == age.retire]),
-                                        #(gx.r * Bx)[age == age.retire] * COLA.scale / COLA.scale[age == age.retire]),    # Benefits for new retirees
-                         ALx.r = B.r * ax  # Liability for remaining retirement benefits.                                                      
-                         ) %>%
-                  ungroup  %>% 
-                  select(start.year, year, ea, age, year.retire, age.retire,  B.r, ALx.r, ax, Bx, COLA.scale, gx.r)
-                  #select(year, ea, age, year.retire,  B.r, ALx.r)
+                         ALx.r = B.r * ax  # Liability for remaining retirement benefits.
+
+                         ) %>% ungroup %>% 
+                  # select(start.year, year, ea, age, year.retire, age.retire,  B.r, ALx.r)# , ax, Bx, COLA.scale, gx.r)
+                  select(year, ea, age, year.retire,  B.r, ALx.r)
+
+
+
 
 
 # young plan 

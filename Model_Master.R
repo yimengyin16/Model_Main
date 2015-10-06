@@ -158,12 +158,12 @@ options(digits = 4, scipen = 6)
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  "AL.act_PR", "AL.ret_PR","AL.term_PR", 
-                 "NC.act_PR", "NC.term_PR", 
+                 "NC.act_PR", "NC.term_PR", "MA_PR", 
                  #"AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", 
-                 # "PR",#
+                  "PR", "PR.growth", 
                  
                  # "ExF",   
-                  "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
+                 # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  #"ADC", "EEC", "ERC",  
                  "C", "B"     
                  # "I.r" ,   "I.e"
@@ -234,7 +234,6 @@ save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
 gc()
 
-outputs_list$entrant_dist
 
 
 

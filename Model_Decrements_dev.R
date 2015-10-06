@@ -65,8 +65,8 @@ mort <- mortality   %>% filter(tablename == tablename_mortality)   %>% select(ag
  # Consistency check: max yos <= r.full - min.ea
  # Problem: auto detecting term table by only yos and by yos and age. 
 
-term <- termrates %>% filter(planname == tablename_termination) %>% dplyr::rename(qxt = termrate) %>% select(-planname)
-term
+ term <- termrates %>% filter(planname == tablename_termination) %>% dplyr::rename(qxt = termrate) %>% select(-planname)
+# term
 # term <- termination %>% filter(tablename == tablename_termination) %>% select(age, ea, qxt) 
 
 

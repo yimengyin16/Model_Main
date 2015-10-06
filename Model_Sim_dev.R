@@ -302,7 +302,9 @@ run_sim <- function(      .i.r = i.r,
            runname = runname,
            FR      = 100 * AA / exp(log(AL)),
            FR_MA   = 100 * MA / exp(log(AL)),
-           UAAL_PR = 100 * UAAL / PR, 
+           UAAL_PR = 100 * UAAL / PR,
+           MA_PR   = 100 * MA / PR,
+           AA_PR   = 100 * AA / PR,
            AL_PR   = 100 * AL / PR,
            AL.act_PR    = 100 * AL.act / PR, 
            AL.ret_PR    = 100 * AL.ret / PR, 
@@ -314,7 +316,8 @@ run_sim <- function(      .i.r = i.r,
            SC_PR   = 100 * SC / PR, 
            ERC_PR  = 100 * ERC / PR, 
            C_PR    = 100 * C / PR,
-           B_PR    = 100 * B / PR) %>%
+           B_PR    = 100 * B / PR,
+           PR.growth = ifelse(year > 1, 100 * (PR / lag(PR) - 1), NA)) %>%
     select(runname, sim, year, everything())
   
   return(penSim_results)
