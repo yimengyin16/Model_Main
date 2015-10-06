@@ -54,7 +54,7 @@ SS.all <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_e
   left_join(sscale) %>%
   group_by(start.year, ea) %>% 
   mutate(year = start.year + (age - ea),
-         growth.start = (1 + infl + prod)^(start.year - 1), # assume starting salary grows at the rate of inflation for all entry ages 
+         growth.start = (1 + startingSal_growth)^(start.year - 1), # assume starting salary grows at the rate of inflation for all entry ages 
          scale = cumprod(ifelse(age == ea, 1, lag(1 + salgrowth))), # salgrowth is from data salgrowth
          scale = ifelse(start.year <= 1, scale/scale[year == 1],
                         scale * growth.start)

@@ -39,17 +39,12 @@ load("Data/Prototypes/retrates.rda")
 load("Data/Prototypes/salgrowth.rda")
 load("Data/Prototypes/termrates.rda")
 
-salgrowth.assume
-
-
-
 
 source("Functions.R")
 
 devMode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
 
-
-
+z <- decrements::termination
 
 
 
@@ -112,7 +107,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 
 # 3. No retirees  
-retirees %<>% mutate(nretirees = 0)
+# retirees %<>% mutate(nretirees = 0)
 
 # 4. Only keep a specific age-ea cell of actives
 # actives %<>% mutate(nactives = ifelse(ea %in% 20 & age %in% 62, 1, 0))

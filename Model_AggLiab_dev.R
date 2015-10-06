@@ -9,10 +9,10 @@ get_AggLiab <- function(  .liab   = liab,
 
   
   # Run the section below when developing new features.  
-#   .liab   = liab
-#   .pop   = pop
-#   .paramlist = paramlist
-#   .Global_paramlist = Global_paramlist
+  # .liab   = liab
+  # .pop   = pop
+  # .paramlist = paramlist
+  # .Global_paramlist = Global_paramlist
 
   assign_parmsList(.Global_paramlist, envir = environment())
   assign_parmsList(.paramlist,        envir = environment())
@@ -128,8 +128,3 @@ AggLiab <- get_AggLiab()
 end_time_prep_loop <-  proc.time()
 Time_prep_loop <- end_time_prep_loop - start_time_prep_loop
 
-AggLiab$active %>% data.frame %>% filter(year %in% 43:46) %>% mutate(ind.AL = ALx.tot.active/nactives)
-AggLiab$retiree %>% data.frame %>% filter(year %in% 43:46) %>% mutate(ind.AL = ALx.tot.r/nretirees)
-
-
-AggLiab$retiree

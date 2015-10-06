@@ -210,12 +210,12 @@ run_sim <- function(      .i.r = i.r,
       
       
       # Amortize LG(j)
-      if(amort_type == "closed") SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$AM[j], i, m, infl + prod, end = FALSE, method = amort_method)  
+      if(amort_type == "closed") SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$AM[j], i, m, salgrowth_amort, end = FALSE, method = amort_method)  
       
       # Supplemental cost in j
       penSim$SC[j] <- switch(amort_type,
                              closed = sum(SC_amort[, j]),
-                             open   = amort_LG(penSim$UAAL[j], i, m, infl + prod, end = FALSE, method = amort_method)[1])
+                             open   = amort_LG(penSim$UAAL[j], i, m, salgrowth_amort, end = FALSE, method = amort_method)[1])
       
       
       # Employee contribution, based on payroll. May be adjusted later. 
