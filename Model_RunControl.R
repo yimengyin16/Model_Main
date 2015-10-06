@@ -34,17 +34,15 @@ load("Data/winklevossdata.rdata") # disability, disability mortaity and early re
 
 # Load data for new prototypes before they are in the pp.prototypes package
 load("Data/Prototypes/actives.rda")
-load("Data/Prototypes/retirees.rda")
-load("Data/Prototypes/retrates.rda")
-load("Data/Prototypes/salgrowth.rda")
-load("Data/Prototypes/termrates.rda")
+load("Data/Prototypes/retirees.rda") 
+load("Data/Prototypes/retrates.rda");  retrates %<>% dplyr::rename(qxr = retrate) # %>% mutate(ifelse(age %in% 50:54, 0.05, qxr))
+load("Data/Prototypes/salgrowth.rda"); salgrowth %<>% mutate(yos = age - 20, age = NULL)
+load("Data/Prototypes/termrates.rda"); termrates %<>% dplyr::rename(qxt = termrate)
 
 
 source("Functions.R")
 
 devMode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
-
-z <- decrements::termination
 
 
 

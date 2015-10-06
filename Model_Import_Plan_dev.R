@@ -51,6 +51,7 @@ sscale <- .salgrowth %>% filter(planname == planname_sscale) %>% select(-plannam
 SS.all <- expand.grid(start.year = (1 - (max.age - min.age)):nyear, ea = range_ea, age = min.age:(r.max - 1)) %>% 
   filter(age >= ea, start.year + r.max - 1 - ea >= 1 ) %>% # workers must stay in workforce at least up to year 1. 
   # arrange(start.year, ea, age) %>%
+  mutate(yos = age - ea) %>% 
   left_join(sscale) %>%
   group_by(start.year, ea) %>% 
   mutate(year = start.year + (age - ea),

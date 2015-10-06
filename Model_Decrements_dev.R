@@ -65,13 +65,13 @@ mort <- mortality   %>% filter(tablename == tablename_mortality)   %>% select(ag
  # Consistency check: max yos <= r.full - min.ea
  # Problem: auto detecting term table by only yos and by yos and age. 
 
- term <- termrates %>% filter(planname == tablename_termination) %>% dplyr::rename(qxt = termrate) %>% select(-planname)
+ term <- termrates %>% filter(planname == tablename_termination) %>% select(-planname)
 # term
 # term <- termination %>% filter(tablename == tablename_termination) %>% select(age, ea, qxt) 
 
 
 ## Service Retirement rates (from plan data)
-ret <- retrates %>% filter(planname == tablename_retirement) %>% dplyr::rename(qxr = retrate) %>% select(-planname)
+ret <- retrates %>% filter(planname == tablename_retirement) %>% select(-planname)
 ret
 
 
@@ -181,6 +181,25 @@ return(decrement)
 }
 
 decrement <- get_decrements()
+
+
+
+
+
+# decrements::termination %>% filter(tablename == "az-srs") %>% spread(age, qxt)
+termrates %>% spread(planname, qxt)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
