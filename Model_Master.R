@@ -78,7 +78,7 @@ if(devMode) source("Dev_Params.R") else {
 #*********************************************************************************************************
 # 1.1 Importing Decrement tables and Calculating Probabilities ####
 #*********************************************************************************************************
-source("Model_Decrements.R")
+source("Model_Decrements_dev.R")
 # Output: Decrement (data.frame)
 
 
@@ -114,7 +114,7 @@ source("Model_Decrements.R")
 # These tables are based on PA-PSERS and some naive assumptions for imputation.
 # Please do NOT source the script below if external salary and benefit tables are used.   
 # source("Inputs_Salary_Benefit.R")
-source("Model_Import_Plan.R")
+source("Model_Import_Plan_dev.R")
 
 
 #*********************************************************************************************************

@@ -31,12 +31,25 @@ library(stringr)
 library(pp.prototypes)
 library(decrements)               # mortality and termination for now
 load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
-# load("Data/example_Salary_benefit.RData")
+
+# Load data for new prototypes before they are in the pp.prototypes package
+load("Data/Prototypes/actives.rda")
+load("Data/Prototypes/retirees.rda")
+load("Data/Prototypes/retrates.rda")
+load("Data/Prototypes/salgrowth.rda")
+load("Data/Prototypes/termrates.rda")
+
+salgrowth.assume
+
+
 
 
 source("Functions.R")
 
 devMode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
+
+
+
 
 
 
@@ -99,11 +112,11 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 
 
 # 3. No retirees  
-#  retirees %<>% mutate(nretirees = 0)
+retirees %<>% mutate(nretirees = 0)
 
 # 4. Only keep a specific age-ea cell of actives
-#  actives %<>% mutate(nactives = ifelse(ea %in% 20 & age %in% 62, 1, 0))
-# actives %<>% mutate(nactives = 1)
+# actives %<>% mutate(nactives = ifelse(ea %in% 20 & age %in% 62, 1, 0))
+# actives %<>% mutate(nactives = 0)
 # actives %>% filter(planname == "underfunded")
 
 # 5. Full set of entry ages and ages. 
