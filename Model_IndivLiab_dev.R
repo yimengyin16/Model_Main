@@ -37,11 +37,11 @@ get_IndivLiab <- function(.salary    = salary,
 
 
 # Run the section below when developing new features.   
-  # .salary    <-  salary 
-  # .benefit   <-  benefit 
-  # .decrement <-  decrement
-  # .paramlist <-  paramlist
-  # .Global_paramlist <-  Global_paramlist  
+#   .salary    <-  salary 
+#   .benefit   <-  benefit 
+#   .decrement <-  decrement
+#   .paramlist <-  paramlist
+#   .Global_paramlist <-  Global_paramlist  
   
   
 assign_parmsList(.Global_paramlist, envir = environment())
@@ -71,11 +71,6 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
     Bx = benfactor * yos * fas,                        # accrued benefits
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     
-    # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!! Need to be moved to the dataframe for retirees. 
-    #B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit 
-    #B.init = ifelse(start.year < 1 & age >= r.max, benefit[which(!is.na(benefit))] * COLA.scale/COLA.scale[which(!is.na(benefit))], 0), # Calculte future benefits of initial retirees.
-    #B  = rowSums(cbind(B, B.init), na.rm = TRUE),
-
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at max.age for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age max.age. 
     axR = c(get_tla(pxT[age < r.max], i), rep(0, max.age - r.max + 1)),                        # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
     axRs= c(get_tla(pxT[age < r.max], i, sx[age < r.max]), rep(0, max.age - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
@@ -83,8 +78,8 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
 #   axr = ifelse(ea >= r.min, 0, c(get_tla(pxT[age < r.min], i), rep(0, max.age - r.min + 1))),                 # Similar to axR, but based on r.min.  For calculation of term benefits when costs are spread up to r.min.        
 #   axrs= ifelse(ea >= r.min, 0, c(get_tla(pxT[age < r.min], i, sx[age<r.min]), rep(0, max.age - r.min + 1))),  # Similar to axRs, but based on r.min. For calculation of term benefits when costs are spread up to r.min.
     
-    axr = ifelse(ea >= r.full, 0, c(get_tla(pxT[age < r.full], i), rep(0, max.age - r.full + 1))),                 # Similar to axR, but based on r.min.  For calculation of term benefits when costs are spread up to r.min.        
-    axrs= ifelse(ea >= r.full, 0, c(get_tla(pxT[age < r.full], i, sx[age<r.full]), rep(0, max.age - r.full + 1))),  # Similar to axRs, but based on r.min. For calculation of term benefits when costs are spread up to r.min.
+    axr = ifelse(ea >= r.full, 0, c(get_tla(pxT[age < r.full], i), rep(0, max.age - r.full + 1))),                 # Similar to axR, but based on r.full.  For calculation of term benefits when costs are spread up to r.min.        
+    axrs= ifelse(ea >= r.full, 0, c(get_tla(pxT[age < r.full], i, sx[age<r.full]), rep(0, max.age - r.full + 1))),  # Similar to axRs, but based on r.full. For calculation of term benefits when costs are spread up to r.min.
      
     ayx = c(get_tla2(pxT[age <= r.max], i), rep(0, max.age - r.max)),                     # need to make up the length of the vector up to age max.age
     ayxs= c(get_tla2(pxT[age <= r.max], i,  sx[age <= r.max]), rep(0, max.age - r.max))   # need to make up the length of the vector up to age max.age
@@ -129,8 +124,6 @@ liab.active %<>%
   ) 
 
 #   x <- liab.active %>% filter(start.year == 1, ea == 21)
-
-
 
 
 # Calculate normal costs and liabilities of deferred retirement benefits

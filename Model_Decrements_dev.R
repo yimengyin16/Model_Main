@@ -45,8 +45,8 @@ get_decrements <- function(.paramlist = paramlist,
   
   
 # Run the section below when developing new features.  
-#     .paramlist = paramlist
-#     .Global_paramlist = Global_paramlist
+    .paramlist = paramlist
+    .Global_paramlist = Global_paramlist
   
 # Assign parameters to the local function call.
 assign_parmsList(.Global_paramlist, envir = environment())
@@ -109,11 +109,9 @@ decrement %<>% mutate(
   qxt = ifelse(age >= r.min & (age - ea) >= r.yos, 0, qxt),
   # 2. Coerce retirement rates to 0 when age greater than r.max                     
   qxr = ifelse(age == r.max, 1, 
-               ifelse(age > r.max, 0, qxr))
+               ifelse(age %in% r.min:(r.max - 1), qxr, 0))
 ) 
 # term %<>% mutate(qxt = ifelse(age >= r.min & (age - ea) >= r.yos, 0, qxt)) 
-
-
 
 
 #*************************************************************************************************************

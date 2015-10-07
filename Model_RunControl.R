@@ -33,11 +33,16 @@ library(decrements)               # mortality and termination for now
 load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
 
 # Load data for new prototypes before they are in the pp.prototypes package
-load("Data/Prototypes/actives.rda")
-load("Data/Prototypes/retirees.rda") 
-load("Data/Prototypes/retrates.rda");  retrates %<>% dplyr::rename(qxr = retrate) # %>% mutate(ifelse(age %in% 50:54, 0.05, qxr))
-load("Data/Prototypes/salgrowth.rda"); salgrowth %<>% mutate(yos = age - 20, age = NULL)
-load("Data/Prototypes/termrates.rda"); termrates %<>% dplyr::rename(qxt = termrate)
+load("Data/2015-10-07/actives.rda")
+load("Data/2015-10-07/retirees.rda") 
+
+load("Data/2015-10-07/retrates.rda");  retrates %<>% dplyr::rename(qxr = retrate)
+# load("Data/retrates_AZ.RData"); retrates <- retrate_AZ
+
+load("Data/2015-10-07/salgrowth.rda"); salgrowth %<>% mutate(age = NULL)
+load("Data/2015-10-07/termrates.rda"); termrates %<>% dplyr::rename(qxt = termrate)
+
+termrates$planname %>% table
 
 
 source("Functions.R")
