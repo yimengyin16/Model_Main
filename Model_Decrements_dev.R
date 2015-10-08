@@ -105,8 +105,9 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
 
 ## Imposing restrictions 
 decrement %<>% mutate(
-  # 1. Coerce termination rates to 0 when eligible for early retirement. 
-  qxt = ifelse(age >= r.min & (age - ea) >= r.yos, 0, qxt),
+  # 1. Coerce termination rates to 0 when eligible for early retirement or reaching than r.full(when we assume terms start to receive benefits). 
+  qxt = ifelse((age >= r.min & (age - ea) >= r.yos) | age >= r.full, 0, qxt),
+  # qxt = ifelse( age >= r.full, 0, qxt),
   # 2. Coerce retirement rates to 0 when age greater than r.max                     
   qxr = ifelse(age == r.max, 1, 
                ifelse(age %in% r.min:(r.max - 1), qxr, 0))
@@ -168,7 +169,8 @@ decrement %<>%
 decrement %<>% 
   mutate( pxm = 1 - qxm,
           pxT = 1 - qxt - qxd - qxm - qxr, #(1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
-          pxRm = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxm))) # prob of surviving up to r.max, mortality only
+          pxRm = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxm))), # prob of surviving up to r.max, mortality only
+          px_r.full_m = order_by(-age, cumprod(ifelse(age >= r.full, 1, pxm)))
           # px65T = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxT))), # prob of surviving up to r.max, composite rate
           # p65xm = cumprod(ifelse(age <= r.max, 1, lag(pxm))))            # prob of surviving to x from r.max, mortality only
   )

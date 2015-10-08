@@ -317,6 +317,8 @@ run_sim <- function(      .i.r = i.r,
            ERC_PR  = 100 * ERC / PR, 
            C_PR    = 100 * C / PR,
            B_PR    = 100 * B / PR,
+           ExF     = C - B,
+           ExF_PR  = 100 * ExF / PR,  
            PR.growth = ifelse(year > 1, 100 * (PR / lag(PR) - 1), NA)) %>%
     select(runname, sim, year, everything())
   

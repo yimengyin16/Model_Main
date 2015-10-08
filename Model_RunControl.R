@@ -113,7 +113,8 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 # retirees %<>% mutate(nretirees = 0)
 
 # 4. Only keep a specific age-ea cell of actives
-# actives %<>% mutate(nactives = ifelse(ea %in% 20 & age %in% 62, 1, 0))
+# actives %<>% mutate(nactives = ifelse(ea %in% 20:21 & age %in% 40, 1, 0))
+# actives %<>% mutate(nactives = ifelse(ea == 58 & age == 58,  1, 0))
 # actives %<>% mutate(nactives = 0)
 # actives %>% filter(planname == "underfunded")
 
