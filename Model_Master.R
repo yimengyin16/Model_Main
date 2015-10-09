@@ -113,7 +113,7 @@ source("Model_Decrements_dev.R")
 # Artificial salary table and benefit table for testing purpose are imported by sourcing the following script.
 # These tables are based on PA-PSERS and some naive assumptions for imputation.
 # Please do NOT source the script below if external salary and benefit tables are used.   
-# source("Inputs_Salary_Benefit.R")
+
 source("Model_Import_Plan_dev.R")
 
 

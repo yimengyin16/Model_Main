@@ -370,7 +370,7 @@ Time_wf <- end_time_wf - start_time_wf
 
 
 
-
+pop$active[,,]
 
 
 

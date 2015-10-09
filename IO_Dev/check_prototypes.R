@@ -32,10 +32,10 @@ gen_table <- function (run_name) {
     select(one_of(var.display)) %>% kable
 }
 
-gen_table("AZ-PERS")
-gen_table("LA-CERA")
-gen_table("OH-PERS")
-gen_table("WA-PERS2")
+gen_table("AZ-PERS") # abratio 1000:500
+gen_table("LA-CERA") # abratio 1000:600
+gen_table("OH-PERS") # abratio 1000:600
+gen_table("WA-PERS2")# abratio 1000:300
 
 
 
