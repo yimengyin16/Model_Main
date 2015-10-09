@@ -20,16 +20,9 @@ var.display <- c( "runname", "year",
 )
 
 
-# Workforce statistics to be calculated.  
- # Average age of workforce
- # Average year of service of workforce
- # Average entry age of workforce
- # Average age of retirees
- # Active-to-retiree reatio
- # Age distribution of new entrants.  
 
 
-
+## Funding variables from the results
 gen_table <- function (run_name) {
   # run_name <- "AZ-PERS"
   load(paste0("IO_Dev/Outputs_", run_name,".RData"))
@@ -46,7 +39,7 @@ gen_table("WA-PERS2")
 
 
 
-
+## Age distribution of new entrants
 gen_enDist <- function (run_name) {
   # run_name <- "AZ-PERS"
   load(paste0("IO_Dev/Outputs_", run_name,".RData"))
@@ -64,10 +57,30 @@ gen_enDist("WA-PERS2")
 
 ggplot(entrants_dist, aes(x = ea, y = entrants_pct, color = runname)) + geom_line() + geom_point()
 
+x <- gen_enDist("AZ-PERS")
+x$entrants_pct %>% length
 
 
+## Demographic statistics 
 
+# Workforce statistics to be calculated.  
+# Average age of workforce
+# Average year of service of workforce
+# Average entry age of workforce
+# Average age of retirees
+# Active-to-retiree reatio
 
+gen_demo_summary <- function (run_name) {
+ # run_name <- "AZ-PERS"
+ load(paste0("IO_Dev/Outputs_", run_name,".RData"))
+ outputs_list$demo_summary %>% filter(year %in% c(1, 15, 30, 50))
+ # outputs_list$demo_summary %>% filter(year %in% c(1:50))
+}
+
+gen_demo_summary("AZ-PERS")
+gen_demo_summary("LA-CERA")
+gen_demo_summary("OH-PERS")
+gen_demo_summary("WA-PERS2")
 
 
 

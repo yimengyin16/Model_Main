@@ -230,7 +230,6 @@ for (j in 1:(nyear - 1)){
   
    
   
-  
   # Total inflow and outflow for each status
   out_active   <- active2term + active2disb + active2retired + active2dead 
   new_entrants <- calc_entrants(wf_active[, , j], wf_active[, , j] - out_active, wf_growth, dist = .entrants_dist, no.entrants = no_entrance) # new entrants
@@ -272,6 +271,7 @@ pop <- get_Population()
 
 end_time_wf <- proc.time()
 Time_wf <- end_time_wf - start_time_wf
+
 
 
 #*************************************************************************************************************

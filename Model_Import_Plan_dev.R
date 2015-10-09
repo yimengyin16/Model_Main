@@ -207,27 +207,28 @@ get_initPop <- function (.actives          = actives,
                          .retirees         = retirees,
                          .paramlist        = paramlist,
                          .Global_paramlist = Global_paramlist){
-
+# Import and standardize the total number of actives and retirees.  
+  
 # Run the section below when developing new features.
-  .actives          = actives
-  .retirees         = retirees
-  .paramlist        = paramlist
-  .Global_paramlist = Global_paramlist
+#   .actives          = actives
+#   .retirees         = retirees
+#   .paramlist        = paramlist
+#   .Global_paramlist = Global_paramlist
   
     
   assign_parmsList(.Global_paramlist, envir = environment())
   assign_parmsList(.paramlist,        envir = environment()) 
-  
-  init_actives <- .actives %>% filter(planname == planname_actives) %>% select(ea, age, nactives) %>% 
-                  mutate(nactives = n_init_actives * nactives/sum(nactives))
+
+    
+  init_actives <- .actives %>% filter(planname == planname_actives) %>% select(ea, age, nactives)
   init_actives <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_actives) %>% 
+                  mutate(nactives = n_init_actives * nactives/sum(nactives, na.rm = TRUE)) %>% 
                   spread(age, nactives, fill = 0) %>% select(-ea) %>% as.matrix 
 
   
-  
-  init_retirees <- .retirees %>% filter(planname == planname_retirees) %>% select(age, nretirees) %>% mutate(ea = r.min - 1) %>% 
-                   mutate(nretirees = n_init_retirees * nretirees/sum(nretirees))
+  init_retirees <- .retirees %>% filter(planname == planname_retirees) %>% select(age, nretirees) %>% mutate(ea = r.min - 1) 
   init_retirees <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_retirees) %>% 
+                   mutate(nretirees = n_init_retirees * nretirees/sum(nretirees, na.rm = TRUE)) %>% 
                    spread(age, nretirees, fill = 0) %>% select(-ea) %>% as.matrix
 
   return(list(actives = init_actives, retirees = init_retirees))

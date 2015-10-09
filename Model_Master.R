@@ -220,6 +220,7 @@ Time_loop # the big loop
 outputs_list <- list(results     = penSim_results,
                      ind_act_ret = AggLiab$ind_act_ret, 
                      ind_term    = AggLiab$ind_term,
+                     demo_summary= AggLiab$demo_summary,
                      paramlist = paramlist, 
                      Global_paramlist = Global_paramlist,
                      entrant_dist = entrants_dist)
