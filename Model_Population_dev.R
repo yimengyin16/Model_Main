@@ -357,6 +357,24 @@ Time_wf <- end_time_wf - start_time_wf
 #              age.retire = age) 
 
 
+# # Explore shrinking workforce in AZ-PERS
+# 
+# pop$active %>% apply(3, sum)
+# 
+# pop$active[,"120",41] %>% sum
+# 
+# pop$active[,,1]
+# 
+# 
+# actives %>% filter(planname == "LA-CERA-43.fillin.yos", age >=75)
+
+
+
+
+
+
+
+
 
 
 

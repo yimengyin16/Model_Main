@@ -12,6 +12,29 @@
  # benefit: average benefit payment in year 1, by age and ea. 
 
 
+#*************************************************************************************************************
+#                                       Tailoring Demographic Data                                       #####                  
+#*************************************************************************************************************
+
+tailor_demoData <- function(.paramlist = paramlist,
+                            .Global_paramlist  = Global_paramlist,
+                            .actives = actives,
+                            .retirees = retirees){
+  
+assign_parmsList(.Global_paramlist, envir = environment()) # environment() returns the local environment of the function.
+assign_parmsList(.paramlist,        envir = environment())
+
+.actives  %<>% filter(planname == planname_actives,
+                                  ea %in% range_ea,
+                                  age %in% range_ea)
+.retirees %<>% filter(planname == planname_retirees,
+                                  age >= r.min)
+
+return(list(actives = .actives, retirees = .retirees))
+}
+
+tailored_demoData <-  tailor_demoData()
+  
 
 #*************************************************************************************************************
 #                                        Create complete salary scale                                    #####                  
@@ -20,7 +43,7 @@
 get_scale <- function(
                       #.salgrowth.hist   = salgrowth.hist,
                       #.salgrowth.assume = salgrowth.assume, 
-                      .salgrowth        = salgrowth,
+                      .salgrowth = salgrowth,
                       .paramlist = paramlist,
                       .Global_paramlist  = Global_paramlist){
 
@@ -72,7 +95,7 @@ SS.all <- get_scale()
 #                     Supplement the inital salary table with all starting salary                        #####                  
 #*************************************************************************************************************
 
-fill_startSal <- function(.actives          = actives,
+fill_startSal <- function(.actives          = tailored_demoData$actives,
                           .paramlist        = paramlist,
                           .Global_paramlist = Global_paramlist){
 # This function generate a table of initial salary (year 1) which include all starting salary levels (age = ea)
@@ -178,7 +201,7 @@ salary
 #                               Import initial retirement benefit table from AV                          #####                  
 #*************************************************************************************************************
 get_benefit <- function(
-                        .retirees = retirees,
+                        .retirees = tailored_demoData$retirees,
                         .paramlist = paramlist,
                         .Global_paramlist  = Global_paramlist){
 
@@ -203,8 +226,8 @@ benefit <- get_benefit()
 #                               Generating inital population                                             #####                  
 #*************************************************************************************************************
 
-get_initPop <- function (.actives          = actives,
-                         .retirees         = retirees,
+get_initPop <- function (.actives          = tailored_demoData$actives,
+                         .retirees         = tailored_demoData$retirees,
                          .paramlist        = paramlist,
                          .Global_paramlist = Global_paramlist){
 # Import and standardize the total number of actives and retirees.  
@@ -254,7 +277,7 @@ get_initPop <- function (.actives          = actives,
 #*************************************************************************************************************
  
   
-get_entrantsDist <- function(.actives          = actives,
+get_entrantsDist <- function(.actives          = tailored_demoData$actives,
                              .planname         = paramlist$planname_actives,
                              .range_ea         = paramlist$range_ea,
                              #.paramlist        = paramlist,
