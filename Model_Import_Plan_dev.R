@@ -25,7 +25,7 @@ assign_parmsList(.Global_paramlist, envir = environment()) # environment() retur
 assign_parmsList(.paramlist,        envir = environment())
 
 .actives  %<>% filter(planname == planname_actives,
-                                  ea %in% range_ea,
+                                  ea  %in% range_ea,
                                   age %in% range_ea)
 .retirees %<>% filter(planname == planname_retirees,
                                   age >= r.min)
@@ -111,7 +111,7 @@ fill_startSal <- function(.actives          = tailored_demoData$actives,
 assign_parmsList(.Global_paramlist, envir = environment()) # environment() returns the local environment of the function.
 assign_parmsList(.paramlist,        envir = environment())  
 
-sal <- actives %>% filter(planname == planname_actives) %>% select(age, ea, salary)
+sal <- actives %>% select(age, ea, salary)
 #x <- sal %>% spread(age, salary)
 
 sal.start <- splong(sal, "ea", range_ea) %>% filter(age == ea) %>% select(-age) %>% splong("ea", range_ea) %>% mutate(age = ea)
@@ -208,7 +208,7 @@ get_benefit <- function(
 assign_parmsList(.Global_paramlist, envir = environment())
 assign_parmsList(.paramlist,        envir = environment())  
 
-avgben <- .retirees %>% filter(planname == planname_retirees) %>% select(age, benefit)  
+avgben <- .retirees %>% select(age, benefit)  
     
 benefit <- avgben %>% 
            # filter(age>=r.max) %>% 
@@ -243,13 +243,13 @@ get_initPop <- function (.actives          = tailored_demoData$actives,
   assign_parmsList(.paramlist,        envir = environment()) 
 
     
-  init_actives <- .actives %>% filter(planname == planname_actives) %>% select(ea, age, nactives)
+  init_actives <- .actives %>% select(ea, age, nactives)
   init_actives <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_actives) %>% 
                   mutate(nactives = n_init_actives * nactives/sum(nactives, na.rm = TRUE)) %>% 
                   spread(age, nactives, fill = 0) %>% select(-ea) %>% as.matrix 
 
   
-  init_retirees <- .retirees %>% filter(planname == planname_retirees) %>% select(age, nretirees) %>% mutate(ea = r.min - 1) 
+  init_retirees <- .retirees %>% select(age, nretirees) %>% mutate(ea = r.min - 1) 
   init_retirees <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_retirees) %>% 
                    mutate(nretirees = n_init_retirees * nretirees/sum(nretirees, na.rm = TRUE)) %>% 
                    spread(age, nretirees, fill = 0) %>% select(-ea) %>% as.matrix
@@ -294,7 +294,7 @@ get_entrantsDist <- function(.actives          = tailored_demoData$actives,
 assign_parmsList(.Global_paramlist, envir = environment())
 #assign_parmsList(.paramlist,        envir = environment())   
   
-nact <- .actives %>% filter(planname == .planname) %>% select(age, ea, nactives)
+nact <- .actives %>% select(age, ea, nactives)
 #nact %>% spread(age, nactives)
 
 ## Distributon by simple rule
