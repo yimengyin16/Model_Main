@@ -61,15 +61,25 @@ Reduce(merge, list(
  # Average age of retirees
  .pop$retired %>% group_by(year) %>% summarise(retirees_age.avg = weighted.mean(age, number.r)),
  
- # Active-to-retiree reatio
+ # Total actives, retirees and terminated members. 
  .pop$active  %>% group_by(year) %>% summarise(tot_actives  = sum(number.a)),
  .pop$retired %>% group_by(year) %>% summarise(tot_retirees = sum(number.r)),
- .pop$term    %>% group_by(year) %>% summarise(tot_terms    = sum(number.v))
+ .pop$term    %>% group_by(year) %>% summarise(tot_terms    = sum(number.v)),
+ 
+ # Number of new entrants
+ .pop$active %>% filter(age == ea) %>% group_by(year) %>% summarise(tot_newEntrants = sum(number.a)) 
  )) %>% 
-   mutate(abratio = tot_actives / tot_retirees,
+   mutate(# Ratios
+          abratio = tot_actives / tot_retirees,  # Active-to-retiree reatio
+          newEnt_actives = 100 * tot_newEntrants / tot_actives,
           runname = runname) %>% 
    select(runname, everything())
-  
+
+ 
+ 
+.pop$active %>% filter(age == ea) %>% group_by(year) %>% summarise(tot_newEntrants = sum(number.a)) 
+ 
+   
  
  
 #*************************************************************************************************************

@@ -77,6 +77,7 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at max.age for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age max.age. 
+    ax.r = get_tla(pxm.r, i, COLA.scale),            # ax calculated with mortality table for retirees. 
     axR = c(get_tla(pxT[age < r.max], i), rep(0, max.age - r.max + 1)),                        # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
     axRs= c(get_tla(pxT[age < r.max], i, sx[age < r.max]), rep(0, max.age - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
   
@@ -110,7 +111,7 @@ liab.active %<>%
          # gx.r = ifelse(age > r.full, 1, ifelse(age %in% r.min:r.full, 1, 0) ),
          
          Bx.r  = gx.r * Bx,  # This is the benefit level if the employee starts to CLAIM benefit at age x, not internally retire at age x. 
-         TCx.r = lead(Bx.r) * qxr.a * lead(ax) * v,  # term cost of retirement at the internal retirement age x (start to claim benefit at age x + 1)
+         TCx.r = lead(Bx.r) * qxr.a * lead(ax.r) * v,  # term cost of retirement at the internal retirement age x (start to claim benefit at age x + 1)
          # TCx.r = Bx.r * qxr.a * ax,
          PVFBx.r  = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
 
@@ -120,7 +121,7 @@ liab.active %<>%
          # ALx.UC = Bx * c(get_PVFB(pxT[age <= r.max], v, TCx.r1[age <= r.max]), rep(0, 45)),
          
          # NC and AL of PUC
-         TCx.rPUC = ifelse(age == min(age), 0, (Bx / (age - min(age)) * gx.r * qxr.a * ax)), # Note that this is not really term cost 
+         TCx.rPUC = ifelse(age == min(age), 0, (Bx / (age - min(age)) * gx.r * qxr.a * ax.r)), # Note that this is not really term cost 
          NCx.PUC = c(get_NC.UC(pxT[age <= r.max], v, TCx.rPUC[age <= r.max]),  rep(0, max.age - r.max)),
          ALx.PUC = c(get_AL.PUC(pxT[age <= r.max], v, TCx.rPUC[age <= r.max]), rep(0, max.age - r.max)),
          
@@ -171,7 +172,7 @@ liab.retiree <- liab.retiree[!duplicated(liab.retiree %>% select(start.year, ea,
 
 
 liab.retiree <- merge(liab.retiree,
-                      select(liab.active, start.year, year, ea, age, Bx, ax, COLA.scale, benefit, gx.r) %>% data.table(key = "ea,age,start.year"), 
+                      select(liab.active, start.year, year, ea, age, Bx, ax, ax.r, COLA.scale, benefit, gx.r) %>% data.table(key = "ea,age,start.year"), 
                       all.x = TRUE, by = c("ea", "age","start.year")) %>% 
   arrange(start.year, ea, age.retire)
 
@@ -185,7 +186,7 @@ liab.retiree %<>% as.data.frame  %>% # filter(start.year == -41, ea == 21, age.r
     B.r   = ifelse(year.retire < 2,
                    benefit[year == 1] * COLA.scale / COLA.scale[year == 1],                          # Benefits for initial retirees
                    (gx.r * Bx)[age == age.retire] * COLA.scale / COLA.scale[age == age.retire]),
-    ALx.r = B.r * ax  # Liability for remaining retirement benefits.
+    ALx.r = B.r * ax.r  # Liability for remaining retirement benefits.
     
   ) %>% ungroup %>% 
   # select(start.year, year, ea, age, year.retire, age.retire,  B.r, ALx.r)# , ax, Bx, COLA.scale, gx.r)

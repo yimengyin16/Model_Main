@@ -45,9 +45,9 @@ get_decrements <- function(.paramlist = paramlist,
   
   
 # Run the section below when developing new features.  
-    .paramlist = paramlist
-    .Global_paramlist = Global_paramlist
-  
+#     .paramlist = paramlist
+#     .Global_paramlist = Global_paramlist
+ 
 # Assign parameters to the local function call.
 assign_parmsList(.Global_paramlist, envir = environment())
 assign_parmsList(.paramlist,        envir = environment())
@@ -58,14 +58,15 @@ assign_parmsList(.paramlist,        envir = environment())
 #*************************************************************************************************************
 
 ## Mortality (from decrement package) 
-mort <- mortality   %>% filter(tablename == tablename_mortality)   %>% select(age, qxm)
-
+mort <- mortality %>% filter(tablename == tablename_mortality) %>% 
+                      mutate(qxm.r = qxm * 1) %>% select(age, qxm, qxm.r)
+ 
 
 ## Termination (Separation) rates (from plan data)
  # Consistency check: max yos <= r.full - min.ea
  # Problem: auto detecting term table by only yos and by yos and age. 
 
- term <- termrates %>% filter(planname == tablename_termination) %>% select(-planname)
+term <- termrates %>% filter(planname == tablename_termination) %>% select(-planname)
 # term
 # term <- termination %>% filter(tablename == tablename_termination) %>% select(age, ea, qxt) 
 
@@ -161,13 +162,14 @@ decrement %<>%
   mutate(qxm.d = qxmd ) %>%
   
   # For retired(".r"), the only target status is "dead". Note that in practice retirement mortality may differ from the regular mortality.
-  mutate(qxm.r   = qxm) 
+  mutate(qxm.r   = qxm.r) 
 
 
 
 # Calculate various survival probabilities
 decrement %<>% 
   mutate( pxm = 1 - qxm,
+          pxm.r = 1 - qxm.r,
           pxT = 1 - qxt - qxd - qxm - qxr, #(1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
           pxRm = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxm))), # prob of surviving up to r.max, mortality only
           px_r.full_m = order_by(-age, cumprod(ifelse(age >= r.full, 1, pxm)))
