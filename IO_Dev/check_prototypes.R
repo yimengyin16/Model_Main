@@ -7,7 +7,6 @@
  # Mature Plan: LA-CERA(1000:600), OH-PERS(1000:600)
  # Immature Plan: WA-PERS2(1000:300)
 
-
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c( "runname", "year",
                  "FR",
@@ -20,8 +19,6 @@ var.display <- c( "runname", "year",
 )
 
 
-
-
 ## Funding variables from the results
 gen_table <- function (run_name) {
   # run_name <- "AZ-PERS"
@@ -32,12 +29,6 @@ gen_table <- function (run_name) {
     select(one_of(var.display)) %>% kable
 }
 
-gen_table("AZ-PERS") # abratio 1000:500
-gen_table("LA-CERA") # abratio 1000:600
-gen_table("OH-PERS") # abratio 1000:600
-gen_table("WA-PERS2")# abratio 1000:300
-
-
 
 ## Age distribution of new entrants
 gen_enDist <- function (run_name) {
@@ -46,8 +37,37 @@ gen_enDist <- function (run_name) {
   data.frame(runname = outputs_list$paramlist$runname,  ea = 20:74, entrants_pct = outputs_list$entrant_dist) 
 }
 
+## Demographic statistics 
+gen_demo_summary <- function (run_name) {
+  # run_name <- "AZ-PERS"
+  load(paste0("IO_Dev/Outputs_", run_name,".RData"))
+  outputs_list$demo_summary %>% filter(year %in% c(1, 15, 30, 50))
+  # outputs_list$demo_summary %>% filter(year %in% c(1:50))
+}
 
 
+## Funding variables from the results
+gen_table("AZ-PERS") # abratio 1000:500
+gen_table("LA-CERA") # abratio 1000:600
+gen_table("OH-PERS") # abratio 1000:600
+gen_table("WA-PERS2")# abratio 1000:300
+
+## Demographic statistics 
+gen_demo_summary("AZ-PERS")
+gen_demo_summary("LA-CERA")
+gen_demo_summary("OH-PERS")
+gen_demo_summary("WA-PERS2")
+
+gen_demo_summary("DF100-1")
+
+
+
+
+
+
+
+
+## Age distribution of new entrants
 entrants_dist <- rbind(
 gen_enDist("AZ-PERS"),
 gen_enDist("LA-CERA"),
@@ -61,27 +81,6 @@ x <- gen_enDist("AZ-PERS")
 x$entrants_pct %>% length
 
 
-## Demographic statistics 
 
-# Workforce statistics to be calculated.  
-# Average age of workforce
-# Average year of service of workforce
-# Average entry age of workforce
-# Average age of retirees
-# Active-to-retiree reatio
-
-gen_demo_summary <- function (run_name) {
- # run_name <- "AZ-PERS"
- load(paste0("IO_Dev/Outputs_", run_name,".RData"))
- outputs_list$demo_summary %>% filter(year %in% c(1, 15, 30, 50))
- # outputs_list$demo_summary %>% filter(year %in% c(1:50))
-}
-
-gen_demo_summary("AZ-PERS")
-gen_demo_summary("LA-CERA")
-gen_demo_summary("OH-PERS")
-gen_demo_summary("WA-PERS2")
-
-gen_demo_summary("DF100-1")
 
 

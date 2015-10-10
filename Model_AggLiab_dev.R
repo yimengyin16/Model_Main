@@ -8,10 +8,10 @@ get_AggLiab <- function(  .liab   = liab,
 
   
 # Run the section below when developing new features.  
-#   .liab   = liab
-#   .pop   = pop
-#   .paramlist = paramlist
-#   .Global_paramlist = Global_paramlist
+  .liab   = liab
+  .pop   = pop
+  .paramlist = paramlist
+  .Global_paramlist = Global_paramlist
 
   assign_parmsList(.Global_paramlist, envir = environment())
   assign_parmsList(.paramlist,        envir = environment())
@@ -67,19 +67,29 @@ Reduce(merge, list(
  .pop$term    %>% group_by(year) %>% summarise(tot_terms    = sum(number.v)),
  
  # Number of new entrants
- .pop$active %>% filter(age == ea) %>% group_by(year) %>% summarise(tot_newEntrants = sum(number.a)) 
+ .pop$active %>% filter(age == ea) %>% group_by(year) %>% summarise(tot_newEntrants = sum(number.a)), 
+ 
+ # Number of new retirees
+ .pop$retired %>% filter(year == year.retire) %>% group_by(year) %>% summarise(tot_newRetirees = sum(number.r)),
+ 
+ # Number of new retirees
+ .pop$term %>% filter(year == 1 | year == year.term + 1) %>% group_by(year) %>% summarise(tot_newTerms = sum(number.v))
+ 
  )) %>% 
    mutate(# Ratios
           abratio = tot_actives / tot_retirees,  # Active-to-retiree reatio
-          newEnt_actives = 100 * tot_newEntrants / tot_actives,
+          newEnt_actives  = 100 * tot_newEntrants / tot_actives,
+          newRet_actives  = 100 * tot_newRetirees / tot_actives,
+          newTerm_actives = 100 * tot_newTerms / tot_actives,
           runname = runname) %>% 
    select(runname, everything())
 
  
  
-.pop$active %>% filter(age == ea) %>% group_by(year) %>% summarise(tot_newEntrants = sum(number.a)) 
- 
-   
+# demo_summary
+
+
+# .pop$term %>% filter(year == year.term + 1) %>% group_by(year) %>% summarise(tot_newTerms = sum(number.v)) 
  
  
 #*************************************************************************************************************

@@ -58,8 +58,8 @@ assign_parmsList(.paramlist,        envir = environment())
 #*************************************************************************************************************
 
 ## Mortality (from decrement package) 
-mort <- mortality %>% filter(tablename == tablename_mortality) %>% 
-                      mutate(qxm.r = qxm * 1) %>% select(age, qxm, qxm.r)
+mort <- mortality %>% filter(tablename == tablename_mortality) %>% #mutate(qxm.r = qxm * 1) %>% 
+                      select(age, qxm, qxm.r)
  
 
 ## Termination (Separation) rates (from plan data)
@@ -185,11 +185,6 @@ return(decrement)
 decrement <- get_decrements()
 
 
-
-
-
-# decrements::termination %>% filter(tablename == "az-srs") %>% spread(age, qxt)
-termrates %>% spread(planname, qxt)
 
 
 
