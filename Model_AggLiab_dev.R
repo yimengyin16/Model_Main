@@ -61,36 +61,56 @@ Reduce(merge, list(
  # Average age of retirees
  .pop$retired %>% group_by(year) %>% summarise(retirees_age.avg = weighted.mean(age, number.r)),
  
- # Total actives, retirees and terminated members. 
+ # Total actives, retirees and terminated members. (terms in all status, including not vested.) 
  .pop$active  %>% group_by(year) %>% summarise(tot_actives  = sum(number.a)),
  .pop$retired %>% group_by(year) %>% summarise(tot_retirees = sum(number.r)),
  .pop$term    %>% group_by(year) %>% summarise(tot_terms    = sum(number.v)),
  
- # Number of new entrants
+ # Total vested terms in benefit status and total vested terms not in benefit status. Note: year - (age - ea) gives the year of entrance. 
+ .pop$term %>% filter(age >= r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(tot_termsBen    = sum(number.v)),  
+ .pop$term %>% filter(age <  r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(tot_termsInact  = sum(number.v)),
+ 
+ 
+ # New entrants
  .pop$active %>% filter(age == ea) %>% group_by(year) %>% summarise(tot_newEntrants = sum(number.a)), 
  
- # Number of new retirees
+ # New retirees
  .pop$retired %>% filter(year == year.retire) %>% group_by(year) %>% summarise(tot_newRetirees = sum(number.r)),
  
- # Number of new retirees
- .pop$term %>% filter(year == 1 | year == year.term + 1) %>% group_by(year) %>% summarise(tot_newTerms = sum(number.v))
+ # New terms (in all status, including not vested.)
+ .pop$term %>% filter(year == 1 | year == year.term + 1) %>% group_by(year) %>% summarise(tot_newTerms = sum(number.v)),
+ 
+ # New terms in benefit status.
+ .pop$term %>% filter(age == r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(tot_newTermsBen = sum(number.v)),
+ 
+ # New terms in not in benefit status  Note: year - (age - ea) gives the year of entrance. 
+ .pop$term %>% filter(year == 1 | (year == year.term + 1 & age < r.full & year.term - (year - (age - ea)) >= v.yos)) %>% group_by(year) %>% summarise(tot_newTermsInact = sum(number.v)),
+ 
+ # Number of new death in actives and retirees
+ data.frame(year = 1:nyear, newDeath.act = .pop$newDeath.act),
+ data.frame(year = 1:nyear, newDeath.ret = .pop$newDeath.ret)
+
  
  )) %>% 
    mutate(# Ratios
-          abratio = tot_actives / tot_retirees,  # Active-to-retiree reatio
           newEnt_actives  = 100 * tot_newEntrants / tot_actives,
           newRet_actives  = 100 * tot_newRetirees / tot_actives,
+          
           newTerm_actives = 100 * tot_newTerms / tot_actives,
+          newTermsInact_actives  = 100 * tot_newTermsInact / tot_actives,
+          newTermsBen_termsInact = 100 * tot_newTermsBen / tot_termsInact,
+          
+          newDeath.act_actives  = 100 * newDeath.act / tot_actives,
+          newDeath.ret_retirees = 100 * newDeath.ret / tot_retirees, 
+          
+          ar.ratio = tot_actives / tot_retirees,                  # Active-to-service retiree ratio
+          ab.ratio = tot_actives / (tot_retirees + tot_termsBen), # Active-to-beneficiary ratio
           runname = runname) %>% 
    select(runname, everything())
 
- 
- 
-# demo_summary
 
+ demo_summary
 
-# .pop$term %>% filter(year == year.term + 1) %>% group_by(year) %>% summarise(tot_newTerms = sum(number.v)) 
- 
  
 #*************************************************************************************************************
 #                                     ## Liabilities and NCs for actives   ####

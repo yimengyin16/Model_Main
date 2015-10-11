@@ -67,6 +67,10 @@ wf_dead    <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_term    <- array(0, wf_dim.term,    dimnames = wf_dimnames.term)
 wf_retired <- array(0, wf_dim.retiree, dimnames = wf_dimnames.retiree)
 
+newDeath.act  <- numeric(nyear)
+newDeath.ret  <- numeric(nyear)
+
+
 #*************************************************************************************************************
 #                                     Setting initial population  ####
 #*************************************************************************************************************
@@ -258,9 +262,15 @@ for (j in 1:(nyear - 1)){
   
   wf_disb[, ,   j + 1]    <- (wf_disb[, , j] + in_disb - out_disb) %*% A
   wf_dead[, ,   j + 1]    <- (wf_dead[, , j] + in_dead) %*% A
+
+  newDeath.act[j]  <- sum(active2dead)
+  newDeath.ret[j] <- sum(retired2dead)
+    
 }
 
-return(list(active = wf_active, term = wf_term, disb = wf_disb, retired = wf_retired, dead = wf_dead))
+return(list(active = wf_active, term = wf_term, disb = wf_disb, retired = wf_retired, dead = wf_dead,
+            newDeath.act = newDeath.act,
+            newDeath.ret = newDeath.ret))
 
 }
 

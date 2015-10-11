@@ -29,7 +29,6 @@ gen_table <- function (run_name) {
     select(one_of(var.display)) %>% kable
 }
 
-
 ## Age distribution of new entrants
 gen_enDist <- function (run_name) {
   # run_name <- "AZ-PERS"
@@ -51,6 +50,8 @@ gen_table("AZ-PERS") # abratio 1000:500
 gen_table("LA-CERA") # abratio 1000:600
 gen_table("OH-PERS") # abratio 1000:600
 gen_table("WA-PERS2")# abratio 1000:300
+
+
 
 ## Demographic statistics 
 gen_demo_summary("AZ-PERS")

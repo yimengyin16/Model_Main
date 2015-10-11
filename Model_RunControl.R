@@ -43,9 +43,8 @@ load("Data/2015-10-07/salgrowth.rda"); salgrowth %<>% mutate(age = NULL)
 load("Data/2015-10-07/termrates.rda"); termrates %<>% dplyr::rename(qxt = termrate) # %>% mutate(qxt = 0.5*qxt)
 
 termrates %<>% mutate(qxt = 1 * qxt)
-mortality %<>% mutate(qxm = 0.8 * qxm) %>% 
-               mutate(qxm.r = qxm * 1.5)
-
+mortality %<>% mutate(qxm = 1 * qxm) %>% 
+               mutate(qxm.r = qxm)
 
 
 source("Functions.R")
