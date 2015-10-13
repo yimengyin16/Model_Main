@@ -8,10 +8,10 @@ get_AggLiab <- function(  .liab   = liab,
 
   
 # Run the section below when developing new features.  
-  .liab   = liab
-  .pop   = pop
-  .paramlist = paramlist
-  .Global_paramlist = Global_paramlist
+#   .liab   = liab
+#   .pop   = pop
+#   .paramlist = paramlist
+#   .Global_paramlist = Global_paramlist
 
   assign_parmsList(.Global_paramlist, envir = environment())
   assign_parmsList(.paramlist,        envir = environment())
@@ -72,36 +72,40 @@ Reduce(merge, list(
  
  
  # New entrants
- .pop$active %>% filter(age == ea) %>% group_by(year) %>% summarise(tot_newEntrants = sum(number.a)), 
+ .pop$active %>% filter(age == ea) %>% group_by(year) %>% summarise(new_entrants = sum(number.a)), 
  
  # New retirees
- .pop$retired %>% filter(year == year.retire) %>% group_by(year) %>% summarise(tot_newRetirees = sum(number.r)),
+ .pop$retired %>% filter(year == year.retire) %>% group_by(year) %>% summarise(new_retirees = sum(number.r)),
  
  # New terms (in all status, including not vested.)
- .pop$term %>% filter(year == 1 | year == year.term + 1) %>% group_by(year) %>% summarise(tot_newTerms = sum(number.v)),
+ .pop$term %>% filter(year == 1 | year == year.term + 1) %>% group_by(year) %>% summarise(new_terms = sum(number.v)),
  
  # New terms in benefit status.
- .pop$term %>% filter(age == r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(tot_newTermsBen = sum(number.v)),
+ .pop$term %>% filter(age == r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(new_termsBen = sum(number.v)),
  
  # New terms in not in benefit status  Note: year - (age - ea) gives the year of entrance. 
- .pop$term %>% filter(year == 1 | (year == year.term + 1 & age < r.full & year.term - (year - (age - ea)) >= v.yos)) %>% group_by(year) %>% summarise(tot_newTermsInact = sum(number.v)),
+ .pop$term %>% filter(year == 1 | (year == year.term + 1 & age < r.full & year.term - (year - (age - ea)) >= v.yos)) %>% group_by(year) %>% summarise(new_termsInact = sum(number.v)),
  
  # Number of new death in actives and retirees
  data.frame(year = 1:nyear, newDeath.act = .pop$newDeath.act),
- data.frame(year = 1:nyear, newDeath.ret = .pop$newDeath.ret)
-
+ data.frame(year = 1:nyear, newDeath.ret = .pop$newDeath.ret),
+ 
+ # Number of new disabled in actives
+ data.frame(year = 1:nyear, newDisb.act = .pop$newDisb.act)
  
  )) %>% 
    mutate(# Ratios
-          newEnt_actives  = 100 * tot_newEntrants / tot_actives,
-          newRet_actives  = 100 * tot_newRetirees / tot_actives,
+          newEnt_actives  = 100 * new_entrants / tot_actives,
+          newRet_actives  = 100 * new_retirees / tot_actives,
           
-          newTerm_actives = 100 * tot_newTerms / tot_actives,
-          newTermsInact_actives  = 100 * tot_newTermsInact / tot_actives,
-          newTermsBen_termsInact = 100 * tot_newTermsBen / tot_termsInact,
+          newTerm_actives = 100 * new_terms / tot_actives,
+          newTermsInact_actives  = 100 * new_termsInact / tot_actives,
+          newTermsBen_termsInact = 100 * new_termsBen / tot_termsInact,
           
           newDeath.act_actives  = 100 * newDeath.act / tot_actives,
           newDeath.ret_retirees = 100 * newDeath.ret / tot_retirees, 
+          
+          newDisb.act_actives = 100 * newDisb.act / tot_actives,
           
           ar.ratio = tot_actives / tot_retirees,                  # Active-to-service retiree ratio
           ab.ratio = tot_actives / (tot_retirees + tot_termsBen), # Active-to-beneficiary ratio
@@ -109,7 +113,7 @@ Reduce(merge, list(
    select(runname, everything())
 
 
- demo_summary
+#  demo_summary
 
  
 #*************************************************************************************************************

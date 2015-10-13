@@ -25,11 +25,11 @@ library(readxl)
 library(stringr)
 # library(xlsx)
 # library(XLConnect) # slow but convenient because it reads ranges
-#devtools::install_github("donboyd5/decrements")
-#devtools::install_github("donboyd5/pp.prototypes")
+# devtools::install_github("donboyd5/decrements")
+# devtools::install_github("donboyd5/pp.prototypes")
 
 library(pp.prototypes)
-library(decrements)               # mortality and termination for now
+ library(decrements)               # mortality and termination for now
 load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
 
 # Load data for new prototypes before they are in the pp.prototypes package
@@ -42,9 +42,15 @@ load("Data/2015-10-07/retrates.rda");  retrates %<>% dplyr::rename(qxr = retrate
 load("Data/2015-10-07/salgrowth.rda"); salgrowth %<>% mutate(age = NULL)
 load("Data/2015-10-07/termrates.rda"); termrates %<>% dplyr::rename(qxt = termrate) # %>% mutate(qxt = 0.5*qxt)
 
-termrates %<>% mutate(qxt = 1 * qxt)
-mortality %<>% mutate(qxm = 1 * qxm) %>% 
+load("Data/2015-10-07/mortality.rda")
+
+
+## Calibration of decrements
+termrates %<>% mutate(qxt = 1.2 * qxt)
+mortality %<>% mutate(qxm   = 0.6 * qxm) %>% 
                mutate(qxm.r = qxm)
+retrates %<>% mutate(qxr = qxr * 0.7) 
+
 
 
 source("Functions.R")
@@ -184,18 +190,6 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
 ## Run the model
 source("Model_Master.R", echo = TRUE)
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -69,6 +69,9 @@ wf_retired <- array(0, wf_dim.retiree, dimnames = wf_dimnames.retiree)
 
 newDeath.act  <- numeric(nyear)
 newDeath.ret  <- numeric(nyear)
+newDeath.term <- numeric(nyear)
+
+newDisb.act <- numeric(nyear)
 
 
 #*************************************************************************************************************
@@ -264,13 +267,18 @@ for (j in 1:(nyear - 1)){
   wf_dead[, ,   j + 1]    <- (wf_dead[, , j] + in_dead) %*% A
 
   newDeath.act[j]  <- sum(active2dead)
-  newDeath.ret[j] <- sum(retired2dead)
+  newDeath.ret[j]  <- sum(retired2dead)
+  # newDeath.term[j] <- sum()
+  
+  newDisb.act[j] <- sum(active2disb)
     
 }
 
 return(list(active = wf_active, term = wf_term, disb = wf_disb, retired = wf_retired, dead = wf_dead,
             newDeath.act = newDeath.act,
-            newDeath.ret = newDeath.ret))
+            newDeath.ret = newDeath.ret,
+            
+            newDisb.act  = newDisb.act))
 
 }
 

@@ -15,7 +15,9 @@ var.display <- c( "runname", "year",
                  "SC_PR", "C_PR", "ERC_PR",
                  "MA_PR",   
                  "PR.growth", 
-                 "ExF_PR"   
+                 "ExF_PR",
+                 "AL", "C","B","PR",
+                 "ExF"
 )
 
 
@@ -25,7 +27,6 @@ gen_table <- function (run_name) {
   load(paste0("IO_Dev/Outputs_", run_name,".RData"))
   outputs_list$results %>% 
     filter(sim == 1, year %in% c(1, 15, 30, 50)) %>%
-    mutate(ExF_PR = ExF_PR * 100) %>% 
     select(one_of(var.display)) %>% kable
 }
 
@@ -40,7 +41,7 @@ gen_enDist <- function (run_name) {
 gen_demo_summary <- function (run_name) {
   # run_name <- "AZ-PERS"
   load(paste0("IO_Dev/Outputs_", run_name,".RData"))
-  outputs_list$demo_summary %>% filter(year %in% c(1, 15, 30, 50))
+  outputs_list$demo_summary %>% filter(year %in% c(1,2,15, 30, 50))
   # outputs_list$demo_summary %>% filter(year %in% c(1:50))
 }
 
@@ -61,9 +62,7 @@ gen_demo_summary("WA-PERS2")
 
 gen_demo_summary("DF100-1")
 
-
-
-
+gen_demo_summary("AZ-PERS") %>% select(act)
 
 
 
@@ -80,6 +79,30 @@ ggplot(entrants_dist, aes(x = ea, y = entrants_pct, color = runname)) + geom_lin
 
 x <- gen_enDist("AZ-PERS")
 x$entrants_pct %>% length
+
+
+
+
+# Check new entrance distribution
+
+actives %>% filter(planname == "OH-PERS-85.fillin.yos", age - ea <=1) %>% select(planname, age, ea, nactives) %>%
+            group_by(ea) %>% summarise(ent = mean(nactives)) %>% filter(ea>=20) %>% mutate(entpct = 100 * ent / sum(ent)) %>% data.frame
+
+
+
+actives %>% filter(planname == "AZ-PERS-6") 
+
+actives
+
+
+
+
+
+
+
+
+
+
 
 
 
