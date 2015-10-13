@@ -1,20 +1,20 @@
 # This module create investment return series. 
 
-gen_returns <- function( .paramlist = paramlist,
-                         .Global_paramlist = Global_paramlist,
+gen_returns <- function( #.paramlist = paramlist,
+                         #.Global_paramlist = Global_paramlist,
   
-                        #nyear   = Global_paramlist$nyear,
-                        #nsim    = Global_paramlist$nsim,
-                        #ir.mean = paramlist$ir.mean,
-                        #ir.sd   = paramlist$ir.sd,
+                        nyear   = Global_paramlist$nyear,
+                        nsim    = Global_paramlist$nsim,
+                        ir.mean = paramlist$ir.mean,
+                        ir.sd   = paramlist$ir.sd,
                         seed    = 1234) {
 
-assign_parmsList(.Global_paramlist, envir = environment())
-assign_parmsList(.paramlist,        envir = environment())
+#assign_parmsList(.Global_paramlist, envir = environment())
+#assign_parmsList(.paramlist,        envir = environment())
   
   
   set.seed(seed)
-  i.r <- matrix(rnorm(nyear*nsim, mean = ir.mean, sd = ir.sd),nrow = nyear, ncol = nsim)
+  i.r <- matrix(rnorm(nyear  *nsim, mean = ir.mean, sd = ir.sd),nrow = nyear, ncol = nsim)
   
   if (all(i.r >= -1)) return(i.r) 
   else {
@@ -40,15 +40,16 @@ if(devMode){
     if(sum(paramlist$plan_returns$duration) != Global_paramlist$nyear) stop("Length of return series does not match nsim.", call. = FALSE)
     
     # set.seed(1234)
-    i.r <- with(.paramlist, mapply(gen_returns, 
-                                   nyear = plan_returns$duration, 
-                                   nsim  = Global_paramlist$nsim,
-                                   ir.mean = plan_returns$ir.mean,
-                                   ir.sd = plan_returns$ir.sd,
-                                   SIMPLIFY = (nrow(plan_returns) != 1)
+    i.r <- with(paramlist, mapply(gen_returns, 
+                                    nyear   = Global_paramlist$nyear,
+                                    nsim    = Global_paramlist$nsim,
+                                    ir.mean = paramlist$ir.mean,
+                                    ir.sd   = paramlist$ir.sd,
+                                    SIMPLIFY  = (nrow(paramlist$plan_returns) == 1)
     )) %>% 
       do.call(rbind, .)
   }
+  
   
   if(paramlist$return_type == "external") source(paste0(folder_run, "/getReturn.R"))
   

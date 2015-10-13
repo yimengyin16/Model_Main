@@ -158,6 +158,8 @@ run_sim <- function(      .i.r = i.r,
     SC_amort <- SC_amort0 
     penSim[["i.r"]] <- .i.r[, as.character(k)]
     
+    if(k == -1) init_MA <- "AL_pct"; MA_0_pct <- 1 
+    
     source("Functions.R")
     
     

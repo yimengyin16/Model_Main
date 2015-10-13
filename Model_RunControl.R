@@ -135,7 +135,8 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 # Read in Run Control files ####
 #*********************************************************************************************************
 
-folder_run          <- "IO_Dev"
+# folder_run          <- "IO_Dev"
+folder_run <- "IO_M2.1_new" 
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
 path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)
