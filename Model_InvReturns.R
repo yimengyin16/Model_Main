@@ -41,10 +41,10 @@ if(devMode){
     
     # set.seed(1234)
     i.r <- with(paramlist, mapply(gen_returns, 
-                                    nyear   = Global_paramlist$nyear,
+                                    nyear   = paramlist$plan_returns$duration,
                                     nsim    = Global_paramlist$nsim,
-                                    ir.mean = paramlist$ir.mean,
-                                    ir.sd   = paramlist$ir.sd,
+                                    ir.mean = paramlist$plan_returns$ir.mean,
+                                    ir.sd   = paramlist$plan_returns$ir.sd,
                                     SIMPLIFY  = (nrow(paramlist$plan_returns) == 1)
     )) %>% 
       do.call(rbind, .)
@@ -66,6 +66,6 @@ if(devMode){
 }
 
 
-
+paramlist$plan_returns
 
 

@@ -3,7 +3,7 @@
 ## This is a frozen version before start developing multiple retirement ages.
 
 #*********************************************************************************************************
-#                      Preamble ####
+#                                               Preamble ####
 #*********************************************************************************************************
 
 rm(list = ls())
@@ -151,15 +151,13 @@ path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)
 
 
 # Import global parameters
-Global_params <- read_excel(path_RunControl, sheet="GlobalParams", skip=1) 
+Global_params <- read_excel(path_RunControl, sheet="GlobalParams", skip = 1) 
 
 
 # Import parameters for all plans
 plan_params        <- read_excel(path_RunControl, sheet="RunControl",    skip=4) %>% filter(!is.na(runname))
 plan_returns       <- read_excel(path_RunControl, sheet="Returns",       skip=0) %>% filter(!is.na(runname))
 plan_contributions <- read_excel(path_RunControl, sheet="Contributions", skip=0) %>% filter(!is.na(runname))
-
-
 
 
 #*********************************************************************************************************
@@ -197,7 +195,7 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
 }
 
 ## Run the model
-source("Model_Master.R", echo = TRUE)
+# source("Model_Master.R", echo = TRUE)
 }
 
 

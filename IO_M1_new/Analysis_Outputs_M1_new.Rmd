@@ -99,110 +99,137 @@ results_all %>% filter(runname == "A1F075_O15d", year == 1, sim == 1) %>% select
 
 prefix <- "A1F075_"
 
-select_runs <- c(
-# "0u",
-# "0",
-# "O15d",
-# "O15p",
-# "O30d",
-# "O30p",
-#  "C10d",
-#  "C15d",
-#  "C15p",
-#  "C30d",
-#  "C30p",
 
-# "A5",
-# "A10",
- "O30pA5",
-# "O30pA10"
-# "C30pA5",
-# 
-# "A1F100_O30pA5",
-# 
- "soa1",
- "soa2"
-# "soa3",
-# "soa4"
+runs_M1_F11 <- c(
+ "0",
+ "O15d",
+ "O15p",
+ "O30d",
+ "O30p",
+ "C30p",
+ "O30pA5"
 )
-
-runs_M1F11 <- c(
+  
+runs_M1_O <- c(
 # "0",  
  "O15d",
  "O15p",
  "O30d",
-"O30p",  
-#"C30p",  
-#"C30pA5",
-"O30pA5"  
+ "O30p",  
+ "O30pA5",
+ "O30pA10"
 )
 
-runs_M1F11 <- c(
-# "0",  
+runs_M1_C <- c(
+ # "0",  
  "C15d",
  "C15p",
  "C30d",
-"C30p",  
-#"C30p",  
-#"C30pA5",
-"C30pA5"  
+ "C30p",  
+ "C30pA5",
+ "C30pA10"
 )
- 
+
+
+runs_M1_soa <- c(
+  "O30pA5",
+  "soa1", "soa2", "soa3", "soa4"
+)
+
+
+runs_M1_0 <- c( "0u","0","A5","A10")
+
+
+draw_quantiles(c(paste0(prefix, runs_M1_F11)), "FR_MA", ylim = c(0, 250), year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_F11)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_F11)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
 
 
 
-draw_quantiles(c(paste0(prefix, runs_M1F11)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1F11)), "C_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1F11)), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_O)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_O)), "C_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_O)), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+
+
+draw_quantiles(c(paste0(prefix, runs_M1_C)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_C)), "C_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_C)), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+
+draw_quantiles(c(paste0(prefix, runs_M1_soa)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_soa)), "C_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_soa)), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+
+
+draw_quantiles(c(paste0(prefix, runs_M1_0)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_0)), "C_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_0)), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+
+
+# "A1F100_O30pA5",
+draw_quantiles(c("A1F075_O30pA5", "A1F100_O30pA5"), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c("A1F075_O30pA5", "A1F100_O30pA5"), "C_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
+draw_quantiles(c("A1F075_O30pA5", "A1F100_O30pA5"), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
 
 
 
-
-
-
-
-
-
-# Amortization period with cp payment
-draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "FR_MA",    ylim = c(0, 250))$plot + 
-  labs(y = "%", title = "Quantile Plots of Funded Ratio(Based on Market Asset Value)")
-draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "C_PR",   ylim = c(-2, 35))$plot +
-  labs(y = "%", title = "Quantile Plots of Contribution Rate")
-draw_quantiles("A1F075_6" , "FR_MA", ylim = c(0, 250))$df %>% filter(Quantile == "50%")
-
-
+# # Amortization period with cp payment
+# draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "FR_MA",    ylim = c(0, 250))$plot + 
+#   labs(y = "%", title = "Quantile Plots of Funded Ratio(Based on Market Asset Value)")
+# draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "C_PR",   ylim = c(-2, 35))$plot +
+#   labs(y = "%", title = "Quantile Plots of Contribution Rate")
+# draw_quantiles("A1F075_6" , "FR_MA", ylim = c(0, 250))$df %>% filter(Quantile == "50%")
 
 ```
 
-
-
-
-# Asset Smoothing 
-
-## 100% Initial Funding: Long term effect
 
 ```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
 
-prefix <- "A1F100_"
+#-25% asset shock
 
-# 5-year and 10-year smoothing compared with 30-year open cp amortization  
-draw_quantiles(paste0(prefix, c(3, 6, 7)), "FR", ylim = c(0, 250))$plot %>% print
-draw_quantiles(paste0(prefix, c(3, 6, 7)), "FR_MA", ylim = c(0, 250))$plot %>% print
-draw_quantiles(paste0(prefix, c(3, 6, 7)), "C_PR", ylim = c(-2, 35))$plot %>% print
-draw_quantiles(paste0(prefix, c(3, 6, 7)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+prefix <- "A1F075_"
 
-# 5-year and 10-year smoothing compared with 30-year open cd amortization  
-draw_quantiles(paste0(prefix, c(2, 8, 9)), "FR", ylim = c(0, 250))$plot %>% print
-draw_quantiles(paste0(prefix, c(2, 8, 9)), "FR_MA", ylim = c(0, 250))$plot %>% print
-draw_quantiles(paste0(prefix, c(2, 8, 9)), "C_PR", ylim = c(-2, 35))$plot %>% print
-draw_quantiles(paste0(prefix, c(2, 8, 9)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+runs_M1_shock <- c(
+"0_a"
+# "O30p_a",
+# "O30pA5_a",
+# "O30pA10_a",
+# "O30pA5_a"
+)
 
-# 5-year and 10-year smoothing compared with no amortization 
-draw_quantiles(paste0(prefix, c(0, 4, 5)), "FR", ylim = c(0, 250))$plot %>% print
-draw_quantiles(paste0(prefix, c(0, 4, 5)), "C_PR", ylim = c(-2, 35))$plot %>% print
-draw_quantiles(paste0(prefix, c(0, 4, 5)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_shock)), "FR_MA", ylim = c(0, 250), year.max = 20)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_shock)), "C_PR", ylim = c(-2, 35),  year.max = 20)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_shock)), "ERC_PR", ylim = c(-2, 35),year.max = 20)$plot %>% print
 
 ```
+
+
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+#Geo vs arith mean
+
+prefix <- "B1F075_"
+
+runs_M1_GvA <- c(0, 1)
+
+draw_quantiles(c(paste0(prefix, runs_M1_GvA)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_GvA)), "C_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_GvA)), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Calculate Measures of volatility in FR and contribution
 
 ```{r}
