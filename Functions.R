@@ -358,6 +358,8 @@ get_quantiles <- function( runName,     # character
   
   df <- ldply(split(df, df$runname), fn, .id = "runname")
   
+  df$runname <- factor(df$runname, levels = runName)
+  
   return(df)
   
 }

@@ -1,0 +1,174 @@
+---
+title: "Exploratory Analysis of Model Outputs"
+author: "Yimeng Yin"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+
+```{r mainSet_options, echo=FALSE, cache=FALSE}
+
+# options(width=140)
+# knitr::opts_chunk$set(fig.width=16, fig.height=5, echo=FALSE)
+# # Note: when saving maps (ggsave), width=16, height=9 seems to get rid of white space
+
+```
+
+
+
+
+```{r Preamble, echo = FALSE, include  = FALSE}
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(magrittr) # to use %<>%
+library(zoo)
+library(grid)
+
+rm(list = ls())
+
+run_knitr <- F
+
+if(run_knitr) source("../Functions.R") else source("Functions.R")
+
+```
+
+
+```{r Read, echo=FALSE, include = FALSE}
+## Combine selected files into a single list.
+
+IO_folder <- "IO_M2.1_new"
+
+if(run_knitr) IO_folder <- paste0("../", IO_folder)
+
+file_select <- dir(IO_folder, pattern = ".RData")
+
+fn <- function(x) {
+       load(paste0(IO_folder, "/", x))
+       outputs_list}
+
+
+lists_all        <- alply(file_select, 1, fn)
+names(lists_all) <- laply(lists_all, function(x) x$paramlist$runname)
+
+## Combine the results into a single data frame.
+results_all <- ldply(lists_all, function(x) x$results) %>% select(-X1)
+
+rm(lists_all)
+```
+
+
+```{r Read, echo=FALSE, include = FALSE}
+
+results_all %<>% group_by(runname, sim) %>% 
+                 mutate(dFR = FR - lag(FR),
+                        dFR_MA = FR_MA - lag(FR_MA),
+                        dC_PR = C_PR - lag(C_PR),
+                        dERC_PR = ERC_PR - lag(ERC_PR)
+                        ) %>% 
+                 ungroup
+
+var.display <- c( "runname", "year",
+                 "FR","AL","AA","MA",
+                 # "AL_PR", "AL.act_PR", "AL.ret_PR","AL.term_PR", 
+                 "NC_PR", "NC.act_PR", "NC.term_PR", 
+                 "SC_PR", "C_PR", "ERC_PR",
+                 "MA_PR",   
+                 "PR.growth", 
+                 "ExF_PR",
+                 "AL", "C","B","PR",
+                 "ExF"
+)
+
+results_all %>% filter(runname == "I1F075-1", year == 1, sim == 1) %>% select(one_of(var.display))
+
+```
+
+
+
+# Demographics
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+
+prefix <- "D1F075-"
+
+runs_M2.1_avg <- c(
+  "average_gn1",
+  "average",
+  "average_g1"
+)
+  
+runs_M2.1_mature <- c(
+ "mature1",
+ "mature1_gn1",
+ "mature2",
+ "mature2_gn1"
+)
+
+
+runs_M2.1_immature <- c(
+ "immature",
+ "immature_g1"
+)
+
+
+draw_quantiles(c(paste0(prefix, runs_M2.1_avg)), "FR_MA", year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_avg)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_avg)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+
+
+draw_quantiles(c(paste0(prefix, runs_M2.1_mature)), "FR_MA", year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_mature)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_mature)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+
+
+draw_quantiles(c(paste0(prefix, runs_M2.1_immature)), "FR_MA", year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_immature)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_immature)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+
+```
+
+
+
+# Investment returns
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix1 <- "I1F075-"
+prefix2 <- "I2F075-"
+prefix3 <- "I3F075-"
+
+runs_M2.1_I1 <- 1:5
+runs_M2.1_I2 <- 1:5
+runs_M2.1_I3 <- 1:5
+
+draw_quantiles(c(paste0(prefix1, runs_M2.1_I1)), "FR_MA", year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix1, runs_M2.1_I1)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix1, runs_M2.1_I1)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix3, runs_M2.1_I1)), "MA_PR", year.max = 40)$plot %>% print
+
+draw_quantiles(c(paste0(prefix2, runs_M2.1_I2)), "FR_MA", year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix2, runs_M2.1_I2)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix2, runs_M2.1_I2)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix3, runs_M2.1_I2)), "MA_PR", year.max = 40)$plot %>% print
+
+# using implied geometric mean as discoun rate. Initial MA adjusted accordingly. 
+draw_quantiles(c(paste0(prefix3, runs_M2.1_I3)), "FR_MA", year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix3, runs_M2.1_I3)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix3, runs_M2.1_I3)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix3, runs_M2.1_I3)), "MA_PR", year.max = 40)$plot %>% print
+
+
+
+```
+
+
+
+
