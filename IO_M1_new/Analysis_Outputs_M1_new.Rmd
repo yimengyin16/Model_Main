@@ -1,0 +1,703 @@
+---
+title: "Exploratory Analysis of Model Outputs"
+author: "Yimeng Yin"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+
+```{r mainSet_options, echo=FALSE, cache=FALSE}
+
+# options(width=140)
+# knitr::opts_chunk$set(fig.width=16, fig.height=5, echo=FALSE)
+# # Note: when saving maps (ggsave), width=16, height=9 seems to get rid of white space
+
+```
+
+
+
+
+```{r Preamble, echo = FALSE, include  = FALSE}
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(magrittr) # to use %<>%
+library(zoo)
+library(grid)
+
+rm(list = ls())
+
+run_knitr <- F
+
+if(run_knitr) source("../Functions.R") else source("Functions.R")
+
+```
+
+
+```{r Read, echo=FALSE, include = FALSE}
+## Combine selected files into a single list.
+
+IO_folder <- "IO_M1_new"
+
+if(run_knitr) IO_folder <- paste0("../", IO_folder)
+
+file_select <- dir(IO_folder, pattern = ".RData")
+
+fn <- function(x) {
+       load(paste0(IO_folder, "/", x))
+       outputs_list}
+
+
+lists_all        <- alply(file_select, 1, fn)
+names(lists_all) <- laply(lists_all, function(x) x$paramlist$runname)
+
+## Combine the results into a single data frame.
+results_all <- ldply(lists_all, function(x) x$results) %>% select(-X1)
+
+rm(lists_all)
+```
+
+
+```{r Read, echo=FALSE, include = FALSE}
+
+results_all %<>% group_by(runname, sim) %>% 
+                 mutate(dFR = FR - lag(FR),
+                        dFR_MA = FR_MA - lag(FR_MA),
+                        dC_PR = C_PR - lag(C_PR),
+                        dERC_PR = ERC_PR - lag(ERC_PR)
+                        ) %>% 
+                 ungroup
+
+var.display <- c( "runname", "year",
+                 "FR",
+                 "AL_PR", "AL.act_PR", "AL.ret_PR","AL.term_PR", 
+                 "NC_PR", "NC.act_PR", "NC.term_PR", 
+                 "SC_PR", "C_PR", "ERC_PR",
+                 "MA_PR",   
+                 "PR.growth", 
+                 "ExF_PR",
+                 "AL", "C","B","PR",
+                 "ExF"
+)
+
+results_all %>% filter(runname == "A1F075_O15d", year == 1, sim == 1) %>% select(one_of(var.display))
+
+```
+
+
+
+# Funding policies
+
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "A1F075_"
+
+select_runs <- c(
+# "0u",
+# "0",
+# "O15d",
+# "O15p",
+# "O30d",
+# "O30p",
+#  "C10d",
+#  "C15d",
+#  "C15p",
+#  "C30d",
+#  "C30p",
+
+# "A5",
+# "A10",
+ "O30pA5",
+# "O30pA10"
+# "C30pA5",
+# 
+# "A1F100_O30pA5",
+# 
+ "soa1",
+ "soa2"
+# "soa3",
+# "soa4"
+)
+
+runs_M1F11 <- c(
+# "0",  
+ "O15d",
+ "O15p",
+ "O30d",
+"O30p",  
+#"C30p",  
+#"C30pA5",
+"O30pA5"  
+)
+
+runs_M1F11 <- c(
+# "0",  
+ "C15d",
+ "C15p",
+ "C30d",
+"C30p",  
+#"C30p",  
+#"C30pA5",
+"C30pA5"  
+)
+ 
+
+
+
+draw_quantiles(c(paste0(prefix, runs_M1F11)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1F11)), "C_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1F11)), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+
+
+
+
+
+
+
+
+
+# Amortization period with cp payment
+draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "FR_MA",    ylim = c(0, 250))$plot + 
+  labs(y = "%", title = "Quantile Plots of Funded Ratio(Based on Market Asset Value)")
+draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "C_PR",   ylim = c(-2, 35))$plot +
+  labs(y = "%", title = "Quantile Plots of Contribution Rate")
+draw_quantiles("A1F075_6" , "FR_MA", ylim = c(0, 250))$df %>% filter(Quantile == "50%")
+
+
+
+```
+
+
+
+
+# Asset Smoothing 
+
+## 100% Initial Funding: Long term effect
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "A1F100_"
+
+# 5-year and 10-year smoothing compared with 30-year open cp amortization  
+draw_quantiles(paste0(prefix, c(3, 6, 7)), "FR", ylim = c(0, 250))$plot %>% print
+draw_quantiles(paste0(prefix, c(3, 6, 7)), "FR_MA", ylim = c(0, 250))$plot %>% print
+draw_quantiles(paste0(prefix, c(3, 6, 7)), "C_PR", ylim = c(-2, 35))$plot %>% print
+draw_quantiles(paste0(prefix, c(3, 6, 7)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+
+# 5-year and 10-year smoothing compared with 30-year open cd amortization  
+draw_quantiles(paste0(prefix, c(2, 8, 9)), "FR", ylim = c(0, 250))$plot %>% print
+draw_quantiles(paste0(prefix, c(2, 8, 9)), "FR_MA", ylim = c(0, 250))$plot %>% print
+draw_quantiles(paste0(prefix, c(2, 8, 9)), "C_PR", ylim = c(-2, 35))$plot %>% print
+draw_quantiles(paste0(prefix, c(2, 8, 9)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+
+# 5-year and 10-year smoothing compared with no amortization 
+draw_quantiles(paste0(prefix, c(0, 4, 5)), "FR", ylim = c(0, 250))$plot %>% print
+draw_quantiles(paste0(prefix, c(0, 4, 5)), "C_PR", ylim = c(-2, 35))$plot %>% print
+draw_quantiles(paste0(prefix, c(0, 4, 5)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+
+```
+# Calculate Measures of volatility in FR and contribution
+
+```{r}
+# 30-year open cp, no amortization 
+
+prefix <- "A1F100_"
+
+get_vol_MA <- function(runName, year.max, data = results_all){
+         df <-  data %>% 
+                filter(runname == runName, year <= year.max) %>%
+                group_by(sim) %>% 
+                summarize(avg_dFR     = mean(abs(dFR), na.rm = TRUE),
+                          avg_dFR_MA  = mean(abs(dFR_MA), na.rm = TRUE),
+                          avg_dC_PR   = mean(abs(dC_PR), na.rm = TRUE),
+                          avg_dERC_PR = mean(abs(dERC_PR), na.rm = TRUE)) %>% 
+                summarize(m_avg_dFR     = median(avg_dFR),
+                          m_avg_dFR_MA  = median(avg_dFR_MA),
+                          m_avg_dC_PR   = median(avg_dC_PR),
+                          m_avg_dERC_PR = median(avg_dERC_PR)) %>% 
+                mutate(runname = runName) %>% 
+                select(runname, everything())
+}
+
+get_vol_MM <- function(runName, year.max, data = results_all){
+         df <-  data %>% 
+                filter(runname == runName, year <= year.max) %>%
+                group_by(sim) %>% 
+                summarize(avg_dFR     = median(abs(dFR), na.rm = TRUE),
+                          avg_dFR_MA  = median(abs(dFR_MA), na.rm = TRUE),
+                          avg_dC_PR   = median(abs(dC_PR), na.rm = TRUE),
+                          avg_dERC_PR = median(abs(dERC_PR), na.rm = TRUE)) %>% 
+                summarize(m_avg_dFR     = median(avg_dFR),
+                          m_avg_dFR_MA  = median(avg_dFR_MA),
+                          m_avg_dC_PR   = median(avg_dC_PR),
+                          m_avg_dERC_PR = median(avg_dERC_PR)) %>% 
+                mutate(runname = runName) %>% 
+                select(runname, everything())
+}
+
+
+# 20 years is a more practical timeframe from the perspective of policymaking. Hence a measureo of volatility in 20 years 
+# rather than in the entire 80-year simulation period is more relevant to plan sponsors and policymakers. 
+
+sum_vol100_MM20 <- adply(paste0("A1F100_", c(0, 1:3, paste0(1:3,"c"),4, 5, 6, 7)), 1, get_vol_MM, year.max = 20) %>% select(-X1)
+sum_vol075_MA20 <- adply(paste0("A1F075_", c(0, 1:3, paste0(1:3,"c"),4, 5, 6, 7)), 1, get_vol_MA, year.max = 20) %>% select(-X1)
+sum_vol100_MA20 <- adply(paste0("A1F100_", c(0, 1:3, paste0(1:3,"c"),4, 5, 6, 7)), 1, get_vol_MA, year.max = 20) %>% select(-X1)
+
+sum_vol100_MM40 <- adply(paste0("A1F100_", c(0, 1:3, paste0(1:3,"c"),4, 5, 6, 7)), 1, get_vol_MM, year.max = 40) %>% select(-X1)
+sum_vol100_MA40 <- adply(paste0("A1F100_", c(0, 1:3, paste0(1:3,"c"),4, 5, 6, 7)), 1, get_vol_MA, year.max = 40) %>% select(-X1)
+
+sum_vol100_MM80 <- adply(paste0("A1F100_", c(0, 1:3, paste0(1:3,"c"),4, 5, 6, 7)), 1, get_vol_MM, year.max = 80) %>% select(-X1)
+sum_vol100_MA80 <- adply(paste0("A1F100_", c(0, 1:3, paste0(1:3,"c"),4, 5, 6, 7)), 1, get_vol_MA, year.max = 80) %>% select(-X1)
+
+sum_vol100_MM20
+sum_vol100_MA20
+
+sum_vol100_MM40
+sum_vol100_MA40
+
+sum_vol100_MM80
+sum_vol100_MA80
+
+# 100% and 75% initial funded ratio
+sum_vol100_MA20
+sum_vol075_MA20
+
+# Thoughts:
+
+# The distribution of abs values are quite skewed and the difference between mean and median for all variables is big.
+
+# The current "no smoothing" policy may not be a good benchmark for comparison of long-term volatility in cont rates. Because contribution rate becomes 0 after a few decades in a substantial number of simulations. So the variation this mostly due to the wild swings during early years in the simulation. But there are variation in cont. rate for other policies. Therefore it may not be fair to compare their vaiation. The "no smoothing" policy can be a good benchmark if there is no non-neg restrictions on ADC and contribution, so contribution rate can swing freely. 
+
+# One problem with the M-M measure is that the measure becomes 0 if we look at more than 20 years, because there are lots of 0 contribution by by then. The M-A measure does not have this problem. 
+
+# It seems ok for now to use M-A measure. But we may want to think about other measure b/c we are trying to measure very skewed distributions.
+
+# Another possible measure is the % of years in which contribution rate is greater than a certain value. The question is what value to use. 
+
+# We may want to devise an index based on paired comparison(compare results from different policies for the same single sim). This way we may see the trade-off between vol. in FR and vol. in cont. rate.  v
+
+
+## Check the distribution of annual change
+
+var_list <- c("runname", "sim", "year","FR", "dFR","FR_MA", "dFR_MA", "dC_PR", "dERC_PR", "i.r")
+
+df_avg <- results_all %>% 
+          filter(runname == "A1F100_6") %>%
+          select(one_of(var_list))
+
+df_avg141 <- df_avg %>% filter(sim == 141)
+mean(df_avg141$dFR_MA, na.rm = TRUE)  # 47%
+get_geoReturn(df_avg141$i.r) # geometric mean 9.4%
+var(df_avg141$i.r)^0.5 # variance 12.7%
+
+
+df_avg$dFR_MA %>% abs %>%  summary
+df_avg$dFR %>% abs %>% summary
+df_avg$dC_PR %>% abs %>% summary
+df_avg$dERC_PR %>% abs %>%  summary
+
+
+
+df_avg2 <- df_avg %>% group_by(sim) %>%  
+                    summarize(avg_dFR = mean(abs(dFR), na.rm = TRUE),
+                          avg_dFR_MA  = mean(abs(dFR_MA), na.rm = TRUE),
+                          avg_dC_PR   = mean(abs(dC_PR), na.rm = TRUE),
+                          avg_dERC_PR = mean(abs(dERC_PR), na.rm = TRUE))
+
+df_avg2$avg_dFR_MA %>% hist
+df_avg2$avg_dFR %>% hist
+df_avg2$avg_dC_PR %>% hist
+df_avg2$avg_dERC_PR %>% hist
+
+df_avg2$avg_dFR_MA %>% summary
+df_avg2$avg_dFR %>% summary
+df_avg2$avg_dC_PR %>% summary
+df_avg2$avg_dERC_PR %>% summary
+
+# distribution of contribution rate is quite irregular, is this normal or due to a too small number of sims?
+
+
+
+
+
+
+
+```
+
+## 100% Initial Funding: Long term effect: Single runs with high ending FR
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "A1F100_"
+
+## Compare funding policy under the same simulation
+runnames <- paste0("A1F100_", c("3", "6", "7"))
+
+
+results2 <-  results_all %>% 
+             select(runname, year, sim, FR, C_PR) %>% 
+             filter(year == 80, runname %in% runnames)
+results2 %>% filter(FR > 120, FR < 130)
+
+# high ending FR: 
+sims <- c(36, 216, 232)
+# low ending FR:  c(249, 435,525)
+
+singleRuns <-  results_all %>% select(runname, year, sim, FR, FR_MA, C_PR, ERC_PR, i.r) %>% 
+               filter(runname %in% runnames) %>% 
+               filter(sim %in% sims) %>% 
+               group_by(runname, sim) %>% 
+               mutate(rollingReturn = 100 * rollapply(i.r, 10, get_geoReturn, align = "right", fill = NA)) %>% 
+               gather(variable, value, -runname, -year, - sim) 
+               
+
+# 10-year rolling geometric return
+singleRuns %>% filter(variable == "rollingReturn", runname == runnames[1]) %>% 
+               ggplot(aes(x = year, y = value)) + theme_bw() + 
+               facet_grid(. ~ sim) + # coord_cartesian(ylim = c(-5,150)) +
+               geom_line() + geom_point() + 
+               labs(y = "10-Year Rolling Average Return (%)", title = "10-year Rolling Geometric Average Return under Selected Runs with High Ending Funded Ratio")
+
+# %>%  ggsave(filename = "IO_Prelim/R3_Rolling.png", width = 8, height = 3, dpi = 400)
+
+
+# FR in single runs
+singleRuns %>% filter(variable == "FR_MA", runname %in% runnames) %>% 
+               ggplot(aes(x = year, y = value, color = runname)) + theme_bw() + 
+               facet_grid(. ~ sim) + # coord_cartesian(ylim = c(-5,150)) +
+               geom_line() + geom_point() + 
+               labs(y = "Funded Ratio", title = "Funded Ratio in Selected Single Runs with High Ending Funded Ratio") + 
+               scale_color_discrete(labels = c("No Smoothing", "5-year Smoothing", "10-year Smoothing")) +
+               theme(legend.position="bottom", legend.margin = unit(-0.5, "cm"), legend.title=element_blank())
+
+singleRuns %>% filter(variable == "C_PR", runname %in% runnames) %>% 
+               ggplot(aes(x = year, y = value, color = runname)) + theme_bw() + 
+               facet_grid(. ~ sim) + # coord_cartesian(ylim = c(-5,150)) +
+               geom_line() + geom_point() + 
+               labs(y = "Contribution Rate", title = "Contribution Rate in Selected Single Runs with High Ending Funded Ratio") + 
+               scale_color_discrete(labels = c("No Smoothing", "5-year Smoothing", "10-year Smoothing")) +
+               theme(legend.position="bottom", legend.margin = unit(-0.5, "cm"), legend.title=element_blank())
+
+```
+
+## 100% Initial Funding: Long term effect: Single runs with low ending FR
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "A1F100_"
+
+## Compare funding policy under the same simulation
+runnames <- paste0("A1F100_", c("3", "6", "7"))
+
+
+results2 <-  results_all %>% 
+             select(runname, year, sim, FR, C_PR) %>% 
+             filter(year == 80, runname %in% runnames)
+results2 %>% filter(FR > 120, FR < 130)
+
+# high ending FR: c(36, 216, 232)
+# low ending FR:  
+sims <- c(249, 435,525)
+
+singleRuns <-  results_all %>% select(runname, year, sim, FR, FR_MA, C_PR, ERC_PR, i.r) %>% 
+               filter(runname %in% runnames) %>% 
+               filter(sim %in% sims) %>% 
+               group_by(runname, sim) %>% 
+               mutate(rollingReturn = 100 * rollapply(i.r, 10, get_geoReturn, align = "right", fill = NA)) %>% 
+               gather(variable, value, -runname, -year, - sim) 
+               
+
+# 10-year rolling geometric return
+singleRuns %>% filter(variable == "rollingReturn", runname == runnames[1]) %>% 
+               ggplot(aes(x = year, y = value)) + theme_bw() + 
+               facet_grid(. ~ sim) + # coord_cartesian(ylim = c(-5,150)) +
+               geom_line() + geom_point() + 
+               labs(y = "10-Year Rolling Average Return (%)", title = "10-year Rolling Geometric Average Return under Selected Runs with High Ending Funded Ratio")
+
+# %>%  ggsave(filename = "IO_Prelim/R3_Rolling.png", width = 8, height = 3, dpi = 400)
+
+
+# FR in single runs
+singleRuns %>% filter(variable == "FR_MA", runname %in% runnames) %>% 
+               ggplot(aes(x = year, y = value, color = runname)) + theme_bw() + 
+               facet_grid(. ~ sim) + # coord_cartesian(ylim = c(-5,150)) +
+               geom_line() + geom_point() + 
+               labs(y = "Funded Ratio", title = "Funded Ratio in Selected Single Runs") + 
+               scale_color_discrete(labels = c("No Asset Smoothing", "5-year Asset Smoothing", "10-year Asset Smoothing")) +
+               theme(legend.position="bottom", legend.margin = unit(-0.5, "cm"), legend.title=element_blank())
+
+singleRuns %>% filter(variable == "C_PR", runname %in% runnames) %>% 
+               ggplot(aes(x = year, y = value, color = runname)) + theme_bw() + 
+               facet_grid(. ~ sim) + # coord_cartesian(ylim = c(-5,150)) +
+               geom_line() + geom_point() + 
+               labs(y = "Contribution Rate", title = "Contribution Rate in Selected Single Runs") + 
+               scale_color_discrete(labels = c("No Asset Smoothing", "5-year Asset Smoothing", "10-year Asset Smoothing")) +
+               theme(legend.position="bottom", legend.margin = unit(-0.5, "cm"), legend.title=element_blank())
+
+```
+
+
+# Comparison between no smoothing and smoothing 
+
+```{r}
+
+# Compare no smoothing to smoothing 
+fn <- function(x) 100 * sum(x)/length(x)
+
+df <- results_all %>% filter(runname %in% runnames) %>% select(runname, sim, year, FR, FR_MA, C_PR, ERC_PR) %>% 
+                gather(var, value, -runname, -sim, -year) %>% 
+                mutate(var = paste0(var, substr(runname, 8, 8) )) %>% 
+                select(sim,year, var, value)%>% 
+                spread(var, value) %>% 
+                mutate(FR_L5  =  FR6 <  FR3,
+                       FR_L10 =  FR7 <  FR3,
+                       FR_MA_L5  =  FR_MA6 <  FR_MA3,
+                       FR_MA_L10 =  FR_MA7 <  FR_MA3,
+                       C_L5  =   C_PR6 > C_PR3,
+                       C_L10 =   C_PR7 > C_PR3,
+                       ERC_L5  = ERC_PR6 > ERC_PR3,
+                       ERC_L10 = ERC_PR7 > ERC_PR3
+                       ) %>% 
+       group_by(year) %>% 
+       summarize(FR_L5  = fn(FR_L5),
+                 FR_L10 = fn(FR_L10),
+                 FR_MA_L5  = fn(FR_MA_L5),
+                 FR_MA_L10 = fn(FR_MA_L10),
+                 C_L5  =  fn(C_L5),
+                 C_L10 =  fn(C_L10),
+                 ERC_L5  =fn(ERC_L5),
+                 ERC_L10 =fn(ERC_L10))
+
+
+
+df2 <- df %>% gather(var, value, -year) %>% 
+              mutate(type = ifelse(var %in% c("FR_L5", "FR_L10"), "Funded Ratio Based on Actuarial Value", NA),
+                     type = ifelse(var %in% c("FR_MA_L5", "FR_MA_L10"), "Funded Ratio Based on Market Value", type),
+                     type = ifelse(var %in% c("C_L5", "C_L10"), "Total Contribution Rate", type),
+                     type = ifelse(var %in% c("ERC_L5", "ERC_L10"), "Employer Contribution Rate", type),
+                     
+                     sth  = ifelse(var %in% c("FR_L5", "FR_MA_L5", "C_L5", "ERC_L5"), "5-year Smoothing", NA),
+                     sth  = ifelse(var %in% c("FR_L10", "FR_MA_L10", "C_L10", "ERC_L10"), "10-year Smoothing", sth),
+              
+                     type = factor(type, levels = c("Funded Ratio Based on Actuarial Value",
+                                                    "Funded Ratio Based on Market Value",
+                                                    "Total Contribution Rate",
+                                                    "Employer Contribution Rate")),
+                     sth = factor(sth, levels = c("5-year Smoothing", "10-year Smoothing"))
+                     )
+
+
+
+
+df2 %>% filter(substr(type, 1, 1) == "F", year !=1) %>% 
+       ggplot(aes(x = year, y = value, color = sth)) + theme_bw() + facet_grid(. ~ type) + 
+       geom_line() + geom_point() + geom_hline(yintercept = 50, linetype = 2) + 
+       coord_cartesian(ylim = c(-5, 105))+
+       scale_color_manual(values = c("green3", "blue"), labels = c("5-year Smoothing", "10-year Smoothing")) +
+       theme(legend.position="bottom", legend.margin = unit(-0.5, "cm"), legend.title=element_blank()) + 
+       labs(y = "%", title = "Percentage of Simulations in which Asset Smoothing Methods Lead to Lower Funded Ratio")
+
+
+df2 %>% filter(substr(type, 1, 1) != "F", year !=1) %>% 
+       ggplot(aes(x = year, y = value, color = sth)) + theme_bw() + facet_grid(. ~ type) + 
+       geom_line() + geom_point() + geom_hline(yintercept = 50, linetype = 2) + 
+       coord_cartesian(ylim = c(-5, 105))+
+       scale_color_manual(values = c("green3", "blue"), labels = c("5-year Smoothing", "10-year Smoothing")) +
+       theme(legend.position="bottom", legend.margin = unit(-0.5, "cm"), legend.title=element_blank()) + 
+       labs(y = "%", title = "Percentage of Simulations in which Asset Smoothing Methods Lead to Higher Contribution Rate")
+
+
+
+```
+
+
+
+## -25%  Initial Funding shock
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "A1F075_"
+
+# 15-year zoom in
+draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "FR", ylim = c(0, 250),     year.max = 15)$plot %>% print
+draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "FR_MA", ylim = c(0, 250),  year.max = 15)$plot %>% print
+draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "C_PR", ylim = c(-2, 35),   year.max = 15)$plot %>% print
+draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "ERC_PR", ylim = c(-2, 35), year.max = 15)$plot %>% print
+
+draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "FR", ylim = c(0, 125),     year.max = 20)$plot +
+  labs(y = "%", title = "Quantile Plots of Funded Ratio(Based on Market Asset Value)")
+  draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "FR_MA", ylim = c(0, 125),  year.max = 20)$plot %>% print
+draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "C_PR", ylim = c(-2, 20),   year.max = 20)$plot +
+  labs(y = "%", title = "Quantile Plots of Total Contribution Rate")
+draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "ERC_PR", ylim = c(-2, 20), year.max = 20)$plot %>% print
+
+# 80-year view
+draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "FR", ylim = c(0, 250),     year.max = 80)$plot %>% print
+draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "FR_MA", ylim = c(0, 250),  year.max = 80)$plot %>% print
+draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "C_PR", ylim = c(-2, 35),   year.max = 80)$plot %>% print
+draw_quantiles(paste0(prefix, c("0a", "4a", "5a")), "ERC_PR", ylim = c(-2, 35), year.max = 80)$plot %>% print
+
+draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "FR", ylim = c(0, 250),     year.max = 80)$plot %>% print
+draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "FR_MA", ylim = c(0, 250),  year.max = 80)$plot %>% print
+draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "C_PR", ylim = c(-2, 35),   year.max = 80)$plot %>% print
+draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "ERC_PR", ylim = c(-2, 35), year.max = 80)$plot %>% print
+
+# draw_quantiles(paste0(prefix, c("3a", "6a", "7a")), "FR", ylim = c(0, 250),     year.max = 80)$df
+
+# Look at single runs
+
+
+
+## Compare funding policy under the same simulation
+
+runnames <- paste0(prefix, c("0a", "4a", "5a"))
+# runnames <- paste0(prefix, c("3a", "6a", "7a"))
+# runnames <- paste0("A1F100-", c("3", "6", "7"))
+
+
+results2 <-  results_all %>% 
+             select(runname, year, sim, FR, C_PR) %>% 
+             filter(year == 80, runname %in% runnames)
+results2 %>% filter(FR > 150, FR < 155)
+
+
+
+singleRuns <-  results_all %>% select(runname, year, sim, FR, FR_MA, C_PR, ERC_PR, i.r) %>% 
+               filter(runname %in% runnames) %>% 
+               filter(sim %in% c(36, 289, 357)) %>% 
+               group_by(runname, sim) %>% 
+               mutate(rollingReturn = 100 * rollapply(i.r, 10, get_geoReturn, align = "right", fill = NA)) %>% 
+               gather(variable, value, -runname, -year, - sim) 
+               
+# c(25, 249, 309)              
+# c(249, 435,525)
+
+# 5-year rolling geometric return
+singleRuns %>% filter(variable == "rollingReturn", runname == runnames[1]) %>% 
+               ggplot(aes(x = year, y = value)) + theme_bw() + 
+               facet_grid(. ~ sim) + # coord_cartesian(ylim = c(-5,150)) +
+               geom_line() + geom_point() + 
+               labs(y = "10-Year Rolling Average Return (%)", title = "10-year Rolling Geometric Average Return under Selected Runs")
+
+# %>%  ggsave(filename = "IO_Prelim/R3_Rolling.png", width = 8, height = 3, dpi = 400)
+
+
+# FR in single runs
+singleRuns %>% filter(variable == "FR_MA", runname %in% runnames) %>% 
+               ggplot(aes(x = year, y = value, color = runname)) + theme_bw() + 
+               facet_grid(. ~ sim) + # coord_cartesian(ylim = c(-5,150)) +
+               geom_line() + geom_point() + 
+               labs(y = "Funded Ratio", title = "Funded Ratio in Selected Single Runs")
+
+singleRuns %>% filter(variable == "C_PR", runname %in% runnames) %>% 
+               ggplot(aes(x = year, y = value, color = runname)) + theme_bw() + 
+               facet_grid(. ~ sim) + # coord_cartesian(ylim = c(-5,150)) +
+               geom_line() + geom_point() + 
+               labs(y = "Contribution Rate", title = "Contribution Rate in Selected Single Runs")
+
+
+```
+
+
+## 75% Initial Funding
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "A1F075-"
+
+draw_quantiles(paste0(prefix, c(0, 4, 5)), "FR", ylim = c(0, 250))$plot %>% print
+draw_quantiles(paste0(prefix, c(0, 4, 5)), "C_PR", ylim = c(-2, 35))$plot %>% print
+draw_quantiles(paste0(prefix, c(0, 4, 5)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+
+
+draw_quantiles(paste0(prefix, c(3, 6, 7)), "FR", ylim = c(0, 250))$plot %>% print
+draw_quantiles(paste0(prefix, c(3, 6, 7)), "C_PR", ylim = c(-2, 35))$plot %>% print
+draw_quantiles(paste0(prefix, c(3, 6, 7)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+
+```
+
+
+# Discount rate and BRP assumptions
+
+## Forward looking vs Backward looking discount (BRP assumptions)
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "B2F100_"
+draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "FR", ylim = c(0, 250))$plot   %>% print
+draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "C_PR", ylim = c(-2, 35))$plot  %>% print
+draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "ERC_PR", ylim = c(-2, 35))$plot  %>% print
+
+
+prefix <- "B2F075_"
+draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "FR_MA", ylim = c(0, 250))$plot + 
+   labs(y = "%", title = "Quantile Plots of Funded Ratio Based on Market Asset Value")
+draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "C_PR", ylim = c(-2, 35))$plot + 
+  labs(y = "%", title = "Quantile Plots of Total Total Contribution Rate")
+draw_quantiles(paste0(prefix, c(0, 1, 2, 3)), "ERC_PR", ylim = c(-2, 35))$plot  %>% print
+
+
+
+# Intial Liability in 0 and 1
+
+results_all %>% filter(runname %in% paste0("B2F100_", c(0, 1)), year == 1, sim %in% 1:2) %>% 
+                select(runname, sim, year, AL, AA, MA)
+#    runname sim year        AL        AA        MA
+# 1 B2F100_0   1    1 143423401 143423401 143423401
+
+
+results_all %>% filter(runname %in% paste0("B2F075_", c(0, 1)), year == 1, sim %in% 1:2) %>% 
+                select(runname, sim, year, AL, AA, MA)
+#    runname sim year        AL        AA        MA
+# 1 B2F075_0   1    1 143423401 107567551 107567551
+
+
+results_all %>% filter(runname %in% paste0("B2F075_2a"), year == 1, sim %in% 1:2) %>% 
+                select(runname, sim, year, AL, AA, MA, FR,FR_MA)
+
+
+# now BRP plans with DC = 6.4% have the same initial asset as plans with DC = 7.5%
+prefix <- "B2F100_"
+draw_quantiles(paste0(prefix, c(0, 1, "2a", "3a")), "FR", ylim = c(0, 250))$plot   %>% print
+draw_quantiles(paste0(prefix, c(0, 1, "2a", "3a")), "C_PR", ylim = c(-2, 35))$plot  %>% print
+
+prefix <- "B2F075_"
+draw_quantiles(paste0(prefix, c(0, 1, "2a", "3a")), "FR", ylim = c(0, 250))$plot   %>% print
+draw_quantiles(paste0(prefix, c(0, 1, "2a", "3a")), "C_PR", ylim = c(-2, 35))$plot  %>% print
+
+```
+
+
+## Geometric mean vs Arithmetic mean
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "B1F100_"
+draw_quantiles(paste0(prefix, c(0, 1)), "FR", ylim = c(0, 250))$plot %>% print
+draw_quantiles(paste0(prefix, c(0, 1)), "C_PR", ylim = c(-2, 35))$plot %>% print
+draw_quantiles(paste0(prefix, c(0, 1)), "ERC_PR", ylim = c(-2, 35))$plot %>% print
+
+
+prefix <- "B1F075_"
+draw_quantiles(paste0(prefix, c(0, 1)), "FR_MA", ylim = c(0, 250))$plot +
+   labs(y = "%", title = "Quantile Plots of Funded Ratio(Based on Market Asset Value)")
+draw_quantiles(paste0(prefix, c(0, 1)), "C_PR", ylim = c(-2, 35))$plot +
+   labs(y = "%", title = "Quantile Plots of Total Total Contribution Rate")
+draw_quantiles(paste0(prefix, c(0, 1)), "ERC_PR", ylim = c(-2, 35))$plot 
+
+```
+
+
+
+
+
+
+
+

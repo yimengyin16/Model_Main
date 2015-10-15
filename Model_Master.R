@@ -60,6 +60,7 @@
  # Separate different sources of AL and NC 
 
 
+print(paramlist$runname)
 
 #*********************************************************************************************************
 # 0. Parameters   ####
@@ -108,7 +109,7 @@ source("Model_Decrements_dev.R")
 #    by age. Once we have that we can assign an arbitrary ea to it an throw it into the model. Note that the AV of NJ-TPAF only contains 
 #    average benefits for retirees and vested terms by age group. Also note that if service retirees and vested terms follow the same mortality table 
 #    and have the same COLA rule, I don't think we need to distinguish between them.     
-#
+
 
 # Artificial salary table and benefit table for testing purpose are imported by sourcing the following script.
 # These tables are based on PA-PSERS and some naive assumptions for imputation.

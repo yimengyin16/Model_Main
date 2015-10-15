@@ -325,9 +325,9 @@ trans_cont <- function(cont, run){
 
 
 
-
-
-## Functions for plotting results
+#**********************************************
+#  4. Functions for analyzing results        ####
+#**********************************************
 
 get_quantiles <- function( runName,     # character
                            varName,     # character
@@ -342,7 +342,7 @@ get_quantiles <- function( runName,     # character
   #   qts = c(0.1, 0.25, 0.5, 0.75, 0.9)
   #   
   
-  df <- data %>% filter(runname %in% runName) %>%  
+  df <- data %>% filter(runname %in% runName, sim >= 1) %>%  
     select_("runname",  "sim","year", varName) %>% spread_("year", varName)
   
   fn <- function(df) { 

@@ -20,7 +20,6 @@ library(tidyr) # gather, spread
 library(foreach)
 library(doParallel)
 library(microbenchmark)
-# library(data.table)
 library(readxl)
 library(stringr)
 # library(xlsx)
@@ -29,7 +28,7 @@ library(stringr)
 # devtools::install_github("donboyd5/pp.prototypes")
 
 library(pp.prototypes)
- library(decrements)               # mortality and termination for now
+library(decrements)               # mortality and termination for now
 load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
 
 # Load data for new prototypes before they are in the pp.prototypes package
@@ -45,17 +44,26 @@ load("Data/2015-10-07/termrates.rda"); termrates %<>% dplyr::rename(qxt = termra
 load("Data/2015-10-07/mortality.rda")
 
 
-## Calibration of decrements
-termrates %<>% mutate(qxt = 1.2 * qxt)
-mortality %<>% mutate(qxm   = 0.6 * qxm) %>% 
-               mutate(qxm.r = qxm)
-retrates %<>% mutate(qxr = qxr * 0.7) 
-
-
-
 source("Functions.R")
 
 devMode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
+
+
+
+
+#*********************************************************************************************************
+#                      ## Calibration of decrements  ####
+#*********************************************************************************************************
+
+# Calibrate term rates, mortality rates and retirement rates to approximately match workforce flows of AV-PERS
+# in 2013.  
+
+termrates %<>% mutate(qxt = 1.2 * qxt)
+
+mortality %<>% mutate(qxm = 0.6 * qxm) %>% 
+  mutate(qxm.r = qxm)
+
+retrates %<>% mutate(qxr = qxr * 0.7) 
 
 
 
@@ -135,8 +143,8 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 # Read in Run Control files ####
 #*********************************************************************************************************
 
-# folder_run          <- "IO_Dev"
-folder_run <- "IO_M2.1_new" 
+
+folder_run <- "IO_M1_new" 
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
 path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)

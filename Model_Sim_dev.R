@@ -158,22 +158,20 @@ run_sim <- function(      .i.r = i.r,
     SC_amort <- SC_amort0 
     penSim[["i.r"]] <- .i.r[, as.character(k)]
     
-    if(k == -1) init_MA <- "AL_pct"; MA_0_pct <- 1 
-    
     source("Functions.R")
-    
     
     for (j in 1:nyear){
       # j <- 2
       # AL(j) 
       
-      
-      
+   
       # MA(j) and EAA(j) 
-      if(j == 1) {penSim$MA[j]  <- switch(init_MA,
-                                          MA = MA_0,                        # Use preset value
-                                          AL = penSim$AL[j],                # Assume inital fund equals inital liability.
-                                          AL_pct = penSim$AL[j] * MA_0_pct) # Inital MA is a proportion of inital AL
+      if(j == 1) {penSim$MA[j]  <- ifelse(k == -1, penSim$AL[j],
+                                           switch(init_MA, 
+                                                  MA = MA_0,                        # Use preset value
+                                                  AL = penSim$AL[j],                # Assume inital fund equals inital liability.
+                                                  AL_pct = penSim$AL[j] * MA_0_pct) # Inital MA is a proportion of inital AL
+                                   ) 
       penSim$EAA[j] <- switch(init_EAA,
                               AL = EAA_0,                       # Use preset value 
                               MA = penSim$MA[j])                # Assume inital EAA equals inital market value.
@@ -292,7 +290,7 @@ run_sim <- function(      .i.r = i.r,
       
     }
     
-    #penSim_results[[k]] <- penSim
+    # penSim_results[[k]] <- penSim
     as.data.frame(penSim)
   }
   
@@ -380,6 +378,5 @@ Time_loop
 # x[1, "ALx.tot"],
 # x[1, 2], # fastest
 # liab_tot_active$ALx.tot[1] , times = 10000)
-
 
 

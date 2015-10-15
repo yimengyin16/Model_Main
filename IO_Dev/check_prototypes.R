@@ -23,7 +23,6 @@ var.display <- c( "runname", "year",
 
 ## Funding variables from the results
 gen_table <- function (run_name) {
-  # run_name <- "AZ-PERS"
   load(paste0("IO_Dev/Outputs_", run_name,".RData"))
   outputs_list$results %>% 
     filter(sim == 1, year %in% c(1, 15, 30, 50)) %>%
@@ -32,14 +31,12 @@ gen_table <- function (run_name) {
 
 ## Age distribution of new entrants
 gen_enDist <- function (run_name) {
-  # run_name <- "AZ-PERS"
   load(paste0("IO_Dev/Outputs_", run_name,".RData"))
   data.frame(runname = outputs_list$paramlist$runname,  ea = 20:74, entrants_pct = outputs_list$entrant_dist) 
 }
 
 ## Demographic statistics 
 gen_demo_summary <- function (run_name) {
-  # run_name <- "AZ-PERS"
   load(paste0("IO_Dev/Outputs_", run_name,".RData"))
   outputs_list$demo_summary %>% filter(year %in% c(1,2,15, 30, 50))
   # outputs_list$demo_summary %>% filter(year %in% c(1:50))
@@ -61,7 +58,6 @@ gen_demo_summary("OH-PERS")
 gen_demo_summary("WA-PERS2")
 
 gen_demo_summary("DF100-1")
-
 gen_demo_summary("AZ-PERS") %>% select(act)
 
 
@@ -87,8 +83,6 @@ x$entrants_pct %>% length
 
 actives %>% filter(planname == "OH-PERS-85.fillin.yos", age - ea <=1) %>% select(planname, age, ea, nactives) %>%
             group_by(ea) %>% summarise(ent = mean(nactives)) %>% filter(ea>=20) %>% mutate(entpct = 100 * ent / sum(ent)) %>% data.frame
-
-
 
 actives %>% filter(planname == "AZ-PERS-6") 
 

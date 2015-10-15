@@ -58,8 +58,8 @@ if(devMode){
    # Run 0: deterministic return the same as ir.mean
    # Run -1: deterministic return the same as i. 
   
-  i.r <- cbind(rep(paramlist$ir.mean, Global_paramlist$nyear),
-               rep(paramlist$i, Global_paramlist$nyear),
+  i.r <- cbind(rep(paramlist$i, Global_paramlist$nyear), # Check consistency
+               rep(paramlist$ir.mean, Global_paramlist$nyear), # Deterministic run
                i.r)
   colnames(i.r) <- c(-1:Global_paramlist$nsim)
   
