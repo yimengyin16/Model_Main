@@ -374,6 +374,13 @@ draw_quantiles  <- function(runName,     # character
                             ylim = NULL,
                             EEC_line = 5){
   
+#   runName <- c("D1F075-average_gn2","D1F075-average")     # character
+#   varName <- c("C_PR")     # character
+#   data = results_all
+#   year.max = 80
+#   qts = c(0.1, 0.25, 0.5, 0.75, 0.9)
+#   ylim = NULL
+#   EEC_line = 5
 
   col1 <- colorRampPalette(c("darkgreen","yellowgreen", "dodgerblue4", "orangered", "red4"))
   
@@ -387,22 +394,35 @@ draw_quantiles  <- function(runName,     # character
                         qts = qts)  %>% 
     gather(Quantile, Value, -runname, -year) %>% 
     mutate(Quantile = factor(Quantile, levels = paste0(sort(qts, decreasing = TRUE) * 100, "%")))
-    
+  
+  
   
   plot_q <- 
     ggplot(df_q, aes(x = year, y = Value, color = Quantile)) + theme_bw() + 
     geom_point(size = 1.5) + geom_line()+ 
-    labs(y = varName, title = paste0("Quantile plots of ", varName)) + 
-    scale_color_manual(values = color_values)
+    labs(y = varName, title = paste0("Quantile plots of ", varName)) 
+    # scale_color_manual(values = color_values)
   
+
   
-  if(length(runName) > 1) plot_q <- plot_q + facet_grid(. ~ runname) 
-  if(!is.null(ylim))    plot_q <- plot_q + coord_cartesian(ylim = ylim)
-  if(varName == "FR")   plot_q <- plot_q + geom_hline(yintercept = 100,     color = "black", linetype = 2)
-  if(varName == "C_PR") plot_q <- plot_q + geom_hline(yintercept = EEC_line,color = "black", linetype = 2)
+  if (varName %in% c("C_PR","ERC_PR")) {
+    df_NC.rate <- data %>% filter(runname %in% runName, sim == 1, year <= year.max) %>% select(runname, year, NC_PR) %>% 
+                  mutate(Quantile = "Normal Cost Rate") %>% rename(Value = NC_PR)
+    plot_q <- plot_q + geom_line(data = df_NC.rate, aes(x = year, y = Value), linetype = 1)+ scale_color_manual(values = c(color_values, "black")) 
+  } else {
+    plot_q <- plot_q + scale_color_manual(values = color_values)
+  }
+    
+    
+  if(length(runName) > 1) plot_q <- plot_q + facet_grid(. ~ runname)
+  if(!is.null(ylim))      plot_q <- plot_q + coord_cartesian(ylim = ylim)
+  if(varName == "FR")     plot_q <- plot_q + geom_hline(yintercept = 100,     color = "black", linetype = 2)
+  if(varName == "C_PR")   plot_q <- plot_q + geom_hline(yintercept = EEC_line,color = "black", linetype = 2)
 
   list(df = df_q, plot = plot_q)
 }
+
+
 
 
 draw_quantiles2  <- function(runName,     # character

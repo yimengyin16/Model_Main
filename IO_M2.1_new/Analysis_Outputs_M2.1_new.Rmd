@@ -86,7 +86,7 @@ var.display <- c( "runname", "year",
                  "ExF"
 )
 
-results_all %>% filter(runname == "I1F075-1", year == 1, sim == 1) %>% select(one_of(var.display))
+results_all %>% filter(runname == "D1F075-average_g1", year %in% 1:10, sim == 1) %>% select(one_of(var.display))
 
 ```
 
@@ -100,9 +100,11 @@ results_all %>% filter(runname == "I1F075-1", year == 1, sim == 1) %>% select(on
 prefix <- "D1F075-"
 
 runs_M2.1_avg <- c(
+  "average_gn2",
   "average_gn1",
   "average",
-  "average_g1"
+  "average_g1",
+  "average_g2"
 )
   
 runs_M2.1_mature <- c(
@@ -119,19 +121,25 @@ runs_M2.1_immature <- c(
 )
 
 
-draw_quantiles(c(paste0(prefix, runs_M2.1_avg)), "FR_MA", year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_avg)), "FR_MA", ylim = c(-10, 400), year.max = 60)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M2.1_avg)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M2.1_avg)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_avg)), "MA_PR", ylim = c(-10, 2000), year.max = 40)$plot %>% print
+
 
 
 draw_quantiles(c(paste0(prefix, runs_M2.1_mature)), "FR_MA", year.max = 40)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M2.1_mature)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M2.1_mature)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_mature)), "MA_PR", ylim = c(-10, 2000), year.max = 40)$plot %>% print
+
 
 
 draw_quantiles(c(paste0(prefix, runs_M2.1_immature)), "FR_MA", year.max = 40)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M2.1_immature)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M2.1_immature)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_immature)), "MA_PR", ylim = c(-10, 2000), year.max = 40)$plot %>% print
+
 
 ```
 
@@ -166,8 +174,24 @@ draw_quantiles(c(paste0(prefix3, runs_M2.1_I3)), "ERC_PR", ylim = c(-2, 35),year
 draw_quantiles(c(paste0(prefix3, runs_M2.1_I3)), "MA_PR", year.max = 40)$plot %>% print
 
 
-
 ```
+
+
+# Investment returns
+
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+
+prefix <- "BF075-"
+
+
+runs_M2.1_B <- 1:2
+
+# using implied geometric mean as discoun rate. Initial MA adjusted accordingly. 
+draw_quantiles(c(paste0(prefix, runs_M2.1_B)), "FR_MA", year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_B)), "C_PR", ylim = c(-2, 35),  year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_B)), "ERC_PR", ylim = c(-2, 35),year.max = 40)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M2.1_B)), "MA_PR", year.max = 40)$plot %>% print
+
 
 
 
