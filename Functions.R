@@ -256,7 +256,9 @@ memory<-function(maxnobjs=5){
   print(paste("Memory in use after: ",memory.size(),sep=""))
 }
 
-na2zero <- function(x){x[is.na(x)] <- 0 ;return(x)}
+#na2zero <- function(x){x[is.na(x)] <- 0 ;return(x)}
+na2zero <- function(x){replace(x, is.na(x), 0)}
+
 
 f2n <- function(x) {
   if(is.numeric(x)|is.integer(x)) x else
