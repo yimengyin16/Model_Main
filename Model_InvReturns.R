@@ -55,11 +55,11 @@ if(devMode){
   
   
   ## Add two additional runs as run 0 and run -1.
-   # Run 0: deterministic return the same as ir.mean
+   # Run 0: deterministic return the same as ir.mean - ir.sd^2/2
    # Run -1: deterministic return the same as i. 
   
   i.r <- cbind(rep(paramlist$i, Global_paramlist$nyear), # Check consistency
-               rep(paramlist$ir.mean, Global_paramlist$nyear), # Deterministic run
+               rep(paramlist$ir.mean - paramlist$ir.sd^2/2 , Global_paramlist$nyear), # Deterministic run
                i.r)
   colnames(i.r) <- c(-1:Global_paramlist$nsim)
   

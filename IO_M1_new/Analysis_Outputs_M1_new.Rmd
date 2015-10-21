@@ -19,7 +19,6 @@ output:
 
 
 
-
 ```{r Preamble, echo = FALSE, include  = FALSE}
 library(reshape2)
 library(plyr)
@@ -30,13 +29,18 @@ library(knitr)
 library(magrittr) # to use %<>%
 library(zoo)
 library(grid)
+library(gridExtra)
+library(stringr)
 
 rm(list = ls())
 
-run_knitr <- F
+run_knitr <- F  #set to TRUE before knitting.
+# When knitting HTML files, the working directory will be changed to the on where the .rmd file is located.
+# The relative paths must be modified if they are not relative to the folder the .rmd file is located. 
+# (When running the code line by line, it is covenient to set the paths relative to the folder of main model.)
+  
 
 if(run_knitr) source("../Functions.R") else source("Functions.R")
-
 ```
 
 
@@ -47,32 +51,21 @@ IO_folder <- "IO_M1_new"
 
 if(run_knitr) IO_folder <- paste0("../", IO_folder)
 
-file_select <- dir(IO_folder, pattern = ".RData")
+get_results <- function(IO_folder){
+  
+  fn <- function(x) {
+    load(paste0(IO_folder, "/", x))
+    outputs_list$results}
 
-fn <- function(x) {
-       load(paste0(IO_folder, "/", x))
-       outputs_list}
+  file_select <- dir(IO_folder, pattern = "^Outputs")
+  results_all <- adply(file_select, 1, fn) %>% select(-X1)
+}
 
-
-lists_all        <- alply(file_select, 1, fn)
-names(lists_all) <- laply(lists_all, function(x) x$paramlist$runname)
-
-## Combine the results into a single data frame.
-results_all <- ldply(lists_all, function(x) x$results) %>% select(-X1)
-
-rm(lists_all)
+results_all <- get_results(IO_folder)
 ```
 
 
-```{r Read, echo=FALSE, include = FALSE}
-
-results_all %<>% group_by(runname, sim) %>% 
-                 mutate(dFR = FR - lag(FR),
-                        dFR_MA = FR_MA - lag(FR_MA),
-                        dC_PR = C_PR - lag(C_PR),
-                        dERC_PR = ERC_PR - lag(ERC_PR)
-                        ) %>% 
-                 ungroup
+```{r, echo=FALSE, include = FALSE}
 
 var.display <- c( "runname", "year",
                  "FR","AL","AA",
@@ -83,23 +76,21 @@ var.display <- c( "runname", "year",
                  "PR.growth", 
                  "ExF_PR",
                  "AL", "C","B","PR",
-                 "ExF"
+                 "ExF",
+                 "i.r"
 )
 
-results_all %>% filter(runname =="A1F100_O30pA5", sim == -1) %>% select(one_of(var.display))
+results_all %>% filter(runname =="A1F100_O30pA5", sim == 0) %>% select(one_of(var.display))
 
 ```
 
 
 
-# Funding policies
-
+# Funding policies: Figure 11 in M1 report
 
 ```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
 
 prefix <- "A1F075_"
-
-
 runs_M1_F11 <- c(
  "0",
  "O15d",
@@ -109,7 +100,50 @@ runs_M1_F11 <- c(
  "C30p",
  "O30pA5"
 )
-  
+
+draw_quantiles(c(paste0(prefix, runs_M1_F11)), "FR_MA",  ylim = c(0, 250),  year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_F11)), "C_PR",   ylim = c(-2, 35),  year.max = 60)$plot %>% print
+#draw_quantiles(c(paste0(prefix, runs_M1_F11)), "ERC_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_F11)), "MA_PR",  year.max = 60)$plot %>% print
+```
+
+
+
+
+# Funding policies: SOA/BRP runs
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+prefix <- "A1F075_"
+runs_M1_soa <- c(
+  "O30pA5",
+  "soa1", "soa2", "soa3", "soa4"
+)
+
+draw_quantiles(c(paste0(prefix, runs_M1_soa)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_soa)), "C_PR",  ylim = c(-2, 50),  year.max = 60)$plot %>% print
+#draw_quantiles(c(paste0(prefix, runs_M1_soa)), "ERC_PR",ylim = c(-2, 50),year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_soa)), "MA_PR",year.max = 60)$plot %>% print
+
+```
+
+
+
+# Funding policies: Runs with ERC_PR cap
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+prefix <- "A1F075_"
+runs_M1_cap <- c("O30pA5", "O30pA5_cap", "soa1", "soa1_cap", "soa3", "soa3_cap")
+
+draw_quantiles(c(paste0(prefix, runs_M1_cap)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_cap)), "C_PR",  ylim = c(-2, 35),  year.max = 60)$plot %>% print
+#draw_quantiles(c(paste0(prefix, runs_M1_cap)), "ERC_PR",ylim = c(-2, 35),year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_cap)), "MA_PR", year.max = 60)$plot %>% print
+
+```
+
+
+```{r, eval=FALSE, fig.height=4, fig.width=20, cache=F, include=FALSE}
+
+prefix <- "A1F075_"
+
 runs_M1_O <- c(
 # "0",  
  "O15d",
@@ -130,20 +164,7 @@ runs_M1_C <- c(
  "C30pA10"
 )
 
-
-runs_M1_soa <- c(
-  "O30pA5",
-  "soa1", "soa2", "soa3", "soa4"
-)
-
-
 runs_M1_0 <- c( "0u","0","A5","A10")
-
-
-draw_quantiles(c(paste0(prefix, runs_M1_F11)), "FR_MA",  ylim = c(0, 250), year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1_F11)), "C_PR",   ylim = c(-2, 35),  year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1_F11)), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1_F11)), "MA_PR",  year.max = 60)$plot %>% print
 
 
 draw_quantiles(c(paste0(prefix, runs_M1_O)), "FR_MA",  ylim = c(0, 250), year.max = 60)$plot %>% print
@@ -152,43 +173,30 @@ draw_quantiles(c(paste0(prefix, runs_M1_O)), "ERC_PR", ylim = c(-2, 35),year.max
 draw_quantiles(c(paste0(prefix, runs_M1_O)), "MA_PR",  year.max = 60)$plot %>% print
 
 
-
 draw_quantiles(c(paste0(prefix, runs_M1_C)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M1_C)), "C_PR",  ylim = c(-2, 35),  year.max = 60)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M1_C)), "ERC_PR",ylim = c(-2, 35),year.max = 60)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M1_C)), "MA_PR", year.max = 60)$plot %>% print
-
-draw_quantiles(c(paste0(prefix, runs_M1_soa)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1_soa)), "C_PR",  ylim = c(-2, 50),  year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1_soa)), "ERC_PR",ylim = c(-2, 50),year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1_soa)), "MA_PR", ylim = c(-2, 50),year.max = 60)$plot %>% print
+ 
 
 draw_quantiles(c(paste0(prefix, runs_M1_0)), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M1_0)), "C_PR",  ylim = c(-2, 35),  year.max = 60)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M1_0)), "ERC_PR",ylim = c(-2, 35),year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1_0)), "MA_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_M1_0)), "MA_PR", year.max = 60)$plot %>% print
 
 
 # "A1F100_O30pA5",
 draw_quantiles(c("A1F075_O30pA5", "A1F100_O30pA5"), "FR_MA", ylim = c(0, 250), year.max = 60)$plot %>% print
 draw_quantiles(c("A1F075_O30pA5", "A1F100_O30pA5"), "C_PR", ylim = c(-2, 35),  year.max = 60)$plot %>% print
-draw_quantiles(c("A1F075_O30pA5", "A1F100_O30pA5"), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
-draw_quantiles(c("A1F075_O30pA5", "A1F100_O30pA5"), "MA_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
-
-
-# # Amortization period with cp payment
-# draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "FR_MA",    ylim = c(0, 250))$plot + 
-#   labs(y = "%", title = "Quantile Plots of Funded Ratio(Based on Market Asset Value)")
-# draw_quantiles(paste0(prefix, c(0, 1, "1cp",2,3,6, "3c")) , "C_PR",   ylim = c(-2, 35))$plot +
-#   labs(y = "%", title = "Quantile Plots of Contribution Rate")
-# draw_quantiles("A1F075_6" , "FR_MA", ylim = c(0, 250))$df %>% filter(Quantile == "50%")
+#draw_quantiles(c("A1F075_O30pA5", "A1F100_O30pA5"), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+draw_quantiles(c("A1F075_O30pA5", "A1F100_O30pA5"), "MA_PR",year.max = 60)$plot %>% print
 
 ```
 
 
 # -25% asset shock
 
-```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=10}
 
 
 prefix <- "A1F075_"
@@ -202,7 +210,7 @@ runs_M1_shock <- c(
 
 draw_quantiles(c(paste0(prefix, runs_M1_shock)), "FR",     ylim = c(0, 250), year.max = 20)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M1_shock)), "C_PR",   ylim = c(-2, 35),  year.max = 20)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1_shock)), "ERC_PR", ylim = c(-2, 35),year.max = 20)$plot %>% print
+#draw_quantiles(c(paste0(prefix, runs_M1_shock)), "ERC_PR", ylim = c(-2, 35),year.max = 20)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M1_shock)), "MA_PR",  year.max = 20)$plot %>% print
 
 
@@ -214,7 +222,7 @@ draw_quantiles(c(paste0(prefix, runs_M1_shock)), "MA_PR",  year.max = 20)$plot %
 0: ir.mean = 7.5; 1: ir.mean = 8.22
 
 
-```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=10}
 
 prefix <- "B1F075_"
 
@@ -222,15 +230,18 @@ runs_M1_GvA <- c(0, 1)
 
 draw_quantiles(c(paste0(prefix, runs_M1_GvA)), "FR_MA", ylim = c(0, 250),  year.max = 60)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M1_GvA)), "C_PR",  ylim = c(-2, 35),  year.max = 60)$plot %>% print
-draw_quantiles(c(paste0(prefix, runs_M1_GvA)), "ERC_PR", ylim = c(-2, 35), year.max = 60)$plot %>% print
+# draw_quantiles(c(paste0(prefix, runs_M1_GvA)), "ERC_PR", ylim = c(-2, 35), year.max = 60)$plot %>% print
 draw_quantiles(c(paste0(prefix, runs_M1_GvA)), "MA_PR", year.max = 60)$plot %>% print
 
 ```
 
 
+
+
+```{r measures, eval = FALSE, echo = FALSE}
+
 # Metrics of risks and volatility 
 
-```{r}
 # Measures:
 # 1. standard deviation over first 30 years, for a typical simulation
 # 2. largest bad-direction change in any 5-year interval of first 30 years - typical simulation
@@ -343,16 +354,14 @@ df_5yearMaxChg
 ```
 
 
-```{r single runs}
+```{r single runs, include = FALSE, eval = FALSE}
 
+# Picking single runs
 
 expand_apply <- function(x, fun, ...){
    # Applying the given function to expanding windows of vector x.
    zoo::rollapply(x, seq_along(x), fun, ...,  fill = NA, align = "right")
   }
-
-expand_apply(c(NA,1:10), mean, na.rm = TRUE)
-
 
 df_return <- 
 results_all %>% filter(year <= 30, runname %in% "A1F075_0", sim > 0) %>% 
@@ -510,13 +519,15 @@ ps <- 2.25 # pointsize
                      nrow=3, ncol=2, top = NULL)
   # ml
   
-  ggsave(paste0(IO_folder, "/graphs/g_", simnum, ".png"), ml, width=13, height=10, units="in")     
+  ggsave(paste0(IO_folder, "/Single_runs/g_", simnum, ".png"), ml, width=13, height=10, units="in")     
 
-  return(ml)
+  invisible(ml)
 }
 
-apply(as.matrix(sim_select1), 1, gpanel.yy)
-apply(as.matrix(sim_select2), 1, gpanel.yy)
+runs_single <- c("A1F075_C10d", "A1F075_O30pA5", "A1F075_soa1")
+panel1 <- apply(as.matrix(sim_select1), 1, gpanel.yy)
+panel2 <- apply(as.matrix(sim_select2), 1, gpanel.yy)
+
 
 ```
 

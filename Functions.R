@@ -409,7 +409,9 @@ draw_quantiles  <- function(runName,     # character
   
   if (varName %in% c("C_PR","ERC_PR")) {
     df_NC.rate <- data %>% filter(runname %in% runName, sim == 1, year <= year.max) %>% select(runname, year, NC_PR) %>% 
-                  mutate(Quantile = "Normal Cost Rate") %>% rename(Value = NC_PR)
+                  mutate(Quantile = "Normal Cost Rate",
+                         runname = factor(runname, levels = runName)) %>% 
+                  rename(Value = NC_PR)
     plot_q <- plot_q + geom_line(data = df_NC.rate, aes(x = year, y = Value), linetype = 1)+ scale_color_manual(values = c(color_values, "black")) 
   } else {
     plot_q <- plot_q + scale_color_manual(values = color_values)

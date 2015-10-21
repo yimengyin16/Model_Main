@@ -1,0 +1,105 @@
+---
+title: "Exploratory Analysis of Model Outputs"
+author: "Yimeng Yin"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+
+```{r mainSet_options, echo=FALSE, cache=FALSE}
+
+# options(width=140)
+# knitr::opts_chunk$set(fig.width=16, fig.height=5, echo=FALSE)
+# # Note: when saving maps (ggsave), width=16, height=9 seems to get rid of white space
+
+```
+
+
+
+
+```{r Preamble, echo = FALSE, include  = FALSE}
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(magrittr) # to use %<>%
+library(zoo)
+library(grid)
+
+rm(list = ls())
+
+run_knitr <- F
+# When knitting HTML files, the working directory will be changed to the on where the .rmd file is located.
+# The relative paths must be modified if they are not relative to the folder the .rmd file is located. 
+# (When running the code line by line, it is covenient to set the paths relative to the folder of main model.)
+
+if(run_knitr) source("../Functions.R") else source("Functions.R")
+
+```
+
+
+```{r Read, echo=FALSE, include = FALSE}
+## Combine selected files into a single list.
+
+IO_folder <- "IO_M2.1history_new"
+
+if(run_knitr) IO_folder <- paste0("../", IO_folder)
+
+get_results <- function(IO_folder){
+  
+  fn <- function(x) {
+    load(paste0(IO_folder, "/", x))
+    outputs_list$results}
+
+  file_select <- dir(IO_folder, pattern = "^Outputs")
+  results_all <- adply(file_select, 1, fn) %>% select(-X1)
+}
+
+results_all <- get_results(IO_folder)
+```
+
+
+```{r, echo=FALSE, include = FALSE}
+
+var.display <- c( "runname", "year",
+                 "FR","AL","AA",
+                 #"AL_PR", "AL.act_PR", "AL.ret_PR","AL.term_PR", 
+                 "NC_PR", "NC.act_PR", "NC.term_PR", 
+                 "SC_PR", "C_PR", "ERC_PR",
+                 "MA_PR",   
+                 "PR.growth", 
+                 "ExF_PR",
+                 "AL", "C","B","PR",
+                 "ExF"
+)
+
+# results_all %>% filter(runname =="A1F100_O30pA5", sim == -1) %>% select(one_of(var.display))
+
+```
+
+
+
+# Stress Scenarios
+```{r, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=10}
+
+prefix <- "H1F075_"
+
+runs_history <- c("O30pA5_99", "O30pA5_95")
+
+draw_quantiles(c(paste0(prefix, runs_history)), "FR_MA",  ylim = c(0, 250), year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_history)), "C_PR",   ylim = c(-2, 35),  year.max = 60)$plot %>% print
+# draw_quantiles(c(paste0(prefix, runs_history)), "ERC_PR", ylim = c(-2, 35),year.max = 60)$plot %>% print
+draw_quantiles(c(paste0(prefix, runs_history)), "MA_PR",  year.max = 60)$plot %>% print
+
+```
+
+
+
+
+
+
