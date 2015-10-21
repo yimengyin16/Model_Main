@@ -15,6 +15,8 @@ library(zoo)
 library(grid)
 library(gridExtra)
 library(stringr)
+library("readr")
+library("readxl")
 
 source("Functions.R") 
 
@@ -98,14 +100,32 @@ runs_M1_C <- c(
   "C30pA10"
 )
 
-runs_cap <- c( "O30pA5_cap", "soa3_cap")
+runs_cap <- c("O30pA5_cap", "soa3_cap")
 
 runs_M1_soa <- c("soa3")
 
 runs_all <- c(runs_M1_O, runs_M1_C, runs_M1_soa, runs_cap)
 
+runs_exclude <- c("O30pA10", "C30pA10", "soa3_cap")
 
-
+runs_all_labels <- c('runname, run.label
+O15d,         15-year open dollar
+O15p,         15-year open percent
+O30d,         30-year open doller
+O30p,         30-year open percent
+O30pA5,       "30-year open percent \n 5-year assets"
+C15d,         15-year closed dollar
+C15p,         15-year closed percent
+C30d,         30-year closed doller
+C30p,         30-year closed percent
+C30pA5,       "30-year closed percent \n       5-year assets"
+O30pA5_cap,   "30-year open percent \n5-year assets;ERC cap"
+soa3,         "SOA-BRP \nBenchmark"
+')
+ 
+runs_all_labels <- read.table(text = runs_all_labels, header = TRUE,sep = ",", stringsAsFactors = F) %>% 
+                   mutate_each(funs(str_trim)) %>% 
+                   mutate(runname = paste0("A1F075_", runname)) 
 
 #****************************************************************************************************
 #               ## Measures of FR risk and contribution volatility   ####
@@ -153,11 +173,19 @@ df_sd <- df_TO %>%
   select(runname, year, sim, C_PR, ERC_PR) %>% 
   group_by(sim, runname) %>% 
   summarise(C_PR.sd = sd(C_PR, na.rm = TRUE), ERC_PR.sd = sd(ERC_PR, na.rm = TRUE)) %>% 
-  # summarise_each(funs(sd(., na.rm = TRUE)), one_of(c("C_PR", "ERC_PR"))) %>% 
   group_by(runname) %>% 
   summarise_each(funs(median)) %>% select(-sim)
-
 df_sd
+
+
+df_dsd <- df_TO %>%
+  select(runname, year, sim, C_PR, ERC_PR) %>% 
+  group_by(sim, runname) %>% 
+  summarise(C_PR.dsd = sd(diff(C_PR), na.rm = TRUE), ERC_PR.dsd = sd(diff(ERC_PR), na.rm = TRUE)) %>% 
+  group_by(runname) %>% 
+  summarise_each(funs(median)) %>% select(-sim)
+df_dsd
+
 
 df_worst <- df_TO %>%
   select(runname, year, sim, C_PR, ERC_PR) %>%  
@@ -255,6 +283,16 @@ return(df_metrics)
 
 }
 
+df_TO <- results_all %>% filter(runname %in% paste0("A1F075_", runs_all), year <= 40, sim > 0) %>% 
+  select(runname, year, sim, FR_MA, ERC_PR, C_PR, C, ERC, PR)  
+
+df_dsd <- df_TO %>%
+  select(runname, year, sim, C_PR, ERC_PR) %>% 
+  group_by(sim, runname) %>% 
+  summarise(C_PR.dsd = sd(diff(C_PR), na.rm = TRUE), ERC_PR.dsd = sd(diff(ERC_PR), na.rm = TRUE)) %>% 
+  group_by(runname) %>% 
+  summarise_each(funs(median)) %>% select(-sim)
+df_dsd
 
 #****************************************************************************************************
 #                  creating plots  ####
@@ -263,15 +301,19 @@ return(df_metrics)
 #df_metrics_y30 <- get_metrics(runs_all, 30, TRUE) # Takes 10+ minutes if include.maxChg = TRUE. Possible reason is the repeated use of zoo::rollapply
 #df_metrics_y40 <- get_metrics(runs_all, 40, TRUE)
 
-# get_metrics(c("O30p"), 30, T)
-
 # save(df_metrics_y30, df_metrics_y40, file = paste0(IO_folder, "/Data_trade_off/df_metrics.RData"))
 load(paste0(IO_folder, "/Data_trade_off/df_metrics.RData"))
+# df_metrics_y40 %<>% left_join(df_dsd) 
+
+df_metrics_y40 %<>% left_join(runs_all_labels) %>% filter(!runname %in% paste0("A1F075_",runs_exclude)) 
+df_metrics_y30 %<>% left_join(runs_all_labels) %>% filter(!runname %in% paste0("A1F075_",runs_exclude)) 
+
+
 
 # Plotting functions
 plot_tradeOff <- function(x, y, data, reg.line = TRUE){
   p <- 
-    data %>% ggplot(aes_string(x = x , y = y, color = "runname", label = "runname")) + 
+    data %>% ggplot(aes_string(x = x , y = y, label = "run.label")) + 
     geom_point(size = 2.5) +
     geom_text(color = "black", hjust = -0.1, size = 3) + 
     # coord_cartesian(xlim = c(0, 0.45)) + 
@@ -283,81 +325,140 @@ plot_tradeOff <- function(x, y, data, reg.line = TRUE){
     return(p)
 }
 
-lab_x     <- function(x, y){paste0("Probability of funded ratio falling below ", x, "% during first ", y, " years")}
-lab_5yChg <- "Median 5-year change of ERC/PR"
+lab_x     <- function(x, y){paste0("Probability of funded ratio falling below ", x, "% during first ", y, " years (%)")}
+lab_5yChg <- "Contribution Volatility \nMedian 5-year max percentage change of employer contribution rate (%)"
 lab_ERC       <- "Ratio of PV employer contribution to PV payroll"
 lab_ERC_L10   <- "Ratio of PV employer contribution to PV payroll: last 10 years only"
+lab_dsd   <- "Standard deviation of the annual change of employer contributions" 
+
+
+
+
+
 
 
 # 30-year trade-off
 pFR40_5yMaxChg_y30 <- plot_tradeOff("FR40_y30", "ERC_PR.5yMaxChg", df_metrics_y30) + labs(x = lab_x(40, 30), y = lab_5yChg)
 pFR50_5yMaxChg_y30 <- plot_tradeOff("FR50_y30", "ERC_PR.5yMaxChg", df_metrics_y30) + labs(x = lab_x(50, 30), y = lab_5yChg)
-# 40-year trade-off
-pFR40_5yMaxChg_y40 <- plot_tradeOff("FR40_y40", "ERC_PR.5yMaxChg", df_metrics_y40) + labs(x = lab_x(40, 40), y = lab_5yChg)
-pFR50_5yMaxChg_y40 <- plot_tradeOff("FR50_y40", "ERC_PR.5yMaxChg", df_metrics_y40) + labs(x = lab_x(50, 40), y = lab_5yChg)
-
-
 
 # 30-year volatility vs level of contribution
 pERC_5yMaxChg_y30 <- plot_tradeOff("PV.ERC_PR", "ERC_PR.5yMaxChg", df_metrics_y30) + labs(x = lab_ERC, y = lab_5yChg)
-pERC_5yMaxChg_y40 <- plot_tradeOff("PV.ERC_PR", "ERC_PR.5yMaxChg", df_metrics_y40) + labs(x = lab_ERC, y = lab_5yChg)
-  # PV of last 10 years
+# PV of last 10 years
 pERC_L10_5yMaxChg_y30 <- plot_tradeOff("PV.ERC_PR_L10", "ERC_PR.5yMaxChg", df_metrics_y30) + labs(x = lab_ERC_L10, y = lab_5yChg)
-pERC_L10_5yMaxChg_y40 <- plot_tradeOff("PV.ERC_PR_L10", "ERC_PR.5yMaxChg", df_metrics_y40) + labs(x = lab_ERC_L10, y = lab_5yChg)
-
-
 
 # 30-year FR vs level of contribution
 pFR40_ERC_y30 <- plot_tradeOff("FR40_y30", "PV.ERC_PR", df_metrics_y30) + labs(x = lab_x(40, 30), y = lab_ERC)
 pFR50_ERC_y30 <- plot_tradeOff("FR50_y30", "PV.ERC_PR", df_metrics_y30) + labs(x = lab_x(50, 30), y = lab_ERC)
+
+# 30-year FR vs level of contribution: PV of last 10 years
+pFR40_ERC_L10_y30 <- plot_tradeOff("FR40_y30", "PV.ERC_PR_L10", df_metrics_y30) + labs(x = lab_x(40, 30), y = lab_ERC_L10)
+pFR50_ERC_L10_y30 <- plot_tradeOff("FR50_y30", "PV.ERC_PR_L10", df_metrics_y30) + labs(x = lab_x(50, 30), y = lab_ERC_L10)
+
+
+
+
+
+# 40-year trade-off
+pFR40_5yMaxChg_y40 <- plot_tradeOff("FR40_y40", "ERC_PR.5yMaxChg", df_metrics_y40) + labs(x = lab_x(40, 40), y = lab_5yChg)
+pFR50_5yMaxChg_y40 <- plot_tradeOff("FR50_y40", "ERC_PR.5yMaxChg", df_metrics_y40) + labs(x = lab_x(50, 40), y = lab_5yChg)
+
+# 40-year trade off: contribution volatility measured by sd of first difference
+pFR40_dsd_y40 <- plot_tradeOff("FR40_y40", "ERC_PR.dsd", df_metrics_y40) + labs(x = lab_x(40, 40), y = lab_dsd)
+pFR50_dsd_y40 <- plot_tradeOff("FR50_y40", "ERC_PR.dsd", df_metrics_y40) + labs(x = lab_x(50, 40), y = lab_dsd)
+
+
+# 40-year volatility vs level of contribution
+pERC_5yMaxChg_y40 <- plot_tradeOff("PV.ERC_PR", "ERC_PR.5yMaxChg", df_metrics_y40) + labs(x = lab_ERC, y = lab_5yChg)
+  # PV of last 10 years
+pERC_L10_5yMaxChg_y40 <- plot_tradeOff("PV.ERC_PR_L10", "ERC_PR.5yMaxChg", df_metrics_y40) + labs(x = lab_ERC_L10, y = lab_5yChg)
+
+
 # 40-year FR vs level of contribution
 pFR40_ERC_y40 <- plot_tradeOff("FR40_y40", "PV.ERC_PR", df_metrics_y40) + labs(x = lab_x(40, 40), y = lab_ERC)
 pFR50_ERC_y40 <- plot_tradeOff("FR50_y40", "PV.ERC_PR", df_metrics_y40) + labs(x = lab_x(50, 40), y = lab_ERC)
 
 
-# 30-year FR vs level of contribution: PV of last 10 years
-pFR40_ERC_L10_y30 <- plot_tradeOff("FR40_y30", "PV.ERC_PR_L10", df_metrics_y30) + labs(x = lab_x(40, 30), y = lab_ERC_L10)
-pFR50_ERC_L10_y30 <- plot_tradeOff("FR50_y30", "PV.ERC_PR_L10", df_metrics_y30) + labs(x = lab_x(50, 30), y = lab_ERC_L10)
 # 40-year FR vs level of contribution: PV of last 10 years
 pFR40_ERC_L10_y40 <- plot_tradeOff("FR40_y40", "PV.ERC_PR_L10", df_metrics_y40) + labs(x = lab_x(40, 40), y = lab_ERC_L10)
 pFR50_ERC_L10_y40 <- plot_tradeOff("FR50_y40", "PV.ERC_PR_L10", df_metrics_y40) + labs(x = lab_x(50, 40), y = lab_ERC_L10)
 
 
 
-
 ## Display Graphs
 
-# 30-year and 40-year FR risk and cont volatility graphs 
-pFR40_5yMaxChg_y30 + coord_cartesian(xlim = c(0, 50), ylim = c(0, 25)) 
-pFR40_5yMaxChg_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(0, 25)) 
-
-pFR50_5yMaxChg_y30 + coord_cartesian(xlim = c(0, 50), ylim = c(0, 25)) 
-pFR50_5yMaxChg_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(0, 25)) 
+# 30-year period
+# FR risk and cont volatility graphs 
+pFR40_5yMaxChg_y30 + coord_cartesian(xlim = c(0, 22), ylim = c(0, 25)) 
+pFR50_5yMaxChg_y30 + coord_cartesian(xlim = c(0, 25), ylim = c(0, 25)) 
 
 
-# 30-year and 40-year contribution PV and volatility graphs 
+# contribution PV and cont volatility 
 pERC_5yMaxChg_y30 + coord_cartesian(xlim = c(12, 20), ylim = c(0, 25))
-pERC_5yMaxChg_y40 + coord_cartesian(xlim = c(12, 20), ylim = c(0, 25))
-
- # PV of last 10 years
-pERC_L10_5yMaxChg_y30 + coord_cartesian(xlim = c(2, 19), ylim = c(0, 20))
-pERC_L10_5yMaxChg_y40 + coord_cartesian(xlim = c(2, 19), ylim = c(0, 20))
+pERC_L10_5yMaxChg_y30 + coord_cartesian(xlim = c(2, 19), ylim = c(0, 20))  # PV of last 10 years
 
 
-
-## 30-year and 40-year FR risk and contribution PV graphs 
+# FR risk and contribution PV
 pFR40_ERC_y30 + coord_cartesian(xlim = c(0, 50), ylim = c(12, 20))
-pFR40_ERC_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(12, 20))
+pFR40_ERC_L10_y30 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 17))  # PV of last 10 years
 
 pFR50_ERC_y30 + coord_cartesian(xlim = c(0, 50), ylim = c(12, 20))
+pFR50_ERC_L10_y30 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 17))  # PV of last 10 years
+
+
+
+
+
+
+
+
+# 40-year period
+#  FR risk and cont volatility 
+pFR40_5yMaxChg_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(0, 25)) 
+pFR40_dsd_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(0, 7))
+# quite similar 
+
+pFR50_5yMaxChg_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(0, 25)) 
+
+# contribution PV and cont volatility 
+pERC_5yMaxChg_y40 + coord_cartesian(xlim = c(12, 20), ylim = c(0, 25))
+pERC_L10_5yMaxChg_y40 + coord_cartesian(xlim = c(2, 19), ylim = c(0, 20)) # PV of last 10 years
+
+
+# FR risk and contribution PV
+pFR40_ERC_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(12, 18))
+pFR40_ERC_L10_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 12)) # PV of last 10 years. 
+
 pFR50_ERC_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(12, 20))
+pFR50_ERC_L10_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 17)) # PV of last 10 years
 
- # PV of last 10 years
-pFR40_ERC_L10_y30 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 17))
-pFR40_ERC_L10_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 17))
 
-pFR50_ERC_L10_y30 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 17))
-pFR50_ERC_L10_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 17))
+
+
+
+# Plotting for the report
+p <- 
+df_metrics_y30 %>% ggplot(aes_string(x = "FR40_y30" , y = "ERC_PR.5yMaxChg", label = "run.label")) + 
+    geom_point(size = 2.5) +
+    coord_cartesian(xlim = c(0, 22), ylim = c(0, 23)) + 
+    stat_smooth(data = df_metrics_y30 %>% filter(!grepl("soa", runname)),
+                                    method = "lm", se = F, fullrange = TRUE,  
+                                    color = "darkgray", linetype = 2, size = 0.8) + 
+    theme_bw() + theme(legend.position = "none", plot.title=element_text(size=14)) + 
+    labs(x = lab_x(40, 30), y = lab_5yChg,
+         title = "Pension Contribution Volatility and the Probability of a Low Funded Ratio \nUnder Selected Funding Policies") + 
+    geom_text(color = "black", hjust = -0.1, size = 3.5, 
+              data = df_metrics_y30 %>% filter(!runname %in% c("A1F075_C30d","A1F075_O30pA5","A1F075_O30pA5_cap"))) +
+    geom_text(color = "black", hjust = 0.8, vjust = 1.5, size = 3.5, 
+              data = df_metrics_y30 %>% filter(runname %in% c("A1F075_C30d"))) +
+    geom_text(color = "black", hjust = 0.5, vjust = 1.3, size = 3.5, 
+            data = df_metrics_y30 %>% filter(runname %in% c("A1F075_O30pA5"))) + 
+    geom_text(color = "black", hjust = 0.2, vjust = -0.5, size = 3.5, 
+            data = df_metrics_y30 %>% filter(runname %in% c("A1F075_O30pA5_cap"))) 
+p
+  
+ggsave(paste0(IO_folder, "/Data_trade_off/trade_off.png"), p, width=12, height=7.5, units="in")
+
+
 
 
 

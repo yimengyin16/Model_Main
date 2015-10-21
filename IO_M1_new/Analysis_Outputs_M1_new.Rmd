@@ -511,15 +511,23 @@ ps <- 2.25 # pointsize
   colnames <- str_replace(names(tbl), "\\.", "\n")
   grob <- tableGrob(tbl, rows=NULL, cols=colnames)
    
-  ml <- marrangeGrob(list(p1, p2, p3, p4, grob), 
+#   ml <- marrangeGrob(list(p1, p2, p3, p4, grob), 
+#                      layout_matrix = rbind(c(1,2),
+#                                            c(3,4),
+#                                            c(5,5)),
+#                      
+#                      nrow=3, ncol=2, top = NULL)
+  
+  ml <- marrangeGrob(list(p1, p2, p3, p4), 
                      layout_matrix = rbind(c(1,2),
-                                           c(3,4),
-                                           c(5,5)),
+                                           c(3,4)),
                      
                      nrow=3, ncol=2, top = NULL)
+  
+  
   # ml
   
-  ggsave(paste0(IO_folder, "/Single_runs/g_", simnum, ".png"), ml, width=13, height=10, units="in")     
+  ggsave(paste0(IO_folder, "/Single_runs/g_", simnum, ".png"), ml, width=13, height=8, units="in")     
 
   invisible(ml)
 }
