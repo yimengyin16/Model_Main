@@ -17,6 +17,7 @@ library(gridExtra)
 library(stringr)
 library("readr")
 library("readxl")
+library(xlsx)
 
 source("Functions.R") 
 
@@ -108,19 +109,19 @@ runs_all <- c(runs_M1_O, runs_M1_C, runs_M1_soa, runs_cap)
 
 runs_exclude <- c("O30pA10", "C30pA10", "soa3_cap")
 
-runs_all_labels <- c('runname, run.label
-O15d,         15-year open dollar
-O15p,         15-year open percent
-O30d,         30-year open doller
-O30p,         30-year open percent
-O30pA5,       "30-year open percent \n 5-year assets"
-C15d,         15-year closed dollar
-C15p,         15-year closed percent
-C30d,         30-year closed doller
-C30p,         30-year closed percent
-C30pA5,       "30-year closed percent \n       5-year assets"
-O30pA5_cap,   "30-year open percent \n5-year assets;ERC cap"
-soa3,         "SOA-BRP \nBenchmark"
+runs_all_labels <- c('runname, run.label, key.feature
+O15d,         15-year open dollar,                              15-year level dollar - open
+O15p,         15-year open percent,                             15-year level percent - open
+O30d,         30-year open dollar,                              30-year level dollar - open
+O30p,         30-year open percent,                             30-year level percent - open
+O30pA5,       "30-year open percent \n 5-year assets",          30-year level percent - open; 5-year asset smoothing
+C15d,         15-year closed dollar,                            15-year level dollar - closed                       
+C15p,         15-year closed percent,                           15-year level percent - closed
+C30d,         30-year closed dollar,                            30-year level dollar - closed
+C30p,         30-year closed percent,                           30-year level percent - closed
+C30pA5,       "30-year closed percent \n       5-year assets",  30-year level perncet - closed; 5-year asset smoothing
+O30pA5_cap,   "30-year open percent \n5-year assets;ERC cap",   30-year level perncet - closed; 5-year asset smoothing; 20% ERC cap
+soa3,         "SOA Blue Ribbon\n Benchmark",                    SOA Blue Ribbon Panel Benchmark
 ')
  
 runs_all_labels <- read.table(text = runs_all_labels, header = TRUE,sep = ",", stringsAsFactors = F) %>% 
@@ -135,8 +136,8 @@ get_metrics <- function(runs, year.max, include.maxChg = FALSE){
 
 
   
-# runs = runs_all
-# year.max = 40
+runs = runs_all
+year.max = 30
 # include.maxChg = TRUE
   
 df_TO <- results_all %>% filter(runname %in% paste0("A1F075_", runs), year <= year.max, sim > 0) %>% 
@@ -243,7 +244,6 @@ system.time(
     group_by(runname) %>% 
     summarise_each(funs(median)) %>% select(-sim)
 )
-# save(df_5yearMaxChg, file = paste0(IO_folder, "/Data_analysis/df_5yearChg.RData"))
 }
 
 
@@ -283,32 +283,21 @@ return(df_metrics)
 
 }
 
-df_TO <- results_all %>% filter(runname %in% paste0("A1F075_", runs_all), year <= 40, sim > 0) %>% 
-  select(runname, year, sim, FR_MA, ERC_PR, C_PR, C, ERC, PR)  
-
-df_dsd <- df_TO %>%
-  select(runname, year, sim, C_PR, ERC_PR) %>% 
-  group_by(sim, runname) %>% 
-  summarise(C_PR.dsd = sd(diff(C_PR), na.rm = TRUE), ERC_PR.dsd = sd(diff(ERC_PR), na.rm = TRUE)) %>% 
-  group_by(runname) %>% 
-  summarise_each(funs(median)) %>% select(-sim)
-df_dsd
-
 #****************************************************************************************************
 #                  creating plots  ####
 #****************************************************************************************************
 
-#df_metrics_y30 <- get_metrics(runs_all, 30, TRUE) # Takes 10+ minutes if include.maxChg = TRUE. Possible reason is the repeated use of zoo::rollapply
-#df_metrics_y40 <- get_metrics(runs_all, 40, TRUE)
-
+# df_metrics_y30 <- get_metrics(runs_all, 30, TRUE) # Takes 10+ minutes if include.maxChg = TRUE. Possible reason is the repeated use of zoo::rollapply
+# df_metrics_y40 <- get_metrics(runs_all, 40, TRUE)
 # save(df_metrics_y30, df_metrics_y40, file = paste0(IO_folder, "/Data_trade_off/df_metrics.RData"))
+
 load(paste0(IO_folder, "/Data_trade_off/df_metrics.RData"))
-# df_metrics_y40 %<>% left_join(df_dsd) 
 
 df_metrics_y40 %<>% left_join(runs_all_labels) %>% filter(!runname %in% paste0("A1F075_",runs_exclude)) 
 df_metrics_y30 %<>% left_join(runs_all_labels) %>% filter(!runname %in% paste0("A1F075_",runs_exclude)) 
 
 
+df_metrics_y40
 
 # Plotting functions
 plot_tradeOff <- function(x, y, data, reg.line = TRUE){
@@ -326,7 +315,7 @@ plot_tradeOff <- function(x, y, data, reg.line = TRUE){
 }
 
 lab_x     <- function(x, y){paste0("Probability of funded ratio falling below ", x, "% during first ", y, " years (%)")}
-lab_5yChg <- "Contribution Volatility \nMedian 5-year max percentage change of employer contribution rate (%)"
+lab_5yChg <- "Contribution Volatility:\nMaximum increase in any 5-year period of employer contributions as % of payroll \n(median of 1,000 runs)"
 lab_ERC       <- "Ratio of PV employer contribution to PV payroll"
 lab_ERC_L10   <- "Ratio of PV employer contribution to PV payroll: last 10 years only"
 lab_dsd   <- "Standard deviation of the annual change of employer contributions" 
@@ -409,8 +398,6 @@ pFR50_ERC_L10_y30 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 17))  # PV of l
 
 
 
-
-
 # 40-year period
 #  FR risk and cont volatility 
 pFR40_5yMaxChg_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(0, 25)) 
@@ -432,8 +419,26 @@ pFR50_ERC_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(12, 20))
 pFR50_ERC_L10_y40 + coord_cartesian(xlim = c(0, 50), ylim = c(2, 17)) # PV of last 10 years
 
 
+# Notes: 
+#  points move toward upper-right when using 40-year perid. 
+#  SOA/BRP w/o cap runs have lower FR risk and lower contribtuion volatility
+#  SOA/BRP w/  cap run has 0 5-year max change? Need to investigate. 
+
+# Notes:
+# Graphs change very little when using C_PR. 
+# The difference between 5yChg and 5yMaxChg is small
+# Standard deviation of contribution rate may not be a good measure because of the time trend. 
+# sd of the CHANGES (first differce) in contribution rate might be a better measure.  
 
 
+
+
+
+
+
+#****************************************************************************************************
+#                   Graphs and tables for M1 report  ####
+#****************************************************************************************************
 
 # Plotting for the report
 p <- 
@@ -458,31 +463,12 @@ p
   
 ggsave(paste0(IO_folder, "/Data_trade_off/trade_off.png"), p, width=12, height=7.5, units="in")
 
+# Table 
+table_tradeOff <- df_metrics_y30 %>% select(key.feature, FR40_y30, ERC_PR.5yMaxChg) %>% 
+                  mutate(FR40_y30 = FR40_y30/100)
 
 
-
-
-
-
-
-# Notes: 
-#  points move toward upper-right when using 40-year perid. 
-#  SOA/BRP w/o cap runs have lower FR risk and lower contribtuion volatility
-#  SOA/BRP w/  cap run has 0 5-year max change? Need to investigate. 
-
-# Notes:
- # Graphs change very little when using C_PR. 
- # The difference between 5yChg and 5yMaxChg is small
- # Standard deviation of contribution rate may not be a good measure because of the time trend. 
- # sd of the CHANGES (first differce) in contribution rate might be a better measure.  
-
-
-
-df_metrics %>% ggplot(aes(x = FR60_y30, y = ERC_PR.max, color = runname)) + geom_point(size = 2)
-df_metrics %>% ggplot(aes(x = FR60_y30, y = ERC_PR.final, color = runname)) + geom_point(size = 2)
-plot_tradeOff("FR40_y30", "ERC_PR.sd") + labs(x = lab_x,
-                                              y = "Median sd of ERC/PR in 30 years") 
-
+write.xlsx2(table_tradeOff, file = paste0(IO_folder, "/Data_trade_off/table_trade_off.xlsx"), row.names = FALSE)
 
 
 
