@@ -204,8 +204,8 @@ run_sim <- function(      .i.r = i.r,
         
       } else {
         penSim$EUAAL[j] <- with(penSim, (UAAL[j - 1] + NC[j - 1])*(1 + i[j - 1]) - C[j - 1] - Ic[j - 1])
-        penSim$LG[j] <- with(penSim,  UAAL[j] - EUAAL[j])
-        penSim$AM[j] <- with(penSim,  LG[j] - (C_ADC[j - 1]) * (1 + i[j - 1]))
+        penSim$LG[j]    <- with(penSim,  UAAL[j] - EUAAL[j])
+        penSim$AM[j]    <- with(penSim,  LG[j] - (C_ADC[j - 1]) * (1 + i[j - 1]))
       }   
       
       

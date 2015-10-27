@@ -23,7 +23,6 @@ source("Functions.R")
 
 
 
-
 #****************************************************************************************************
 #               ## Combine selected files into a single list. ####
 #****************************************************************************************************
@@ -68,44 +67,29 @@ results_all %>% filter(runname =="A1F100_O30pA5", sim == 0) %>% select(one_of(va
 #               ## Select runs  ####
 #****************************************************************************************************
 
-runs_trade_off <- c(
-  "O15d",
-  "O15p",
-  "O30d",
-  "O30p",
-  "C30p",
-  "O30pA5",
-  "soa1",
-  #"soa3",
-  "O30pA5_cap",
-  "soa1_cap"
-)
-
-runs_M1_O <- c(
-  # "0",  
+runs_all <- c(
   "O15d",
   "O15p",
   "O30d",
   "O30p",  
   "O30pA5",
-  "O30pA10"
-)
+  "O30pA10",
 
-runs_M1_C <- c(
-  # "0",  
   "C15d",
   "C15p",
   "C30d",
   "C30p",  
   "C30pA5",
-  "C30pA10"
+  "C30pA10",
+
+  "O30pA5_cap", 
+  "soa3_cap",
+
+  "soa3",
+  "soa4", 
+  "soa4.1"
 )
 
-runs_cap <- c("O30pA5_cap", "soa3_cap")
-
-runs_M1_soa <- c("soa3")
-
-runs_all <- c(runs_M1_O, runs_M1_C, runs_M1_soa, runs_cap)
 
 runs_exclude <- c("O30pA10", "C30pA10", "soa3_cap")
 
@@ -122,6 +106,8 @@ C30p,         30-year closed percent,                           30-year level pe
 C30pA5,       "30-year closed percent \n       5-year assets",  30-year level perncet - closed; 5-year asset smoothing
 O30pA5_cap,   "30-year open percent \n5-year assets;ERC cap",   30-year level perncet - closed; 5-year asset smoothing; 20% ERC cap
 soa3,         "SOA Blue Ribbon\n Benchmark",                    SOA Blue Ribbon Panel Benchmark
+soa4,         "SOA Blue Ribbon\n Benchmark;ir=6.62%",                    SOA Blue Ribbon Panel Benchmark;ir6.62%
+soa4.1,       "SOA Blue Ribbon\n Benchmark;ir=5.9%",                  SOA Blue Ribbon Panel Benchmark;ir5.9%
 ')
  
 runs_all_labels <- read.table(text = runs_all_labels, header = TRUE,sep = ",", stringsAsFactors = F) %>% 
@@ -287,8 +273,8 @@ return(df_metrics)
 #                  creating plots  ####
 #****************************************************************************************************
 
-# df_metrics_y30 <- get_metrics(runs_all, 30, TRUE) # Takes 10+ minutes if include.maxChg = TRUE. Possible reason is the repeated use of zoo::rollapply
-# df_metrics_y40 <- get_metrics(runs_all, 40, TRUE)
+ df_metrics_y30 <- get_metrics(runs_all, 30, TRUE) # Takes 10+ minutes if include.maxChg = TRUE. Possible reason is the repeated use of zoo::rollapply
+ df_metrics_y40 <- get_metrics(runs_all, 40, TRUE)
 # save(df_metrics_y30, df_metrics_y40, file = paste0(IO_folder, "/Data_trade_off/df_metrics.RData"))
 
 load(paste0(IO_folder, "/Data_trade_off/df_metrics.RData"))
@@ -319,9 +305,6 @@ lab_5yChg <- "Contribution Volatility:\nMaximum increase in any 5-year period of
 lab_ERC       <- "Ratio of PV employer contribution to PV payroll"
 lab_ERC_L10   <- "Ratio of PV employer contribution to PV payroll: last 10 years only"
 lab_dsd   <- "Standard deviation of the annual change of employer contributions" 
-
-
-
 
 
 
@@ -377,7 +360,7 @@ pFR50_ERC_L10_y40 <- plot_tradeOff("FR50_y40", "PV.ERC_PR_L10", df_metrics_y40) 
 
 # 30-year period
 # FR risk and cont volatility graphs 
-pFR40_5yMaxChg_y30 + coord_cartesian(xlim = c(0, 22), ylim = c(0, 25)) 
+pFR40_5yMaxChg_y30 + coord_cartesian(xlim = c(0, 38), ylim = c(0, 25)) 
 pFR50_5yMaxChg_y30 + coord_cartesian(xlim = c(0, 25), ylim = c(0, 25)) 
 
 

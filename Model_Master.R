@@ -174,7 +174,7 @@ var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  # "C_ADC"
 )
 
-r1 <- penSim_results %>% filter(sim == 2, year %in% 1:105) %>% select(one_of(var.display))
+r1 <- penSim_results %>% filter(sim == 1, year %in% 1:105) %>% select(one_of(var.display))
 kable(r1, digits = 3)
 
 
