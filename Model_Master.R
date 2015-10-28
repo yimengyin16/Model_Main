@@ -218,12 +218,21 @@ Time_loop # the big loop
 #*********************************************************************************************************
 
 
-outputs_list <- list(results     = penSim_results,
-                     ind_act_ret = AggLiab$ind_act_ret, 
-                     ind_term    = AggLiab$ind_term,
-                     demo_summary= AggLiab$demo_summary,
-                     paramlist = paramlist, 
+outputs_list <- list(paramlist = paramlist, 
                      Global_paramlist = Global_paramlist,
+  
+                     decrement = decrement,
+                     
+                     results     = penSim_results,
+                     
+                     ind_active  = AggLiab$ind_active, 
+                     ind_retiree = AggLiab$ind_retiree,
+                     ind_term    = AggLiab$ind_term,
+                     demo_summary= pop$demo_summary,
+                     
+                     #liab  = if(paramlist$save.liab) liab else "Not saved",
+                     #demo  = if(paramlist$save.demo) pop else "Not saved",
+                     
                      entrant_dist = entrants_dist)
 
 # Save outputs to specified folder
@@ -235,6 +244,7 @@ filename_outputs <- paste0("Outputs_",  paramlist$runname, ".RData")
 save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
 gc()
+
 
 
 

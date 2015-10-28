@@ -124,21 +124,24 @@ run_sim <- function(      .i.r = i.r,
 #*************************************************************************************************************
   
   # AL(j)
-  penSim0$AL.act  <- .AggLiab$active[, "ALx.a.tot"]
-  penSim0$AL.ret  <- .AggLiab$retiree[,"ALx.tot.r"]
-  penSim0$AL.term <- .AggLiab$active[, "ALx.v.tot"] + .AggLiab$term[, "ALx.tot.v"]
-  penSim0$AL      <- .AggLiab$active[, "ALx.tot.active"] + .AggLiab$term[, "ALx.tot.v"] + .AggLiab$retiree[,"ALx.tot.r"] 
+  penSim0$AL.act  <- .AggLiab$active[, "ALx.a.sum"]
+  penSim0$AL.ret  <- .AggLiab$retiree[,"ALx.r.sum"]
+  penSim0$AL.term <- .AggLiab$active[, "ALx.v.sum"] 
+  penSim0$AL.Ben  <- .AggLiab$retiree[,"ALx.r.sum"]  + .AggLiab$term[, "ALx.v.sum"]
+  penSim0$AL      <- .AggLiab$active[, "ALx.av.sum"] + .AggLiab$term[, "ALx.v.sum"] + .AggLiab$retiree[,"ALx.r.sum"] 
+  
+  .AggLiab$active[, "ALx.v.sum"]
   
   # NC(j)
-  penSim0$NC.act  <- .AggLiab$active[, "NCx.a.tot"]
-  penSim0$NC.term <- .AggLiab$active[, "NCx.v.tot"] 
-  penSim0$NC      <- .AggLiab$active[, "NCx.tot"] 
+  penSim0$NC.act  <- .AggLiab$active[, "NCx.a.sum"]
+  penSim0$NC.term <- .AggLiab$active[, "NCx.v.sum"] 
+  penSim0$NC      <- .AggLiab$active[, "NCx.av.sum"] 
   
   # B(j)
-  penSim0$B  <- .AggLiab$retiree[, "B.tot.r"] + .AggLiab$term[, "B.tot.v"]
+  penSim0$B  <- .AggLiab$retiree[, "B.r.sum"] + .AggLiab$term[, "B.v.sum"]
   
   # PR(j)
-  penSim0$PR <- .AggLiab$active[, "PR.tot"]
+  penSim0$PR <- .AggLiab$active[, "PR.sum"]
   
   # nactives, nretirees, nterms
   penSim0$nactives  <- .AggLiab$active[,  "nactives"]
@@ -316,6 +319,7 @@ run_sim <- function(      .i.r = i.r,
            AL.act_PR    = 100 * AL.act / PR, 
            AL.ret_PR    = 100 * AL.ret / PR, 
            AL.term_PR   = 100 * AL.term / PR, 
+           AL.Ben_PR    = 100 * AL.Ben / PR,
            ADC_PR  = 100 * ADC / PR,
            NC_PR   = 100 * NC / PR,
            NC.act_PR    = 100 * NC.act / PR,

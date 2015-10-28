@@ -144,8 +144,8 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 #*********************************************************************************************************
 
 
-#folder_run <- "IO_M2.1_new" 
- folder_run <- "IO_M1_new" 
+folder_run <- "IO_M2.1_new" 
+# folder_run <- "IO_M1_new" 
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
 path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)

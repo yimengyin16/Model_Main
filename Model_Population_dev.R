@@ -34,8 +34,8 @@ get_Population <- function(.init_pop = init_pop,
 #   .entrants_dist    = entrants_dist
 #   .paramlist        = paramlist
 #   .Global_paramlist = Global_paramlist
-  
-  
+# #   
+#   
   
 assign_parmsList(.Global_paramlist, envir = environment())
 assign_parmsList(.paramlist,        envir = environment())  
@@ -274,11 +274,116 @@ for (j in 1:(nyear - 1)){
     
 }
 
+
+
+#*************************************************************************************************************
+#                                     Transform Demographic Data to Data Frames   ####
+#*************************************************************************************************************
+
+## Convert 3D arrays of actives, retired and terms to data frame, to be joined by liability data frames
+
+wf_active <- adply(wf_active, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
+  rename(year = X1) %>%
+  gather(age, number.a, -ea, -year) %>% 
+  mutate(year = f2n(year), age = f2n(age)) %>% 
+  filter(age >= ea)
+
+
+wf_retired <- data.frame(expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.retire = 1:nyear),
+                         number.r = as.vector(wf_retired)) %>% 
+                         filter(age >= ea)
+
+
+wf_term <- data.frame(expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.term = 1:nyear),
+                        number.v = as.vector(wf_term)) %>% 
+                        filter(age >= ea)
+
+
+# summarize term across termination year. Resulting data frame will join .Liab$active as part of the output. 
+term_reduced <- wf_term %>% group_by(year, age) %>% summarise(number.v = sum(number.v, na.rm = TRUE))
+
+
+#*************************************************************************************************************
+#                                     Calculate Demographic Summary Statistics   ####
+#*************************************************************************************************************
+# This is a digress from the main purpose of this function. Demographic statistics are useful in analyzing 
+# the plan characteristics, and the most convenient way to construct these statistics is by using data frames. 
+
+demo_summary <- 
+  Reduce(merge, list( 
+    # Average age of workforce
+    # Average year of service of workforce
+    # Average entry age of workforce
+    wf_active %>% group_by(year) %>% summarise(actives_age.avg = weighted.mean(age, number.a)),
+    wf_active %>% group_by(year) %>% summarise(actives_ea.avg  = weighted.mean(ea, number.a)),
+    wf_active %>% group_by(year) %>% mutate(yos = age - ea) %>% summarise(actives_yos.avg  = weighted.mean(yos, number.a)),
+    
+    # Average age of retirees
+    wf_retired %>% group_by(year) %>% summarise(retirees_age.avg = weighted.mean(age, number.r)),
+    
+    # Total actives, retirees and terminated members. (terms in all status, including not vested.) 
+    wf_active  %>% group_by(year) %>% summarise(tot_actives  = sum(number.a)),
+    wf_retired %>% group_by(year) %>% summarise(tot_retirees = sum(number.r)),
+    wf_term    %>% group_by(year) %>% summarise(tot_terms    = sum(number.v)),
+    
+    # Total vested terms in benefit status and total vested terms not in benefit status. Note: year - (age - ea) gives the year of entrance. 
+    wf_term %>% filter(age >= r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(tot_termsBen    = sum(number.v)),  
+    wf_term %>% filter(age <  r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(tot_termsInact  = sum(number.v)),
+    
+    
+    # New entrants
+    wf_active %>% filter(age == ea) %>% group_by(year) %>% summarise(new_entrants = sum(number.a)), 
+    
+    # New retirees
+    wf_retired %>% filter(year == year.retire) %>% group_by(year) %>% summarise(new_retirees = sum(number.r)),
+    
+    # New terms (in all status, including not vested.)
+    wf_term %>% filter(year == 1 | year == year.term + 1) %>% group_by(year) %>% summarise(new_terms = sum(number.v)),
+    
+    # New terms in benefit status.
+    wf_term %>% filter(age == r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(new_termsBen = sum(number.v)),
+    
+    # New terms in not in benefit status  Note: year - (age - ea) gives the year of entrance. 
+    wf_term %>% filter(year == 1 | (year == year.term + 1 & age < r.full & year.term - (year - (age - ea)) >= v.yos)) %>% group_by(year) %>% summarise(new_termsInact = sum(number.v)),
+    
+    # Number of new death in actives and retirees
+    data.frame(year = 1:nyear, newDeath.act = newDeath.act),
+    data.frame(year = 1:nyear, newDeath.ret = newDeath.ret),
+    
+    # Number of new disabled in actives
+    data.frame(year = 1:nyear, newDisb.act = newDisb.act)
+    
+  )) %>% 
+  mutate(# Ratios
+    newEnt_actives  = 100 * new_entrants / tot_actives,
+    newRet_actives  = 100 * new_retirees / tot_actives,
+    
+    newTerm_actives = 100 * new_terms / tot_actives,
+    newTermsInact_actives  = 100 * new_termsInact / tot_actives,
+    newTermsBen_termsInact = 100 * new_termsBen / tot_termsInact,
+    
+    newDeath.act_actives  = 100 * newDeath.act / tot_actives,
+    newDeath.ret_retirees = 100 * newDeath.ret / tot_retirees, 
+    
+    newDisb.act_actives = 100 * newDisb.act / tot_actives,
+    
+    ar.ratio = tot_actives / tot_retirees,                  # Active-to-service retiree ratio
+    ab.ratio = tot_actives / (tot_retirees + tot_termsBen), # Active-to-beneficiary ratio
+    runname = runname) %>% 
+  select(runname, everything())
+
+
+
+
 return(list(active = wf_active, term = wf_term, disb = wf_disb, retired = wf_retired, dead = wf_dead,
             newDeath.act = newDeath.act,
             newDeath.ret = newDeath.ret,
+            newDisb.act  = newDisb.act,
             
-            newDisb.act  = newDisb.act))
+            term_reduced = term_reduced, 
+            
+            demo_summary = demo_summary
+            ))
 
 }
 
