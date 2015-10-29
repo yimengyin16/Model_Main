@@ -15,8 +15,8 @@ library(zoo)
 library(grid)
 library(gridExtra)
 library(stringr)
-library("readr")
-library("readxl")
+library(readr)
+library(readxl)
 library(xlsx)
 
 source("Functions.R") 
@@ -28,6 +28,7 @@ source("Functions.R")
 #****************************************************************************************************
 
 IO_folder   <- "IO_M2.1_new"
+# runName     <- "D1F075-average_g1"
 runName     <- "D1F075-average"
 file_select <- dir(IO_folder, pattern = paste0(runName,".RData"))
 
@@ -37,7 +38,7 @@ load(paste0(IO_folder, "/", file_select))
 #****************************************************************************************************
 #               ## Computing remaining working life and remaining lifetime.   ####
 #****************************************************************************************************
-
+outputs_list$entrant_dist
 
 get_expLife <- function(p, age){
   # get expected remaining work life/life time.
@@ -144,7 +145,9 @@ outputs_list$demo_summary %>% select(tot_terms,
 df_AL.NC_act <- outputs_list$ind_active %>% 
                 select(year, ea, age, number.a, sx, ALx, NCx, ALx.v, NCx.v) %>% 
                 mutate(AL_sx = 100 * (ALx + ALx.v) / sx,
-                       NC_sx = 100 * (NCx + NCx.v) / sx)
+                       NC_sx = 100 * (NCx + NCx.v) / sx,
+                       NC.r_sx = 100 * (NCx) / sx,
+                       NC.v_sx = 100 * NCx.v / sx)
 
 ## AL_sx rate
  # Does it change a lot over time?
@@ -170,8 +173,8 @@ df_AL_sx %>% filter(ea %in% seq(0,70,5)) %>%
              geom_line() + geom_point()
 
 ## NC_sx rate
-df_NC_sx <- df_AL_act %>% filter(year == 30, age ==74, ea %in% 20:74) %>% select(year, ea, age, NC_sx)
-df_NC_sx %>% ggplot(aes(x = ea, y = NC_sx)) + geom_bar(stat = "identity", size)
+df_NC_sx <- df_AL.NC_act %>% filter(year == 30, age == ea, ea %in% 20:74) %>% select(year, ea, age, NC.r_sx)
+df_NC_sx %>% ggplot(aes(x = ea, y = NC.r_sx)) + geom_bar(stat = "identity")
 
 
 
@@ -184,6 +187,7 @@ df_AL.ratios <- outputs_list$results %>% filter(sim == 1) %>%
                   select(runname, sim, year, AL.act, AL.ret, AL.term, AL.Ben, AL_PR, AL.act_PR, AL.ret_PR, AL.term_PR, PR)
                   
 df_AL.ratios %>% kable(digits = 3)
+
 
 # Notes:
 #   - The difference between AL.Ben_PR and AL.ret_PR becomes larger over time(~100% after year 40). This means AL of vested

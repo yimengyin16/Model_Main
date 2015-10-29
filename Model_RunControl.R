@@ -61,7 +61,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 termrates %<>% mutate(qxt = 1.2 * qxt)
 
 mortality %<>% mutate(qxm = 0.6 * qxm) %>% 
-  mutate(qxm.r = qxm)
+               mutate(qxm.r = qxm)
 
 retrates %<>% mutate(qxr = qxr * 0.7) 
 
@@ -137,6 +137,8 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 # 5. Full set of entry ages and ages. 
 # actives <- expand.grid(ea = 20:64, age = 20:64) %>% filter(age >= ea) %>% mutate(planname = "average", nactives = 1, salary = 1 )
 
+# 6. Lower the initial benefit in LA-CERA (mature1)
+# retirees %<>% mutate(benefit = 0.5 * benefit) 
 
 
 #*********************************************************************************************************

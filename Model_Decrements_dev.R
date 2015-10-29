@@ -107,13 +107,21 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
 ## Imposing restrictions 
 decrement %<>% mutate(
   # 1. Coerce termination rates to 0 when eligible for early retirement or reaching than r.full(when we assume terms start to receive benefits). 
-  qxt = ifelse((age >= r.min & (age - ea) >= r.yos) | age >= r.full, 0, qxt),
+   qxt = ifelse((age >= r.min & (age - ea) >= r.yos) | age >= r.full, 0, qxt),
+  #qxt = ifelse(age >= r.min | age >= r.full, 0, qxt),
+  
   # qxt = ifelse( age >= r.full, 0, qxt),
   # 2. Coerce retirement rates to 0 when age greater than r.max                     
-  qxr = ifelse(age == r.max, 1, 
-               ifelse(age %in% r.min:(r.max - 1), qxr, 0))
+#   qxr = ifelse(age == r.max, 1, 
+#                ifelse(age %in% r.min:(r.max - 1), qxr, 0))
+#   
+   qxr = ifelse(age == r.max, 1,  # Assume retirement rates applies only when they are applicable (according to Bob North.)
+                ifelse(age - ea < r.yos, 0, 
+                       ifelse(age %in% r.min:(r.max - 1), qxr, 0)
+                       )
+                )
 ) 
-# term %<>% mutate(qxt = ifelse(age >= r.min & (age - ea) >= r.yos, 0, qxt)) 
+
 
 
 #*************************************************************************************************************

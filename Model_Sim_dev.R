@@ -138,7 +138,8 @@ run_sim <- function(      .i.r = i.r,
   penSim0$NC      <- .AggLiab$active[, "NCx.av.sum"] 
   
   # B(j)
-  penSim0$B  <- .AggLiab$retiree[, "B.r.sum"] + .AggLiab$term[, "B.v.sum"]
+  penSim0$B    <- .AggLiab$retiree[, "B.r.sum"] + .AggLiab$term[, "B.v.sum"]
+  penSim0$B.v  <- .AggLiab$term[, "B.v.sum"]
   
   # PR(j)
   penSim0$PR <- .AggLiab$active[, "PR.sum"]

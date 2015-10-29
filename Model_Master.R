@@ -158,15 +158,14 @@ options(digits = 4, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
-                 "AL.act_PR", "AL.ret_PR","AL.term_PR", 
+                 "AL.act_PR", "AL.ret_PR","AL.term_PR", "AL.Ben_PR",
                  "NC.act_PR", "NC.term_PR", "MA_PR", 
                  #"AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", 
-                  "PR", "PR.growth", 
-                 
+                 # "PR", "PR.growth", 
                  # "ExF",   
                  # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  #"ADC", "EEC", "ERC",  
-                 "C", "B"     
+                 "C", "B", "B.v", "B.v_B", "B_PR"    
                  # "I.r" ,   "I.e"
                  # "i",    "i.r"
                  #, "dERC_PR"
@@ -174,7 +173,7 @@ var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  # "C_ADC"
 )
 
-r1 <- penSim_results %>% filter(sim == 1, year %in% 1:105) %>% select(one_of(var.display))
+r1 <- penSim_results %>% mutate(B.v_B = B.v / B * 100) %>% filter(sim == -1, year %in% 1:105) %>% select(one_of(var.display))
 kable(r1, digits = 3)
 
 
@@ -241,7 +240,7 @@ if(!file.exists(folder_run)) dir.create(folder_run)
 # filename_outputs <- paste0("Outputs_",  paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
 filename_outputs <- paste0("Outputs_",  paramlist$runname, ".RData")
 
-save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
+ save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
 gc()
 
