@@ -17,32 +17,29 @@ library(xlsx)
 
 source("Functions.R") 
 
-IO_folder <- "IO_M2.1_new"
+IO_folder <- "IO_M2.1_new/"
 
 
 #****************************************************************************************************
 #               ## 1. Loading simulation results ####
 #****************************************************************************************************
 
-get_results <- function(IO_folder){
-  
-  fn <- function(x) {
-    load(paste0(IO_folder, "/", x))
-    outputs_list$results}
-  
-  file_select <- dir(IO_folder, pattern = "^Outputs_D1")
-  results_all <- adply(file_select, 1, fn) %>% select(-X1)
+
+load_run <- function(runname, folder){
+  load(paste0(folder, runname))
+  outputs_list$results
 }
 
-results_all <- get_results(IO_folder)
+run_select <- dir(IO_folder, pattern = "^Outputs_D1")
+
+results_all <- ldply(run_select, load_run, IO_folder)
 
 results_all %<>% mutate(ExF_MA = 100 * ExF / MA)
+save(results_all, file = paste0(IO_folder, "/Analysis_Demo/Demo_results.RData"))
+ 
 
 
- save(results_all, file = paste0(IO_folder, "/Analysis_Demo/Demo_results.RData"))
-# load(paste0(IO_folder, "/Analysis_Demo/Demo_results.RData"))
-
-
+ 
 #****************************************************************************************************
 #               ## 2. Measures of FR risk and contribution volatility   ####
 #****************************************************************************************************
