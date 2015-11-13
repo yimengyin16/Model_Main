@@ -146,8 +146,8 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 #*********************************************************************************************************
 
 
-# folder_run <- "IO_M2.1_new" 
-folder_run <- "IO_M1_new" 
+folder_run <- "IO_M2.1_new" 
+# folder_run <- "IO_M1_new" 
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
 path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)
@@ -198,10 +198,11 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
 }
 
 ## Run the model
-source("Model_Master.R", echo = TRUE)
+ source("Model_Master.R", echo = TRUE)
 }
 
 
+paramlist
 
 
 

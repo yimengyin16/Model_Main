@@ -459,6 +459,252 @@ draw_quantiles2  <- function(runName,     # character
 
 
 
+get_metrics <- function(runs,  year.max, data = results_all){
+  
+#     runs = runs_investment
+#     runs = "I6F075-5"
+#     year.max = 30
+#     include.maxChg = FALSE
+  
+  df_TO <- results_all %>% filter(runname %in% runs, year <= year.max, sim > 0) %>% 
+    select(runname, year, sim, MA, FR_MA, ERC_PR, C_PR, C, ERC, PR)  
+  
+  ## Measures of funded status *********************************************
+  
+  # 1. Probability of funded ratio falling below X% in 5, 15, 30 years.  
+  # 2. VaR-like measure:  5th percentile of funded ratio in year 5, 15, and 30.
+  # 3. CVaR-like measure: weighted average of funded ratio below 5th percentile in year 5, 15, and 30. 
+  #                       question: how to calculate the weight?  
+  
+  
+  
+  df_ruin <- 
+    df_TO %>% group_by(runname, sim) %>% 
+    mutate(FR50 = cumany(FR_MA  <= 50),
+           FR40 = cumany(FR_MA  <= 40)) %>% 
+    filter(year %in% c(15,30,40)) %>% 
+    ungroup %>% group_by(runname, year) %>% 
+    summarise(FR50 = 100 * sum(FR50)/n(),
+              FR40 = 100 * sum(FR40)/n()) %>% 
+    gather(variable, value, -runname, -year) %>% 
+    mutate(variable = paste0(variable, "_y", year),
+           year = NULL) %>% 
+    spread(variable, value)
+  
+  df_ruin %>% kable(digits = 3)
+  
+  
+  ## Measures of contribution volatility *************************************
+  
+  df_sd <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>% 
+    group_by(sim, runname) %>% 
+    summarise(C_PR.sd = sd(C_PR, na.rm = TRUE), ERC_PR.sd = sd(ERC_PR, na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(median)) %>% select(-sim)
+  df_sd
+  
+  
+  df_dsd <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>% 
+    group_by(sim, runname) %>% 
+    summarise(C_PR.dsd = sd(diff(C_PR), na.rm = TRUE), ERC_PR.dsd = sd(diff(ERC_PR), na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(med = median(., na.rm = TRUE), q75 = quantile(., 0.75,na.rm = TRUE), q90 = quantile(., 0.9, na.rm = TRUE)), -sim)
+    # summarise_each(funs(median)) %>% select(-sim)
+  df_dsd
+  
+  
+  df_maxC <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>%  
+    group_by(sim, runname) %>% 
+    summarise(C_PR.max = max(C_PR, na.rm = TRUE), ERC_PR.max = max(ERC_PR, na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9)), -sim)
+    # summarise_each(funs(median)) %>% select(-sim)
+  df_maxC
+  
+  df_minFR <- df_TO %>%
+    select(runname, year, sim, FR_MA) %>%  
+    group_by(sim, runname) %>% 
+    summarise(FR_MA.min = min(FR_MA)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(FR_MA.min_med = median, FR_MA.min_q25 = quantile(., 0.25), FR_MA.min_q10 = quantile(., 0.1)), -sim)
+  # summarise_each(funs(median)) %>% select(-sim)
+  df_minFR
+  
+  
+  
+  df_final_C <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>%   
+    group_by(sim, runname)    %>% 
+    filter(year == max(year)) %>%
+    rename(C_PR.final = C_PR,
+           ERC_PR.final = ERC_PR) %>% 
+    group_by(runname) %>%
+    summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9)), -sim)
+#     summarise(C_PR.final   = median(C_PR), 
+#               ERC_PR.final = median(ERC_PR))
+    df_final_C
+
+    df_final_FR <- df_TO %>%
+      select(runname, year, sim, FR_MA) %>%   
+      group_by(sim, runname)    %>% 
+      filter(year == max(year)) %>%
+      rename(FR_MA.final = FR_MA) %>% 
+      group_by(runname) %>%
+      summarise_each(funs(FR_MA.final_med = median, FR_MA.final_q25 = quantile(., 0.25), FR_MA.final_q10 = quantile(., 0.1)), -sim, -year)
+    #     summarise(C_PR.final   = median(C_PR), 
+    #               ERC_PR.final = median(ERC_PR))
+    df_final_FR
+    
+    
+  df_5yearChg <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>%   
+    group_by(sim, runname)  %>% 
+    mutate_each(funs(. - lag(., 5)), one_of(c("C_PR", "ERC_PR")) ) %>% 
+    summarise(C_PR.5yChg   = max(C_PR,   na.rm = TRUE),
+              ERC_PR.5yChg = max(ERC_PR, na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9) ))  %>% 
+    select(-starts_with("sim"))
+  
+  df_5yearChg
+  
+  
+  df_pctChg <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>%   
+    group_by(sim, runname)  %>% 
+    mutate_each(funs(. / lag(.) - 1  ), one_of(c("C_PR", "ERC_PR"))) %>% 
+    summarise(C_PR.pctChg   = 100 * median(C_PR,   na.rm = TRUE),
+              ERC_PR.pctChg = 100 * median(ERC_PR, na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(med = median(., na.rm = TRUE), q75 = quantile(., 0.75, na.rm = TRUE), q90 = quantile(., 0.9, na.rm = TRUE)), -sim) 
+  df_pctChg
+  
+  
+  
+  # with(df_5yearChg, df_5yearChg[runname == "A1F075_O30pA5","C_PR.5yChg"] %>% unlist) %>% hist(breaks = 50)
+  
+  ## Present Value of contribution *************************************
+  
+  df_PVC <- df_TO %>% 
+    select(runname, year, sim, C, ERC, PR) %>% 
+    group_by(sim, runname) %>% 
+    mutate(discount = 1/(1 + 0.075)^(year - 1),
+           discount_L10 = ifelse(max(year) - year >= 10, 0, discount)) %>% 
+    summarise(PV.C   = sum(C * discount),
+              PV.ERC = sum(ERC * discount),
+              PV.PR  = sum(PR * discount),
+              PV.C_L10   = sum(C * discount_L10),
+              PV.ERC_L10 = sum(ERC * discount_L10),
+              PV.PR_L10  = sum(PR * discount_L10)) %>% 
+    group_by(runname) %>% 
+    mutate(PV.C_PR   = 100 * PV.C / PV.PR,
+           PV.ERC_PR = 100 * PV.ERC / PV.PR,
+           PV.C_PR_L10   = 100 * PV.C_L10 / PV.PR_L10,
+           PV.ERC_PR_L10 = 100 * PV.ERC_L10 / PV.PR_L10 ) %>% 
+    summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9)), -sim) 
+  
+  df_PVC
+  
+  df_metrics <- join_all(list(df_ruin, 
+                              df_PVC,
+                              df_sd,
+                              df_dsd,
+                              df_maxC,
+                              df_minFR,
+                              df_final_C,
+                              df_final_FR,
+                              df_5yearChg,
+                              df_pctChg))
+  
+  return(df_metrics)
+  
+}
+
+
+get_metrics_maxChg <- function(runs,  year.max, data = results_all){
+# This function only calculate 5-year and 10-year max change of ERC rate.
+  
+  #     runs = runs_investment
+  #     year.max = 30
+  #     include.maxChg = FALSE
+  #     prefix = "I1F075-"
+  
+  df_TO <- results_all %>% filter(runname %in% runs, year <= year.max, sim > 0) %>% 
+    select(runname, year, sim, FR_MA, ERC_PR, C_PR, C, ERC, PR)  
+  
+  ## Measures of funded status *********************************************
+
+
+  
+
+    ## Create functions to calculate max changes in 5-year intervals. 
+    maxChgWithin <- function(y, fn, ...){
+      # max/min change within a single interval.
+      zoo::rollapply(y, rev(seq_along(y)), function(x) fn(x - x[1], ...), fill = NA, align = "left") %>% fn(., ...)
+      #y <- outer(x, x, "-")
+      #y[lower.tri(y)] %>% fn(., ...)  
+    }
+    
+    roll_maxChg <- function(x, fun, width,  ... ){
+      # For a given vector x, calculate the max/min change WITHIN each interval of the width "width" 
+      zoo::rollapply(x, width, maxChgWithin, fn = fun, ...,  fill = NA, align = "right")
+    }
+    
+    
+      df_5yearMaxChg <- df_TO %>%
+        select(runname, year, sim, C_PR, ERC_PR) %>%
+        group_by(sim, runname)  %>% 
+        mutate(C_PR  = roll_maxChg(C_PR,  max, 5),
+               ERC_PR= roll_maxChg(ERC_PR,max, 5)) %>% 
+        summarise(C_PR.5yMaxChg  = max(C_PR,   na.rm = TRUE),
+                  ERC_PR.5yMaxChg= max(ERC_PR, na.rm = TRUE)) %>% 
+        group_by(runname) %>% 
+        summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9) )) %>% 
+        select(-starts_with("sim"))
+
+
+      df_10yearMaxChg <- df_TO %>%
+        select(runname, year, sim, C_PR, ERC_PR) %>%
+        group_by(sim, runname)  %>% 
+        mutate(C_PR  = roll_maxChg(C_PR,  max, 10),
+               ERC_PR= roll_maxChg(ERC_PR,max, 10)) %>% 
+        summarise(C_PR.10yMaxChg  = max(C_PR,   na.rm = TRUE),
+                  ERC_PR.10yMaxChg= max(ERC_PR, na.rm = TRUE)) %>% 
+        group_by(runname) %>% 
+        summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9) )) %>% 
+        select(-starts_with("sim"))
+  
+  df_maxChg <- join_all(list(df_5yearMaxChg,
+                             df_10yearMaxChg))
+
+  return(df_maxChg)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

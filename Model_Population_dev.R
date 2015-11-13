@@ -395,7 +395,7 @@ pop <- get_Population()
 end_time_wf <- proc.time()
 Time_wf <- end_time_wf - start_time_wf
 
-
+pop$active
 
 #*************************************************************************************************************
 #                                     Checking the results  ####
