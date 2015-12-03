@@ -178,7 +178,7 @@ pmt <- function(p, i, n, end = FALSE){
   return(pmt)  
 }
 
-# pmt(100, 0.08, 1)
+ pmt(100, 0.02, 10)
 # pmt2(100, 0.08, 10, TRUE)
 # pmt2(-100, 0.08, 10)
 
@@ -193,7 +193,7 @@ gaip <- function(p, i, n, g, end = FALSE){
   return(pmt)
 }
 
-# gaip(100, 0.08, 1, 0.04)
+# gaip(100, 0.10, 10, 0.04)
 # gaip3(100, 0.08, 10, 0.02, end = TRUE)
 
 
@@ -459,15 +459,22 @@ draw_quantiles2  <- function(runName,     # character
 
 
 
-get_metrics <- function(runs,  year.max, data = results_all){
+get_metrics <- function(runs,  year.max, plan_AL, data = results_all ){
   
 #     runs = runs_investment
-#     runs = "I6F075-5"
+#     #runs = "I6F075-5"
 #     year.max = 30
 #     include.maxChg = FALSE
-  
-  df_TO <- results_all %>% filter(runname %in% runs, year <= year.max, sim > 0) %>% 
-    select(runname, year, sim, MA, FR_MA, ERC_PR, C_PR, C, ERC, PR)  
+#     plan_AL = "I6F075-1" # any plan with 7.5% discount rate will do.
+#   
+  AL_7.5_v <- results_all %>% filter(runname == plan_AL, sim == 1, year <= year.max) %>% select(AL) %>% unlist
+    
+  df_TO <- results_all %>% filter(runname %in% runs, year <= year.max, sim > 0) %>%
+           arrange(runname, sim, year) %>% 
+           group_by(runname, sim) %>% 
+           mutate(AL_7.5 = AL_7.5_v,
+                  FR_MA_7.5 = 100 * MA / AL_7.5) %>% 
+           select(runname, year, sim, AL, AL_7.5, MA, FR_MA, FR_MA_7.5, ERC_PR, C_PR, C, ERC, PR)  
   
   ## Measures of funded status *********************************************
   
@@ -481,11 +488,15 @@ get_metrics <- function(runs,  year.max, data = results_all){
   df_ruin <- 
     df_TO %>% group_by(runname, sim) %>% 
     mutate(FR50 = cumany(FR_MA  <= 50),
-           FR40 = cumany(FR_MA  <= 40)) %>% 
+           FR40 = cumany(FR_MA  <= 40),
+           FR50_7.5 = cumany(FR_MA_7.5  <= 50),
+           FR40_7.5 = cumany(FR_MA_7.5  <= 40)) %>% 
     filter(year %in% c(15,30,40)) %>% 
     ungroup %>% group_by(runname, year) %>% 
     summarise(FR50 = 100 * sum(FR50)/n(),
-              FR40 = 100 * sum(FR40)/n()) %>% 
+              FR40 = 100 * sum(FR40)/n(),
+              FR50_7.5 = 100 * sum(FR50_7.5)/n(),
+              FR40_7.5 = 100 * sum(FR40_7.5)/n()) %>% 
     gather(variable, value, -runname, -year) %>% 
     mutate(variable = paste0(variable, "_y", year),
            year = NULL) %>% 
@@ -493,6 +504,7 @@ get_metrics <- function(runs,  year.max, data = results_all){
   
   df_ruin %>% kable(digits = 3)
   
+ 
   
   ## Measures of contribution volatility *************************************
   
@@ -525,11 +537,12 @@ get_metrics <- function(runs,  year.max, data = results_all){
   df_maxC
   
   df_minFR <- df_TO %>%
-    select(runname, year, sim, FR_MA) %>%  
+    select(runname, year, sim, FR_MA, FR_MA_7.5) %>%  
     group_by(sim, runname) %>% 
-    summarise(FR_MA.min = min(FR_MA)) %>% 
+    summarise(FR_MA.min = min(FR_MA),
+              FR_MA_7.5.min = min(FR_MA_7.5)) %>% 
     group_by(runname) %>% 
-    summarise_each(funs(FR_MA.min_med = median, FR_MA.min_q25 = quantile(., 0.25), FR_MA.min_q10 = quantile(., 0.1)), -sim)
+    summarise_each(funs(med = median, q25 = quantile(., 0.25), q10 = quantile(., 0.1)), -sim)
   # summarise_each(funs(median)) %>% select(-sim)
   df_minFR
   
@@ -548,12 +561,13 @@ get_metrics <- function(runs,  year.max, data = results_all){
     df_final_C
 
     df_final_FR <- df_TO %>%
-      select(runname, year, sim, FR_MA) %>%   
+      select(runname, year, sim, FR_MA, FR_MA_7.5) %>%   
       group_by(sim, runname)    %>% 
       filter(year == max(year)) %>%
-      rename(FR_MA.final = FR_MA) %>% 
+      rename(FR_MA.final = FR_MA,
+             FR_MA_7.5.final = FR_MA_7.5) %>% 
       group_by(runname) %>%
-      summarise_each(funs(FR_MA.final_med = median, FR_MA.final_q25 = quantile(., 0.25), FR_MA.final_q10 = quantile(., 0.1)), -sim, -year)
+      summarise_each(funs(med = median, q25 = quantile(., 0.25), q10 = quantile(., 0.1)), -sim, -year)
     #     summarise(C_PR.final   = median(C_PR), 
     #               ERC_PR.final = median(ERC_PR))
     df_final_FR
@@ -608,6 +622,14 @@ get_metrics <- function(runs,  year.max, data = results_all){
   
   df_PVC
   
+  df_year1 <- df_TO %>%
+    select(runname, year, sim, FR_MA, FR_MA_7.5, ERC_PR) %>%  
+    filter(year == 1, sim == 1) %>%
+    rename(FR_MA.y1 = FR_MA,
+           FR_MA_7.5.y1 = FR_MA_7.5,
+           ERC_PR.y1 = ERC_PR)
+  df_year1 
+  
   df_metrics <- join_all(list(df_ruin, 
                               df_PVC,
                               df_sd,
@@ -617,7 +639,8 @@ get_metrics <- function(runs,  year.max, data = results_all){
                               df_final_C,
                               df_final_FR,
                               df_5yearChg,
-                              df_pctChg))
+                              df_pctChg,
+                              df_year1))
   
   return(df_metrics)
   

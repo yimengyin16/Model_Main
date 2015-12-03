@@ -32,14 +32,19 @@ load(file = paste0(IO_folder, "/Analysis_Investment/InvBen_metrics.RData"))
 #****************************************************************************************************
 #              ## Tables of Measures of FR risk and contribution volatility for the report   ####
 #****************************************************************************************************
-
-df_metrics_Inv_y30 %<>% select(runname, FR40_y30, 
+df_metrics_Inv_y30 %>% colnames
+df_metrics_Inv_y30 %<>% select(runname, FR40_y30, FR40_7.5_y30,
                                         PV.ERC_PR_med,    PV.ERC_PR_q75,    PV.ERC_PR_q90,
+                                        PV.ERC_PR_L10_med, PV.ERC_PR_L10_q75, PV.ERC_PR_L10_q90,
                                         ERC_PR.max_med,   ERC_PR.max_q75,   ERC_PR.max_q90,
                                         FR_MA.min_med,    FR_MA.min_q25,    FR_MA.min_q10,
+                                        FR_MA_7.5.min_med, FR_MA_7.5.min_q25, FR_MA_7.5.min_q10,   
                                         ERC_PR.final_med,     ERC_PR.final_q75, ERC_PR.final_q90,
                                         FR_MA.final_med,  FR_MA.final_q25,  FR_MA.final_q10,
-                                        ERC_PR.pctChg_med,ERC_PR.pctChg_q75,ERC_PR.pctChg_q90)
+                                        FR_MA_7.5.final_med,  FR_MA_7.5.final_q25,  FR_MA_7.5.final_q10,
+                                        ERC_PR.pctChg_med,ERC_PR.pctChg_q75,ERC_PR.pctChg_q90,
+                                        FR_MA_7.5.y1,   FR_MA.y1,  ERC_PR.y1
+                               )
 
 df_maxChg_Inv_y30  %<>% select(runname, ERC_PR.5yMaxChg_med,  ERC_PR.5yMaxChg_q75,  ERC_PR.5yMaxChg_q90,
                                         ERC_PR.10yMaxChg_med, ERC_PR.10yMaxChg_q75, ERC_PR.10yMaxChg_q90)
@@ -75,45 +80,49 @@ tab.risk
 
 tab.risk %<>% mutate(runname = factor(runname, levels = tab.runname)) %>% 
   arrange(runname) %>%
-  select(runname, NC_PR_y1, MA_PR_med_y1,        MA_PR_med_y30,       MA_PR_q25_y30,  MA_PR_q10_y30,
-                            MA_B_med_y1,         MA_B_med_y30,        MA_B_q25_y30, MA_B_q10_y30, 
-                            ExF_MA_med_y1,       ExF_MA_med_y30,      ExF_MA_q25_y30, ExF_MA_q10_y30, 
-                            
-                            ERC_PR.5yMaxChg_med, ERC_PR.5yMaxChg_q75, ERC_PR.5yMaxChg_q90,  
-                            ERC_PR.10yMaxChg_med, ERC_PR.10yMaxChg_q75, ERC_PR.10yMaxChg_q90,                   
-                            
-                            FR40_y30, 
-                            PV.ERC_PR_med, PV.ERC_PR_q75, PV.ERC_PR_q90,
+  select(runname, 
+                  # Cash flow
+                  ExF_MA_med_y1,       ExF_MA_med_y30,      ExF_MA_q25_y30, ExF_MA_q10_y30, 
+                  
+                  # Costs
+                  NC_PR_y1,
+                  PV.ERC_PR_med, PV.ERC_PR_q75, PV.ERC_PR_q90,
+                  PV.ERC_PR_L10_med, PV.ERC_PR_L10_q75, PV.ERC_PR_L10_q90,
+                  ERC_PR.final_med,  ERC_PR.final_q75,  ERC_PR.final_q90, 
          
-                            ERC_PR.max_med,    ERC_PR.max_q75,    ERC_PR.max_q90,
-                            ERC_PR.final_med,  ERC_PR.final_q75,  ERC_PR.final_q90, 
-                            ERC_PR.pctChg_med, ERC_PR.pctChg_q75, ERC_PR.pctChg_q90,                   
+                  # Funded status
+                  MA_PR_med_y1,        MA_PR_med_y30,       MA_PR_q25_y30,  MA_PR_q10_y30,
+                  MA_B_med_y1,         MA_B_med_y30,        MA_B_q25_y30, MA_B_q10_y30, 
+                  FR40_y30, FR40_7.5_y30,           
+                  
+                  FR_MA_7.5.y1,
+                  FR_MA_7.5.min_med, FR_MA_7.5.min_q25, FR_MA_7.5.min_q10,
+                  FR_MA_7.5.final_med,  FR_MA_7.5.final_q25,  FR_MA_7.5.final_q10,           
          
-                            FR_MA.min_med,    FR_MA.min_q25,    FR_MA.min_q10,
-                            FR_MA.final_med,  FR_MA.final_q25,  FR_MA.final_q10) 
-
-# Simplified version containing only medians
-tab.risk.selected <- tab.risk %>%  
-  select(runname, NC_PR_y1,
-                  MA_PR_med_y1,  MA_PR_med_y30,
-                  ExF_MA_med_y1, ExF_MA_med_y30,  
-                  ERC_PR.5yMaxChg_med, ERC_PR.5yMaxChg_q75,
-                  FR40_y30, 
-                  MA_B_med_y1, MA_B_med_y30, MA_B_q25_y30,
-                  PV.ERC_PR_med, PV.ERC_PR_q75, PV.ERC_PR_q90)
-
-
-tab.risk.selected %>% filter(grepl("I1", runname)) %>%  kable(digits = 3)
-tab.risk.selected %>% filter(grepl("I2", runname)) %>%  kable(digits = 3)
-tab.risk.selected %>% filter(grepl("I3", runname)) %>%  kable(digits = 3)
-tab.risk.selected %>% filter(grepl("I4", runname)) %>%  kable(digits = 3)
-tab.risk.selected %>% filter(grepl("I5", runname)) %>%  kable(digits = 3)
-
-tab.risk.selected %>% filter(grepl("^B", runname)) %>%  kable(digits = 3)
+                  FR_MA.y1, 
+                  FR_MA.min_med,    FR_MA.min_q25,    FR_MA.min_q10,
+                  FR_MA.final_med,  FR_MA.final_q25,  FR_MA.final_q10, 
+                
+                  # Contribution volatility
+                  ERC_PR.5yMaxChg_med, ERC_PR.5yMaxChg_q75, ERC_PR.5yMaxChg_q90,  
+                  ERC_PR.10yMaxChg_med, ERC_PR.10yMaxChg_q75, ERC_PR.10yMaxChg_q90,                   
+                            
+                  ERC_PR.y1,
+                  ERC_PR.max_med,    ERC_PR.max_q75,    ERC_PR.max_q90,
+                            
+                  ERC_PR.pctChg_med, ERC_PR.pctChg_q75, ERC_PR.pctChg_q90)   
 
 
+# tab.risk.selected %>% filter(grepl("I1", runname)) %>%  kable(digits = 3)
+# tab.risk.selected %>% filter(grepl("I2", runname)) %>%  kable(digits = 3)
+# tab.risk.selected %>% filter(grepl("I3", runname)) %>%  kable(digits = 3)
+# tab.risk.selected %>% filter(grepl("I4", runname)) %>%  kable(digits = 3)
+# tab.risk.selected %>% filter(grepl("I5", runname)) %>%  kable(digits = 3)
+# 
+# tab.risk.selected %>% filter(grepl("^B", runname)) %>%  kable(digits = 3)
 
-write.xlsx2(tab.risk, file = paste0(IO_folder,"/", "Analysis_Investment/Inv_Tables.xlsx"), sheetName = "risks", append = TRUE)
+
+write.xlsx2(tab.risk, file = paste0(IO_folder,"/", "Analysis_Investment/Inv_Tables.xlsx"), sheetName = "risks1", append = TRUE)
 
 
 
