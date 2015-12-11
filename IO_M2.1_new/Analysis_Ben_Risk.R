@@ -115,7 +115,8 @@ results_all %>% filter(sim == 1, year == 1)
 
 
 
-draw_quantiles(c("BF075-0", "BF075-3"), "FR_MA", ylim = c(0, 250), year.max = 30)$plot %>% print
+draw_quantiles(c("BF075-0", "BF075-3"), "FR_MA", ylim = c(0, 200), year.max = 30)$plot %>% print
 draw_quantiles(c("BF075-0", "BF075-3"), "ERC_PR", ylim = c(0, 30), year.max = 30)$plot %>% print
-draw_quantiles(c("BF075-0", "BF075-3"), "MA_PR", ylim = c(0, 30), year.max = 30)$plot %>% print
+draw_quantiles(c("BF075-0", "BF075-3"), "C_PR", ylim = c(0, 30), year.max = 30)$plot %>% print
+draw_quantiles(c("BF075-0", "BF075-3"), "MA_PR", ylim = c(0, 1500), year.max = 30)$plot %>% print
 
