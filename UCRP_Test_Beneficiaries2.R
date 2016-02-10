@@ -1,5 +1,44 @@
+# This is the second script that is used to explore modeling approach of beneficiaries (contingent annuitant.)
+  # The development and testing of the basic calculations are done in the first script. This script is mainly used to 
+  # refine the function, better understand the cashflow of contingent annuity, and explore how to best incorporate the 
+  # function into the existing modeling framework. 
+
+
+# Notes
+# 1. Only 1976 Tier members have the option of joint-survivor annuity.(25% for members with Social Security) 
+# 2. In theory, the p% joint-survivor annuity is reduced for the retiree, so that it is actuarially equivalent to the life-annuity. 
+#    The reudction factor can be calculated accroding to Anderson's book. We also need to confirm with UCRP that this is the way how joint-survivor
+#    annuity is treated in practice. 
+# 3. 2 implies that the liability for actives can be calculated as if all retirees choose life annuity upon retirement.
+# 4. The calculation of liability and benefit payment for retirees and beneficiaries needs to be simplified. It would be quite cumbersome to 
+#    track all the benefit payments and liability for the survivors. Current plan is to construct a series adjusted benefit payments and 
+#    mortality for retirees, with which the retirees, when modeled as life annuitant, have the same liability and expected cashflow of benefit as 
+#    when modeled as joint-survivor annutant in each year. 
+
+
+rm(list = ls())
+gc()
+
+library(knitr)
+library(data.table)
+library(gdata) # read.xls
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+library(tidyr) # gather, spread
+library(foreach)
+library(doParallel)
+library(microbenchmark)
+library(readxl)
+library(stringr)
+
+source("Functions.R")
+
+
+
 #*********************************************************************************************************
-#                      ## Making the procedure a function  ####
+#              ##  Function of calculating liability and benefit payment of contingent annuity  ####
 #*********************************************************************************************************
 
 rm(list = ls())
@@ -16,7 +55,12 @@ get_liab.ben <- function(COLA, i,
                          gender.R, pct.ca, age.range, age.r.range,
                          mortality = mortality.post,
                          reduction.factor = 1){
-  
+# For a given range of retirement ages and gender, this function calculates the following for each retirement age:
+# 1) the individual liability and benefit payments for retirees and survivors in each year after retirement. 
+# 2) number of retirees(w/ and w/p living spouse) and survivors in each year after retirement. (initial population is 1)
+# 3) total liability and benefit payment for retirees and survivors in each year after retirement. 
+# 4) benefit reduction factor that makes the liability of contingent annuity equivalent to the liability of life annuity at the year of retirement.  
+
   
   # COLA   <- 0.02
   # B.init <- 1
@@ -29,7 +73,7 @@ get_liab.ben <- function(COLA, i,
   # age.r.range <- 53:70
   
   
-  # Functions
+  # Function to calculate individual liability attributable to surivor benefit. 
   get_surv.liab <- function(pRxm.R, qxm.R, pxm.S, i,  liab.ben){
     # This function calculates the ALs for a retiree that are attributable to benefits payable to survivors. 
     
@@ -45,7 +89,7 @@ get_liab.ben <- function(COLA, i,
     for(j in 1:(n - 1)){
       #j = 1  
       surv.liab[j] <- sum(
-        pRxm.R[j:(n - 1)]/pRxm.R[j] * qxm.R[j:(n-1)] * # probability of dying at each period 
+        pRxm.R[j:(n - 1)]/pRxm.R[j] * qxm.R[j:(n-1)] *   # probability of dying at each period 
           cumprod(pxm.S[j:(n-1)]) *                      # probability of spouse being still alive at each period 
           1/(1 + i)^(1 : (n-j)) * liab.ben[(j + 1):n]    # AL for survivor dis
       )  
@@ -57,22 +101,21 @@ get_liab.ben <- function(COLA, i,
   }
   
   
-  # calculate the liability and benefit cashflow for a male retiree who retirees at age 65 and has
-  # an eligible survivor 3 years younger than him.
-  
   if("numeric" %in% class(reduction.factor) ) reduction = data.frame(age.r = age.r.range, reduction = reduction.factor)
+  
   
   df <- expand.grid(age = (min(age.range) - 3):max(age.range), age.r = age.r.range) %>% 
     left_join(mortality.post %>% filter(year == 2029) %>%  select(age, qxm.post.M, qxm.post.F)) %>%
     left_join(reduction) %>% 
     group_by(age.r) %>%
-    mutate(gender.R = gender.R,
-           age.S = ifelse(gender.R == "M", age - 3, age + 3),
-           qxm.R = ifelse(gender.R == "M", qxm.post.M, qxm.post.F),
-           qxm.S = ifelse(gender.R == "M", lag(qxm.post.F, 3), lead(qxm.post.M, 3)),
-           qxm.S = ifelse(gender.R == "M",
-                          ifelse(age == max(age), 1, qxm.S), # For convenience, it is assumed that the max age for the female spouses is 117.)
-                          ifelse(age.S > max(age.range), 1, qxm.S)
+    mutate(
+      gender.R = gender.R,
+      age.S = ifelse(gender.R == "M", age - 3, age + 3),
+      qxm.R = ifelse(gender.R == "M", qxm.post.M, qxm.post.F),
+      qxm.S = ifelse(gender.R == "M", lag(qxm.post.F, 3), lead(qxm.post.M, 3)),
+      qxm.S = ifelse(gender.R == "M",
+                     ifelse(age == max(age), 1, qxm.S), # For convenience, it is assumed that the max age for the female spouses is 117.)
+                     ifelse(age.S > max(age.range), 1, qxm.S)
            ))%>% 
     filter(age >= age.r) %>%  
     mutate(
@@ -99,7 +142,7 @@ get_liab.ben <- function(COLA, i,
       
     ) %>% 
     
-    ## Demographic dynamics  ##
+    ## setting up variables for demographics  ##
     
     mutate(
       
@@ -118,8 +161,10 @@ get_liab.ben <- function(COLA, i,
       n.R0S1 = 0,
       n.R0   = 0
     ) 
+
   
-  
+    
+  ## demographic dynamics
   
   fn_demo <- function(df.demo){      
     for (j in 2:nrow(df.demo)){
@@ -135,10 +180,11 @@ get_liab.ben <- function(COLA, i,
   
   df <- split(df, df$age.r) %>% lapply(fn_demo) %>% rbind_all
   
-  # check demographic
+    # check demographic
   df.check <- df %>% mutate(tot.check = n.R1S1 + n.R1S0 + n.R0) %>% select(age, age.S, n.R1S1, n.R1S0, n.R0S1, tot.check) 
-  
-  #                      ## Aggregate liability and benefit payment  ##
+
+    
+  ## Aggregate liability and benefit payment  ##
   
   df %<>% select(age.r,age, age.S, B, liab.ret.indiv.la, liab.ret.indiv.ca, liab.ben.indiv,
                  n.R1S1, n.R1S0, n.R0S1) %>% 
@@ -153,15 +199,15 @@ get_liab.ben <- function(COLA, i,
       liab.tot.R0S1 = liab.ben.indiv * n.R0S1,                          # total liability for survivors. 
       liab.tot      = liab.tot.R1S1 + liab.tot.R1S0 + liab.tot.R0S1,    # total liability for all. 
       
-      liab.tot.la   = liab.ret.indiv.la * (n.R1S1 + n.R1S0) , # only look at the first row
-      reduction     = liab.tot.la / liab.tot,     # only look at the first row
+      liab.tot.la   = liab.ret.indiv.la * (n.R1S1 + n.R1S0) ,           # total liability for a life annuity with the same initial benefit.
+      reduction     = liab.tot.la / liab.tot,                           # only look at the first row
       
       MA = ifelse(age == min(age), liab.tot, 0),
       B_R = liab.tot.R0S1 / (liab.tot.R1S1 + liab.tot.R1S0),
       B.S_B.R = B.S / B.R)
   
   
-  # Check internal consistency 
+ # Check internal consistency 
   
   fn_MA <- function(df){
     
@@ -172,14 +218,16 @@ get_liab.ben <- function(COLA, i,
   }
   
   df <- split(df, df$age.r) %>% lapply(fn_MA) %>% rbind_all %>% 
-    mutate(FR = MA / liab.tot) 
+        mutate(FR = MA / liab.tot) 
   
   return(df)
   
 }
 
 
-
+#*********************************************************************************************************
+#              ##  Calculate benefit reduction factors for male and female members.   ####
+#*********************************************************************************************************
 
 # Run the function
 
@@ -209,4 +257,84 @@ reduction.F <- df1.F %>% group_by(age.r) %>% filter(age == min(age)) %>% select(
 df2.F <- get_liab.ben(COLA = 0.02, i = 0.0725,
                       gender.R = "F", pct.ca = 0.25, age.range = 53:120, age.r.range = 53:70,
                       reduction = reduction)
+
+
+
+#*********************************************************************************************************
+#              ##  calculate the grand total liability and benefit based gender ratio.   ####
+#*********************************************************************************************************
+
+female.pct <- 0.6
+male.pct   <- 1 - female.pct 
+
+
+
+# For male retirees
+# w/o benefit reduction
+df1.M <- get_liab.ben(COLA = 0.02, i = 0.0725,
+                      gender.R = "M", pct.ca = 0.25, age.range = 53:120, age.r.range = 53:70)
+
+ # save the benefit reductin factor for contingent annuity. 
+ reduction.M <- df1.M %>% group_by(age.r) %>% filter(age == min(age)) %>% select(reduction) 
+
+ # w/ benefit reduction
+ df2.M <- get_liab.ben(COLA = 0.02, i = 0.0725,
+                      gender.R = "M", pct.ca = 0.25, age.range = 53:120, age.r.range = 53:70,
+                      reduction = reduction)
+
+
+# For female retirees
+ # w/o benefit reduction
+ df1.F <- get_liab.ben(COLA = 0.02, i = 0.0725,
+                      gender.R = "F", pct.ca = 0.25, age.range = 53:120, age.r.range = 53:70)
+
+ # save the benefit reductin factor for contingent annuity. 
+ reduction.F <- df1.F %>% group_by(age.r) %>% filter(age == min(age)) %>% select(reduction) 
+
+ # w/ benefit reduction
+ df2.F <- get_liab.ben(COLA = 0.02, i = 0.0725,
+                     gender.R = "F", pct.ca = 0.25, age.range = 53:120, age.r.range = 53:70,
+                      reduction = reduction)
+
+
+df.all <-   select(df2.M, age.r, age, age.S, B.tot.M = B.tot, B.R.M = B.R, B.S.M = B.S, 
+                                             liab.tot.M = liab.tot, liab.tot.R1S1.M = liab.tot.R1S1, liab.tot.R1S0.M = liab.tot.R1S0, liab.tot.R0S1.M = liab.tot.R0S1,
+                                             n.R1S1.M = n.R1S1, n.R1S0.M = n.R1S0, n.R0S1.M = n.R0S1) %>% 
+  left_join(select(df2.F, age.r, age,        B.tot.F = B.tot, B.R.F = B.R, B.S.F = B.S, 
+                                             liab.tot.F = liab.tot, liab.tot.R1S1.F = liab.tot.R1S1, liab.tot.R1S0.F = liab.tot.R1S0, liab.tot.R0S1.F = liab.tot.R0S1,
+                                             n.R1S1.F = n.R1S1, n.R1S0.F = n.R1S0, n.R0S1.F = n.R0S1)) %>% 
+            mutate(#female.pct = female.pct,
+                   #male.pct   = 1 - female.pct,
+                   liab.tot = female.pct * liab.tot.F + male.pct * liab.tot.M,
+                   liab.tot.R1S1 = female.pct * liab.tot.R1S1.F + male.pct * liab.tot.R1S1.M,
+                   liab.tot.R1S0 = female.pct * liab.tot.R1S0.F + male.pct * liab.tot.R1S0.M,
+                   liab.tot.R0S1 = female.pct * liab.tot.R0S1.F + male.pct * liab.tot.R0S1.M,
+                   
+                   B.tot    = female.pct * B.tot.F  + male.pct * B.tot.M,
+                   B.R      = female.pct * B.R.F    + male.pct * B.R.M,
+                   B.S      = female.pct * B.S.F    + male.pct * B.S.M,
+                   
+                   n.R1S1   = female.pct * n.R1S1.F + male.pct * n.R1S1.M,
+                   n.R1S0   = female.pct * n.R1S0.F + male.pct * n.R1S0.M,
+                   n.R0S1   = female.pct * n.R0S1.F + male.pct * n.R0S1.M
+                   )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
