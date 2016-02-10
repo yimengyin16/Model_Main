@@ -128,12 +128,11 @@ mortality.disb <- mortality %>% filter(type %in% c("qxm.d.M", "qxm.d.F")) %>% un
   spread(type, qxm_proj)
 
 
+mortality.pre %>% filter(year == 2029) %>% print(n = 1000)
+mortality.disb %>% filter(year == 2029) %>% print(n = 1000)
 
 
-
-
-
-
+save(mortality.pre, mortality.post, mortality.disb, file = "Data/UCRP.inputs1.RData")
 
 
 

@@ -77,7 +77,7 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
     
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at max.age for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age max.age. 
-    ax.r = get_tla(pxm.r, i, COLA.scale),            # ax calculated with mortality table for retirees. 
+    ax.r = get_tla(pxm.r, i, COLA.scale),              # ax calculated with mortality table for retirees. 
     axR = c(get_tla(pxT[age < r.max], i), rep(0, max.age - r.max + 1)),                        # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
     axRs= c(get_tla(pxT[age < r.max], i, sx[age < r.max]), rep(0, max.age - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
   
