@@ -170,7 +170,7 @@ liab.retiree <- rbind(
 ) %>%
   data.table(key = "start.year,ea,age.retire,age") 
 
-liab.retiree <- liab.retiree[!duplicated(liab.retiree %>% select(start.year, ea, age, age.retire ))]
+liab.retiree <- liab.retiree[!duplicated(liab.retiree %>% select(start.year, ea, age, age.retire )),]
 
 
 liab.retiree <- merge(liab.retiree,
