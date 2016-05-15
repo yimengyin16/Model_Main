@@ -200,7 +200,7 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
 }
 
 ## Run the model
-# source("Model_Master.R", echo = TRUE)
+source("Model_Master.R", echo = TRUE)
 }
 
 

@@ -30,10 +30,10 @@ get_Population <- function(.init_pop = init_pop,
  #  (5)Dead       (dim = 3) We do not really need an array for dead, what's needed is only the total number of dead.  
 
 # Run the section below when developing new features.   
-#   .init_pop         = init_pop
-#   .entrants_dist    = entrants_dist
-#   .paramlist        = paramlist
-#   .Global_paramlist = Global_paramlist
+  # .init_pop         = init_pop
+  # .entrants_dist    = entrants_dist
+  # .paramlist        = paramlist
+  # .Global_paramlist = Global_paramlist
 # #   
 #   
   
@@ -285,7 +285,7 @@ for (j in 1:(nyear - 1)){
 wf_active <- adply(wf_active, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
   rename(year = X1) %>%
   gather(age, number.a, -ea, -year) %>% 
-  mutate(year = f2n(year), age = f2n(age)) %>% 
+  mutate(year = f2n(year), age = as.numeric(age)) %>% 
   filter(age >= ea)
 
 

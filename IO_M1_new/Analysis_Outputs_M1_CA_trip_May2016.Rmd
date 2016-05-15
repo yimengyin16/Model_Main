@@ -1,0 +1,339 @@
+---
+title: "Exploratory Analysis of Model Outputs"
+author: "Yimeng Yin"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+
+```{r mainSet_options, echo=FALSE, cache=FALSE}
+
+# options(width=140)
+# knitr::opts_chunk$set(fig.width=16, fig.height=5, echo=FALSE)
+# # Note: when saving maps (ggsave), width=16, height=9 seems to get rid of white space
+
+```
+
+
+
+```{r Preamble, echo = FALSE, include  = FALSE}
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(magrittr) # to use %<>%
+library(zoo)
+library(grid)
+library(gridExtra)
+library(stringr)
+
+source("Functions.R")
+
+rm(list = ls())
+
+run_knitr <- F  #set to TRUE before knitting.
+# When knitting HTML files, the working directory will be changed to the on where the .rmd file is located.
+# The relative paths must be modified if they are not relative to the folder the .rmd file is located. 
+# (When running the code line by line, it is covenient to set the paths relative to the folder of main model.)
+  
+
+if(run_knitr) source("../Functions.R") else source("Functions.R")
+```
+
+
+```{r Read, echo=FALSE, include = FALSE}
+## Combine selected files into a single list.
+
+IO_folder <- "IO_M1_new"
+
+if(run_knitr) IO_folder <- paste0("../", IO_folder)
+
+get_results <- function(IO_folder){
+  
+  fn <- function(x) {
+    load(paste0(IO_folder, "/", x))
+    outputs_list$results}
+
+  file_select <- dir(IO_folder, pattern = "^Outputs")
+  results_all <- adply(file_select, 1, fn) %>% select(-X1)
+}
+
+results_all <- get_results(IO_folder)
+```
+
+
+```{r}
+
+runs_all <- paste0("A1F075_", c("O30pA5", "C15d", "soa3"))
+
+runs_all_labels <- c('runname, label.long, label.short 
+O30pA5,       "Common smoothing policy \n(30-year open percent \n5-year assets)",          Common smoothing policy
+C15d,         "Less backloaded policy \n(15-year closed dollar)",                          Less backloaded policy                       
+soa3,         "SOA Blue Ribbon\n Benchmark \n(Less smoothed and low discount rate)",       SOA Blue Ribbon'
+)
+
+runs_all_labels <- read.table(text = runs_all_labels, header = TRUE,sep = ",", stringsAsFactors = F) %>% 
+                   mutate_each(funs(str_trim)) %>% 
+                   mutate(runname = paste0("A1F075_", runname)) 
+
+runs_all_labels
+
+```
+
+
+
+
+```{r, echo=FALSE, include = FALSE}
+# Median funded status
+ 
+
+
+df_plot1 <- results_all  %>% 
+  filter(runname %in% runs_all, sim > 0, year <= 30 )
+
+df_dc75 <- df_plot1 %>% filter(runname == runs_all[1]) %>% select(sim, year, AL75 = AL)
+
+df_plot1 <- df_plot1 %>% 
+  left_join(df_dc75) %>% 
+  select(runname, sim, year, AL75, MA, ERC_PR) %>% 
+  group_by(runname, sim) %>% 
+  mutate(FR_MA     = 100 * MA / AL75,
+         FR40less  = cumany(FR_MA <= 40),
+         ERC_high  = cumany(ERC_PR >= 30), 
+         ERC_hike  = cumany(na2zero(ERC_PR - lag(ERC_PR, 4) >= 10))) %>% 
+  group_by(runname, year) %>% 
+  summarize(FR40less = 100 * sum(FR40less, na.rm = T)/n(),
+            ERC_high = 100 * sum(ERC_high, na.rm = T)/n(),
+            ERC_hike = 100 * sum(ERC_hike, na.rm = T)/n(),
+            FR.med   = median(FR_MA),
+            ERC_PR.med= median(ERC_PR)
+            ) %>% 
+  left_join(runs_all_labels) %>% ungroup() %>% 
+  mutate(runname = factor(runname, levels = runs_all, 
+                          labels = c("Common policy", 
+                                     "Less backloaded policy",
+                                     "SOA Blue Ribbon")))
+
+
+
+
+p.FR.med <- 
+ggplot(df_plot1, aes(x = year, y = FR.med, color = runname, shape = runname, label = label.short)) + theme_bw() + 
+  geom_point(size = 3) + geom_line() +
+  geom_hline(yintercept = 100, linetype = 2, color = "black") + 
+  coord_cartesian(ylim = c(0, 150)) + 
+  scale_x_continuous(breaks = seq(0,30, 5))+ 
+  scale_y_continuous(breaks = seq(0,200, 25)) + 
+  labs(x = "Year",
+       y = "Funded ratio (%)",
+       title = "Median funded ratio under \nalternative funding policies") + 
+  guides(col = guide_legend(title = "Funding policy"), shape = guide_legend(title = "Funding policy")) + 
+  theme(legend.justification=c(0,1), legend.position=c(0,1),
+        legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
+p.FR.med
+
+
+p.FR40less <- 
+ggplot(df_plot1, aes(x = year, y = FR40less, color = runname, shape = runname, label = label.short)) + theme_bw() + 
+  geom_point(size = 3) + geom_line() +
+  coord_cartesian(ylim = c(0, 20)) + 
+  scale_x_continuous(breaks = seq(0,30, 5))+ 
+  scale_y_continuous(breaks = seq(0,20, 5)) + 
+  labs(x = "Year",
+       y = "Probability (%)",
+       title = "Probability of funded ratio falling below 40% \nat any time prior to and including the given year") + 
+  guides(col = guide_legend(title = "Funding policy"), shape = guide_legend(title = "Funding policy")) + 
+  theme(legend.justification=c(0,1), legend.position=c(0,1),
+        legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
+p.FR40less
+
+
+
+
+p.ERC_PR.med <- 
+ggplot(df_plot1, aes(x = year, y = ERC_PR.med, color = runname, shape = runname, label = label.short)) + theme_bw() + 
+  geom_point(size = 3) + geom_line() +
+  coord_cartesian(ylim = c(0, 35)) + 
+  scale_x_continuous(breaks = seq(0,30, 5))+ 
+  scale_y_continuous(breaks = seq(0,35, 5)) + 
+  labs(x = "Year",
+       y = "Employer contribution rate (%)",
+       title = "Median employer contribution as a percentage of payroll") + 
+  guides(col = guide_legend(title = "Funding policy"), shape = guide_legend(title = "Funding policy")) + 
+  theme(legend.justification=c(1,1), legend.position=c(1,1),
+        legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
+p.ERC_PR.med
+
+
+
+p.ERC_high <- 
+ggplot(df_plot1, aes(x = year, y = ERC_high, color = runname, shape = runname, label = label.short)) + theme_bw() + 
+  geom_point(size = 3) + geom_line() +
+  coord_cartesian(ylim = c(0, 100)) + 
+  scale_x_continuous(breaks = seq(0,30, 5))+ 
+  scale_y_continuous(breaks = seq(0,100, 10)) + 
+  labs(x = "Year",
+       y = "Probability (%)",
+       title = "Probability of Employer contribution above 30% of payroll \nat any time prior to and including the given year ") + 
+  guides(col = guide_legend(title = "Funding policy"), shape = guide_legend(title = "Funding policy")) + 
+  theme(legend.justification=c(0,1), legend.position=c(0,0.9),
+        legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
+p.ERC_high
+
+
+p.ERC_hike <- 
+ggplot(df_plot1, aes(x = year, y = ERC_hike, color = runname, shape = runname, label = label.short)) + theme_bw() + 
+  geom_point(size = 3) + geom_line() +
+  coord_cartesian(ylim = c(0, 100)) + 
+  scale_x_continuous(breaks = seq(0,30, 5))+ 
+  scale_y_continuous(breaks = seq(0,100, 10)) + 
+  labs(x = "Year",
+       y = "Probability (%)",
+       title = "Probability of employer contribution rising by more than \n10% of payroll at any time prior to and including the given year ") + 
+  guides(col = guide_legend(title = "Funding policy"), shape = guide_legend(title = "Funding policy")) + 
+  theme(legend.justification=c(0,1), legend.position=c(0,1),
+        legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
+p.ERC_hike
+
+
+g.width = 6
+g.height = 5.5
+g.folder = "/Slides_CAtrip_May2016/"
+
+ggsave(paste0(IO_folder, g.folder, "p.FR.med.png"), p.FR.med, width=g.width, height=g.height, units="in")
+ggsave(paste0(IO_folder, g.folder, "p.FR40less.png"), p.FR40less, width=g.width, height=g.height, units="in")
+ggsave(paste0(IO_folder, g.folder, "p.ERC_PR.med.png"), p.ERC_PR.med, width=g.width, height=g.height, units="in")
+ggsave(paste0(IO_folder, g.folder, "p.ERC_high.png"), p.ERC_high, width=g.width, height=g.height, units="in")
+ggsave(paste0(IO_folder, g.folder, "p.ERC_hike.png"), p.ERC_hike, width=g.width, height=g.height, units="in")
+
+
+```
+
+
+
+```{r}
+
+runs_all2 <- paste0("A1F075_", 
+                   c("C15d",
+                     "C15p",
+                     "C30d",
+                     "C30p",
+                     "C30pA5",
+                     "O15d",
+                     "O15p",
+                     "O30d",
+                     "O30p",
+                     "O30pA5",
+                     "O30pA5_cap",
+                     "soa3"))
+
+
+runs_all2_labels <- c('runname, run.label, key.feature
+O15d,         15-year open dollar,                              15-year level dollar - open
+O15p,         15-year open percent,                             15-year level percent - open
+O30d,         30-year open dollar,                              30-year level dollar - open
+O30p,         30-year open percent,                             30-year level percent - open
+O30pA5,       "Common smoothing policy \n(30-year open percent \n5-year assets)",          30-year level percent - open; 5-year asset smoothing
+C15d,         "Less backloaded policy \n(15-year closed dollar)",                            15-year level dollar - closed                       
+C15p,         15-year closed percent,                           15-year level percent - closed
+C30d,         30-year closed dollar,                            30-year level dollar - closed
+C30p,         30-year closed percent,                           30-year level percent - closed
+C30pA5,       "30-year closed percent \n       5-year assets",  30-year level perncet - closed; 5-year asset smoothing
+O30pA5_cap,   "30-year open percent \n5-year assets;ERC cap",   30-year level perncet - closed; 5-year asset smoothing; 20% ERC cap
+soa3,         "SOA Blue Ribbon Benchmark \n(Less smoothed and low discount rate)",                    SOA Blue Ribbon Panel Benchmark
+')
+ 
+runs_all2_labels <- read.table(text = runs_all2_labels, header = TRUE,sep = ",", stringsAsFactors = F) %>% 
+                   mutate_each(funs(str_trim)) %>% 
+                   mutate(runname = paste0("A1F075_", runname)) 
+
+
+
+
+
+
+
+## Create functions to calculate max changes in 5-year intervals. 
+maxChgWithin <- function(y, fn, ...){
+  # max/min change within a single interval.
+  zoo::rollapply(y, rev(seq_along(y)), function(x) fn(x - x[1], ...), fill = NA, align = "left") %>% fn(., ...)
+  #y <- outer(x, x, "-")
+  #y[lower.tri(y)] %>% fn(., ...)  
+}
+
+roll_maxChg <- function(x, fun, width,  ... ){
+  # For a given vector x, calculate the max/min change WITHIN each interval of the width "width" 
+  zoo::rollapply(x, width, maxChgWithin, fn = fun, ...,  fill = NA, align = "right")
+}
+
+
+df_plot2 <- results_all %>% 
+  filter(runname %in% runs_all2, sim > 0, year <= 30) %>%  
+    select(runname, year, sim, FR_MA, ERC_PR) %>%
+    group_by(sim, runname)  %>% 
+    mutate(FR40less  = cumany(FR_MA <= 40),
+           ERC_PR    = max(na2zero(ERC_PR - lag(ERC_PR, 4)))) %>% #  roll_maxChg(ERC_PR, max, 5)) %>%  #  
+    summarise(FR40less = last(FR40less),
+              ERC_PR.5yMaxChg= max(ERC_PR, na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise(FR40less = 100 * sum(FR40less, na.rm = T)/n(),
+              ERC_PR.5yMaxChg = median(ERC_PR.5yMaxChg)) %>% 
+    mutate(Color = runname %in% runs_all) %>% 
+  left_join(runs_all2_labels)
+  
+    
+df_plot2
+
+
+
+
+
+
+
+p <- 
+df_plot2 %>% ggplot(aes_string(x = "FR40less" , y = "ERC_PR.5yMaxChg", label = "run.label", color = "Color")) + 
+    geom_point(size = 3) +
+    scale_color_manual(values = c("black", "blue")) + 
+    coord_cartesian(xlim = c(0, 22), ylim = c(0, 23)) + 
+    stat_smooth(data = df_plot2 %>% filter(!grepl("soa", runname)),
+                                    method = "lm", se = F, fullrange = TRUE,  
+                                    color = "darkgray", linetype = 2, size = 0.8) + 
+    theme_bw() + theme(legend.position = "none", plot.title=element_text(size=18)) + 
+    labs(x = "Risk of low funidng: \nProbability of funded ratio falling below 40% during first 30 years (%)", 
+         y = "Contribution Volatility:\nMaximum increase in any 5-year period of employer contributions \nas % of payroll (median of 1,000 runs)",
+         title = "Trade-off between contribution volatility and risk of severe low funding") + 
+    geom_text(color = "black", hjust = -0.1, size = 3.5, 
+              data = df_plot2 %>% filter(!runname %in% c("A1F075_C30d","A1F075_O30pA5","A1F075_O30pA5_cap"))) +
+    geom_text(color = "black", hjust = 0.8, vjust = 1.5, size = 3.5, 
+              data = df_plot2 %>% filter(runname %in% c("A1F075_C30d"))) +
+    geom_text(color = "black", hjust = 0.5, vjust = 1.3, size = 3.5, 
+            data = df_plot2 %>% filter(runname %in% c("A1F075_O30pA5"))) + 
+    geom_text(color = "black", hjust = 0.2, vjust = -0.5, size = 3.5, 
+            data = df_plot2 %>% filter(runname %in% c("A1F075_O30pA5_cap"))) 
+p
+
+
+
+ggsave(paste0(IO_folder, g.folder, "trade_off.png"), p, width=10, height=6, units="in")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
