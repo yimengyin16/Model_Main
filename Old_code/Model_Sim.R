@@ -4,12 +4,11 @@ run_sim <- function(      .i.r = i.r,
                           .AggLiab   = AggLiab,
                           .paramlist = paramlist,
                           .Global_paramlist = Global_paramlist){
-
-# Run the section below when developing new features.  
-#     .i.r = i.r 
-#     .AggLiab   = AggLiab
-#     .paramlist = paramlist
-#     .Global_paramlist = Global_paramlist
+  
+  #   .i.r = i.r 
+  #   .AggLiab   = AggLiab
+  #   .paramlist = paramlist
+  #   .Global_paramlist = Global_paramlist
   
   
   assign_parmsList(.Global_paramlist, envir = environment())
@@ -119,35 +118,32 @@ run_sim <- function(      .i.r = i.r,
   s.vector <- seq(0,1,length = s.year + 1)[-(s.year+1)]; s.vector  # a vector containing the porportion of 
   
   
-#*************************************************************************************************************
-#                                       Simuation  ####
-#*************************************************************************************************************
+  #*************************************************************************************************************
+  #                                       Simuation  ####
+  #*************************************************************************************************************
   
   # AL(j)
-  penSim0$AL.act  <- .AggLiab$active[, "ALx.a.sum"]
-  penSim0$AL.ret  <- .AggLiab$retiree[,"ALx.r.sum"]
-  penSim0$AL.term <- .AggLiab$active[, "ALx.v.sum"] 
-  penSim0$AL.Ben  <- .AggLiab$retiree[,"ALx.r.sum"]  + .AggLiab$term[, "ALx.v.sum"]
-  penSim0$AL      <- .AggLiab$active[, "ALx.av.sum"] + .AggLiab$term[, "ALx.v.sum"] + .AggLiab$retiree[,"ALx.r.sum"] 
+  penSim0$AL.act  <- .AggLiab$active[, "ALx.a.tot"]
+  penSim0$AL.ret  <- .AggLiab$active[, "ALx.r.tot"]
+  penSim0$AL.term <- .AggLiab$active[, "ALx.v.tot"] + .AggLiab$term[, "ALx.tot.v"]
+  penSim0$AL      <- .AggLiab$active[, "ALx.tot"]   + .AggLiab$term[, "ALx.tot.v"]
   
-  .AggLiab$active[, "ALx.v.sum"]
-  
+  # penSim0$AL      <- .AggLiab$active[, "ALx.tot"]   + .AggLiab$term[, "ALx.tot.v"]
   # NC(j)
-  penSim0$NC.act  <- .AggLiab$active[, "NCx.a.sum"]
-  penSim0$NC.term <- .AggLiab$active[, "NCx.v.sum"] 
-  penSim0$NC      <- .AggLiab$active[, "NCx.av.sum"] 
+  
+  penSim0$NC.act  <- .AggLiab$active[, "NCx.a.tot"]
+  penSim0$NC.term <- .AggLiab$active[, "NCx.v.tot"] 
+  penSim0$NC      <- .AggLiab$active[, "NCx.tot"] 
   
   # B(j)
-  penSim0$B    <- .AggLiab$retiree[, "B.r.sum"] + .AggLiab$term[, "B.v.sum"]
-  penSim0$B.v  <- .AggLiab$term[, "B.v.sum"]
-  
+  penSim0$B  <- .AggLiab$active[, "B.tot"] + .AggLiab$term[, "B.tot.v"]
   # PR(j)
-  penSim0$PR <- .AggLiab$active[, "PR.sum"]
+  penSim0$PR <- .AggLiab$active[, "PR.tot"]
   
   # nactives, nretirees, nterms
-  penSim0$nactives  <- .AggLiab$active[,  "nactives"]
-  penSim0$nretirees <- .AggLiab$reitree[, "nretirees"]
-  penSim0$nterms    <- .AggLiab$term[,    "nterms"]
+  penSim0$nactives  <- .AggLiab$active[, "nactives"]
+  penSim0$nretirees <- .AggLiab$active[, "nretirees"]
+  penSim0$nterms    <- .AggLiab$term[,   "nterms"]
   
   cl <- makeCluster(ncore) 
   registerDoParallel(cl)
@@ -155,27 +151,34 @@ run_sim <- function(      .i.r = i.r,
   #penSim_results <- list()
   #for(k in 1:nsim){
   
-  penSim_results <- foreach(k = -1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
+  penSim_results <- foreach(k = 1:nsim, .packages = c("dplyr", "tidyr")) %dopar% {
     # k <- 1
     # initialize
     penSim <- penSim0
     SC_amort <- SC_amort0 
-    penSim[["i.r"]] <- .i.r[, as.character(k)]
+    penSim[["i.r"]] <- .i.r[, k]
     
     source("Functions.R")
+    
     
     for (j in 1:nyear){
       # j <- 2
       # AL(j) 
       
-   
+      #     # AL(j)
+      #     penSim$AL[j] <- .AggLiab$active[j, "ALx.tot"] + .AggLiab$term[j, "ALx.tot.v"]
+      #     # NC(j)
+      #     penSim$NC[j] <- .AggLiab$active[j, "NCx.tot"] 
+      #     # B(j)
+      #     penSim$B[j]  <- .AggLiab$active[j, "B.tot"] + .AggLiab$term[j, "B.tot.v"]
+      #     # PR(j)
+      #     penSim$PR[j] <- .AggLiab$active[j, "PR.tot"]
+      
       # MA(j) and EAA(j) 
-      if(j == 1) {penSim$MA[j]  <- ifelse(k == -1, penSim$AL[j],
-                                           switch(init_MA, 
-                                                  MA = MA_0,                        # Use preset value
-                                                  AL = penSim$AL[j],                # Assume inital fund equals inital liability.
-                                                  AL_pct = penSim$AL[j] * MA_0_pct) # Inital MA is a proportion of inital AL
-                                   ) 
+      if(j == 1) {penSim$MA[j]  <- switch(init_MA,
+                                          MA = MA_0,                        # Use preset value
+                                          AL = penSim$AL[j],                # Assume inital fund equals inital liability.
+                                          AL_pct = penSim$AL[j] * MA_0_pct) # Inital MA is a proportion of inital AL
       penSim$EAA[j] <- switch(init_EAA,
                               AL = EAA_0,                       # Use preset value 
                               MA = penSim$MA[j])                # Assume inital EAA equals inital market value.
@@ -208,18 +211,18 @@ run_sim <- function(      .i.r = i.r,
         
       } else {
         penSim$EUAAL[j] <- with(penSim, (UAAL[j - 1] + NC[j - 1])*(1 + i[j - 1]) - C[j - 1] - Ic[j - 1])
-        penSim$LG[j]    <- with(penSim,  UAAL[j] - EUAAL[j])
-        penSim$AM[j]    <- with(penSim,  LG[j] - (C_ADC[j - 1]) * (1 + i[j - 1]))
+        penSim$LG[j] <- with(penSim,  UAAL[j] - EUAAL[j])
+        penSim$AM[j] <- with(penSim, LG[j] - (C_ADC[j - 1]) * (1 + i[j - 1]))
       }   
       
       
       # Amortize LG(j)
-      if(amort_type == "closed") SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$AM[j], i, m, salgrowth_amort, end = FALSE, method = amort_method)  
+      if(amort_type == "closed") SC_amort[j, j:(j + m - 1)] <- amort_LG(penSim$AM[j], i, m, infl + prod, end = FALSE, method = amort_method)  
       
       # Supplemental cost in j
       penSim$SC[j] <- switch(amort_type,
                              closed = sum(SC_amort[, j]),
-                             open   = amort_LG(penSim$UAAL[j], i, m, salgrowth_amort, end = FALSE, method = amort_method)[1])
+                             open   = amort_LG(penSim$UAAL[j], i, m, infl + prod, end = FALSE, method = amort_method)[1])
       
       
       # Employee contribution, based on payroll. May be adjusted later. 
@@ -267,7 +270,10 @@ run_sim <- function(      .i.r = i.r,
         penSim$ERC[j] <- as.numeric(plan_contributions[j == plan_contributions$year, "pct_ADC"]) * penSim$ERC[j]
       }
       
-
+      
+      
+      
+      
       
       # C(j)
       penSim$C[j] <- with(penSim, EEC[j] + ERC[j])
@@ -294,33 +300,23 @@ run_sim <- function(      .i.r = i.r,
       
     }
     
-    # penSim_results[[k]] <- penSim
+    #penSim_results[[k]] <- penSim
     as.data.frame(penSim)
   }
   
   stopCluster(cl)
-
   
-
-    
-#*************************************************************************************************************
-#                                  Combining results into a data frame.   ####
-#*************************************************************************************************************
-
-   
+  # Combine results into a data frame. 
   penSim_results <- bind_rows(penSim_results) %>% 
-    mutate(sim     = rep(-1:nsim, each = nyear),
+    mutate(sim     = rep(1:nsim, each = nyear),
            runname = runname,
            FR      = 100 * AA / exp(log(AL)),
            FR_MA   = 100 * MA / exp(log(AL)),
-           UAAL_PR = 100 * UAAL / PR,
-           MA_PR   = 100 * MA / PR,
-           AA_PR   = 100 * AA / PR,
+           UAAL_PR = 100 * UAAL / PR, 
            AL_PR   = 100 * AL / PR,
            AL.act_PR    = 100 * AL.act / PR, 
            AL.ret_PR    = 100 * AL.ret / PR, 
            AL.term_PR   = 100 * AL.term / PR, 
-           AL.Ben_PR    = 100 * AL.Ben / PR,
            ADC_PR  = 100 * ADC / PR,
            NC_PR   = 100 * NC / PR,
            NC.act_PR    = 100 * NC.act / PR,
@@ -328,11 +324,7 @@ run_sim <- function(      .i.r = i.r,
            SC_PR   = 100 * SC / PR, 
            ERC_PR  = 100 * ERC / PR, 
            C_PR    = 100 * C / PR,
-           B_PR    = 100 * B / PR,
-           ExF     = C - B,
-           ExF_PR  = 100 * ExF / PR,
-           ExF_MA  = 100 * ExF / MA,
-           PR.growth = ifelse(year > 1, 100 * (PR / lag(PR) - 1), NA)) %>%
+           B_PR    = 100 * B / PR) %>%
     select(runname, sim, year, everything())
   
   return(penSim_results)
@@ -384,5 +376,9 @@ Time_loop
 # x[1, "ALx.tot"],
 # x[1, 2], # fastest
 # liab_tot_active$ALx.tot[1] , times = 10000)
+
+
+
+
 
 

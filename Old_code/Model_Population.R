@@ -7,7 +7,9 @@ get_Population <- function(.init_pop = init_pop,
                            .paramlist    = paramlist,
                            .Global_paramlist = Global_paramlist){
 
+
 ## Issues
+ # For now, new entrants are equally distributed across all entry ages. 
  # growth of workforce(controlled by growth rate or pre-defined path of growth.)
 
 ## Inputs
@@ -25,17 +27,10 @@ get_Population <- function(.init_pop = init_pop,
 ## An array is created for each of the 6 status:
  #  (1)Active     (dim = 3)
  #  (2)Terminated (dim = 4)
- #  (3)Retired    (dim = 4)
- #  (4)Disabled   (dim = 3) later will be expanded to dim = 4, with additional dim being year.disb
+ #  (3)Disabled   (dim = 3) later will be expanded to dim = 4, with additional dim being year.disb
+ #  (4)Retired    (dim = 3) later will be expanded to dim = 4, with additional dim being year.retired
  #  (5)Dead       (dim = 3) We do not really need an array for dead, what's needed is only the total number of dead.  
 
-# Run the section below when developing new features.   
-  # .init_pop         = init_pop
-  # .entrants_dist    = entrants_dist
-  # .paramlist        = paramlist
-  # .Global_paramlist = Global_paramlist
-# #   
-#   
   
 assign_parmsList(.Global_paramlist, envir = environment())
 assign_parmsList(.paramlist,        envir = environment())  
@@ -56,22 +51,11 @@ wf_dim.term      <- c(length(range_ea), length(range_age), nyear, nyear)
 wf_dimnames.term <- list(range_ea, range_age, 1:nyear, 1:nyear)
 
 
-# # The array of retirees has 4 dimensions: ea x age x year x year of retirement
-wf_dim.retiree      <- c(length(range_ea), length(range_age), nyear, nyear)
-wf_dimnames.retiree <- list(range_ea, range_age, 1:nyear, 1:nyear)
-
-
 wf_active  <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_disb    <- array(0, wf_dim, dimnames = wf_dimnames) 
+wf_retired <- array(0, wf_dim, dimnames = wf_dimnames)
 wf_dead    <- array(0, wf_dim, dimnames = wf_dimnames)
-wf_term    <- array(0, wf_dim.term,    dimnames = wf_dimnames.term)
-wf_retired <- array(0, wf_dim.retiree, dimnames = wf_dimnames.retiree)
-
-newDeath.act  <- numeric(nyear)
-newDeath.ret  <- numeric(nyear)
-newDeath.term <- numeric(nyear)
-
-newDisb.act <- numeric(nyear)
+wf_term    <- array(0, wf_dim.term, dimnames = wf_dimnames.term)
 
 
 #*************************************************************************************************************
@@ -79,11 +63,8 @@ newDisb.act <- numeric(nyear)
 #*************************************************************************************************************
 
 # Setting inital distribution of workforce and retirees.
- # Note on initial retirees: It is assumed that all initial retirees entered the workforce at age 54 and retireed in year 1. 
- # Altough this may produce yos greater than r.max - ea.min, it is irrelevant to the calculation since we do not care about initial retirees' yos.  
-
-wf_active[, , 1]     <- .init_pop$actives 
-wf_retired[, , 1, 1] <- .init_pop$retirees
+wf_active[, , 1]  <- .init_pop$actives 
+wf_retired[, , 1] <- .init_pop$retirees
 
 
 
@@ -108,10 +89,10 @@ decrement_wf <- sapply(decrement, function(x){x[is.na(x)] <- 0; return(x)}) %>% 
     # which means all active members who survive all other risks at (r.max - 1) will enter the status "retired" for sure at age r.max (and collect the benefit regardless 
     # whether they will die at r.max)      
 
-# decrement_wf %<>% group_by(ea) %>%  
-#                   mutate(qxr.a = ifelse(age == r.max - 1,
-#                                         1 - qxt.a - qxm.a - qxd.a, 
-#                                         lead(qxr.a)*(1 - qxt.a - qxm.a - qxd.a)))
+decrement_wf %<>% group_by(ea) %>%  
+                  mutate(qxr.a = ifelse(age == r.max - 1,
+                         1 - qxt.a - qxm.a - qxd.a, 
+                         lead(qxr.a)*(1 - qxt.a - qxm.a - qxd.a)))
 
 # decrement_wf %>% filter(age == 64)
 
@@ -221,21 +202,20 @@ calc_entrants <- function(wf0, wf1, delta, dist, no.entrants = FALSE){
 for (j in 1:(nyear - 1)){
 #i <-  1  
   # compute the inflow to and outflow
-  active2term    <- wf_active[, , j] * p_active2term  # This will join wf_term[, , j + 1, j], note that workers who terminate in year j won't join the terminated group until j+1. 
-  active2disb    <- wf_active[, , j] * p_active2disb
-  active2dead    <- wf_active[, , j] * p_active2dead
-  active2retired <- wf_active[, , j] * p_active2retired # This will join wf_retired[, , j + 1, j + 1].
+  active2term  <- wf_active[, , j] * p_active2term  # This will join wf_term[, , j + 1, j], note that workers who terminate in year j won't join the terminated group until j+1. 
+  active2disb  <- wf_active[, , j] * p_active2disb
+  active2dead  <- wf_active[, , j] * p_active2dead
+  active2retired <- wf_active[, , j] * p_active2retired
   
   # Where do the terminated_vested go
-  term2dead  <- wf_term[, , j, ] * as.vector(p_term2dead)           # a 3D array, each slice(3rd dim) contains the # of death in a termination age group
+  term2dead    <- wf_term[, , j, ] * as.vector(p_term2dead)    # a 3D array, each slice(3rd dim) contains the # of death in a termination age group
 
-  # Where do the retired go
-  retired2dead   <- wf_retired[, , j, ] * as.vector(p_retired2dead) # a 3D array, each slice(3rd dim) contains the # of death in a retirement age group    
-  
   # Where do the disabled go
   disb2dead      <- wf_disb[, , j] * p_disb2dead
   
-   
+  # Where do the retired go
+  retired2dead   <- wf_retired[, , j] * p_retired2dead
+  
   
   # Total inflow and outflow for each status
   out_active   <- active2term + active2disb + active2retired + active2dead 
@@ -247,12 +227,10 @@ for (j in 1:(nyear - 1)){
   out_disb <- disb2dead
   in_disb  <- active2disb
   
-  out_retired <- retired2dead   # This is a 3D array (ea x age x year.retire)
-  in_retired  <- active2retired # This is a matrix
+  out_retired <- retired2dead
+  in_retired  <- active2retired
   
-  in_dead <- active2dead + 
-             apply(term2dead, c(1,2), sum) + apply(retired2dead, c(1,2), sum) + # get a matirix of ea x age by summing over year.term/year.retiree
-             disb2dead 
+  in_dead <- active2dead + apply(term2dead, c(1,2), sum) + disb2dead + retired2dead
   
   # Calculate workforce for next year. 
   wf_active[, , j + 1]  <- (wf_active[, , j] - out_active) %*% A + new_entrants
@@ -260,130 +238,12 @@ for (j in 1:(nyear - 1)){
   wf_term[, , j + 1, ]  <- apply((wf_term[, , j, ] - out_term), 3, function(x) x %*% A) %>% array(wf_dim.term[-3])
   wf_term[, , j + 1, j] <- in_term %*% A
   
-  wf_retired[, ,j + 1, ]       <- apply((wf_retired[, , j, ] - out_retired), 3, function(x) x %*% A) %>% array(wf_dim.retiree[-3])
-  wf_retired[, , j + 1, j + 1] <- in_retired %*% A
-  
   wf_disb[, ,   j + 1]    <- (wf_disb[, , j] + in_disb - out_disb) %*% A
+  wf_retired[, ,j + 1]    <- (wf_retired[, , j] + in_retired - out_retired) %*% A
   wf_dead[, ,   j + 1]    <- (wf_dead[, , j] + in_dead) %*% A
-
-  newDeath.act[j]  <- sum(active2dead)
-  newDeath.ret[j]  <- sum(retired2dead)
-  # newDeath.term[j] <- sum()
-  
-  newDisb.act[j] <- sum(active2disb)
-    
 }
 
-
-
-#*************************************************************************************************************
-#                                     Transform Demographic Data to Data Frames   ####
-#*************************************************************************************************************
-
-## Convert 3D arrays of actives, retired and terms to data frame, to be joined by liability data frames
-
-wf_active <- adply(wf_active, 3, function(x) {df = as.data.frame(x); df$ea = as.numeric(rownames(x));df}) %>% 
-  rename(year = X1) %>%
-  gather(age, number.a, -ea, -year) %>% 
-  mutate(year = f2n(year), age = as.numeric(age)) %>% 
-  filter(age >= ea)
-
-
-wf_retired <- data.frame(expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.retire = 1:nyear),
-                         number.r = as.vector(wf_retired)) %>% 
-                         filter(age >= ea)
-
-
-wf_term <- data.frame(expand.grid(ea = range_ea, age = range_age, year = 1:nyear, year.term = 1:nyear),
-                        number.v = as.vector(wf_term)) %>% 
-                        filter(age >= ea)
-
-
-# summarize term across termination year. Resulting data frame will join .Liab$active as part of the output. 
-term_reduced <- wf_term %>% group_by(year, age) %>% summarise(number.v = sum(number.v, na.rm = TRUE))
-
-
-#*************************************************************************************************************
-#                                     Calculate Demographic Summary Statistics   ####
-#*************************************************************************************************************
-# This is a digress from the main purpose of this function. Demographic statistics are useful in analyzing 
-# the plan characteristics, and the most convenient way to construct these statistics is by using data frames. 
-
-demo_summary <- 
-  Reduce(merge, list( 
-    # Average age of workforce
-    # Average year of service of workforce
-    # Average entry age of workforce
-    wf_active %>% group_by(year) %>% summarise(actives_age.avg = weighted.mean(age, number.a)),
-    wf_active %>% group_by(year) %>% summarise(actives_ea.avg  = weighted.mean(ea, number.a)),
-    wf_active %>% group_by(year) %>% mutate(yos = age - ea) %>% summarise(actives_yos.avg  = weighted.mean(yos, number.a)),
-    
-    # Average age of retirees
-    wf_retired %>% group_by(year) %>% summarise(retirees_age.avg = weighted.mean(age, number.r)),
-    
-    # Total actives, retirees and terminated members. (terms in all status, including not vested.) 
-    wf_active  %>% group_by(year) %>% summarise(tot_actives  = sum(number.a)),
-    wf_retired %>% group_by(year) %>% summarise(tot_retirees = sum(number.r)),
-    wf_term    %>% group_by(year) %>% summarise(tot_terms    = sum(number.v)),
-    
-    # Total vested terms in benefit status and total vested terms not in benefit status. Note: year - (age - ea) gives the year of entrance. 
-    wf_term %>% filter(age >= r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(tot_termsBen    = sum(number.v)),  
-    wf_term %>% filter(age <  r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(tot_termsInact  = sum(number.v)),
-    
-    
-    # New entrants
-    wf_active %>% filter(age == ea) %>% group_by(year) %>% summarise(new_entrants = sum(number.a)), 
-    
-    # New retirees
-    wf_retired %>% filter(year == year.retire) %>% group_by(year) %>% summarise(new_retirees = sum(number.r)),
-    
-    # New terms (in all status, including not vested.)
-    wf_term %>% filter(year == 1 | year == year.term + 1) %>% group_by(year) %>% summarise(new_terms = sum(number.v)),
-    
-    # New terms in benefit status.
-    wf_term %>% filter(age == r.full & year.term - (year - (age - ea)) >= v.yos) %>% group_by(year) %>% summarise(new_termsBen = sum(number.v)),
-    
-    # New terms in not in benefit status  Note: year - (age - ea) gives the year of entrance. 
-    wf_term %>% filter(year == 1 | (year == year.term + 1 & age < r.full & year.term - (year - (age - ea)) >= v.yos)) %>% group_by(year) %>% summarise(new_termsInact = sum(number.v)),
-    
-    # Number of new death in actives and retirees
-    data.frame(year = 1:nyear, newDeath.act = newDeath.act),
-    data.frame(year = 1:nyear, newDeath.ret = newDeath.ret),
-    
-    # Number of new disabled in actives
-    data.frame(year = 1:nyear, newDisb.act = newDisb.act)
-    
-  )) %>% 
-  mutate(# Ratios
-    newEnt_actives  = 100 * new_entrants / tot_actives,
-    newRet_actives  = 100 * new_retirees / tot_actives,
-    
-    newTerm_actives = 100 * new_terms / tot_actives,
-    newTermsInact_actives  = 100 * new_termsInact / tot_actives,
-    newTermsBen_termsInact = 100 * new_termsBen / tot_termsInact,
-    
-    newDeath.act_actives  = 100 * newDeath.act / tot_actives,
-    newDeath.ret_retirees = 100 * newDeath.ret / tot_retirees, 
-    
-    newDisb.act_actives = 100 * newDisb.act / tot_actives,
-    
-    ar.ratio = tot_actives / tot_retirees,                  # Active-to-service retiree ratio
-    ab.ratio = tot_actives / (tot_retirees + tot_termsBen), # Active-to-beneficiary ratio
-    runname = runname) %>% 
-  select(runname, everything())
-
-
-
-
-return(list(active = wf_active, term = wf_term, disb = wf_disb, retired = wf_retired, dead = wf_dead,
-            newDeath.act = newDeath.act,
-            newDeath.ret = newDeath.ret,
-            newDisb.act  = newDisb.act,
-            
-            term_reduced = term_reduced, 
-            
-            demo_summary = demo_summary
-            ))
+return(list(active = wf_active, term = wf_term, disb = wf_disb, retired = wf_retired, dead = wf_dead))
 
 }
 
@@ -395,7 +255,6 @@ pop <- get_Population()
 end_time_wf <- proc.time()
 Time_wf <- end_time_wf - start_time_wf
 
-pop$active
 
 #*************************************************************************************************************
 #                                     Checking the results  ####
@@ -412,11 +271,12 @@ pop$active
 # 
 # # Test the loop with no new entrants, set no.entrants = TRUE in cal_entrants()
 #   
-#   apply(pop$active, 3, sum) + 
-#   apply(pop$retired, 3, sum)+ 
-#   apply(pop$term, 3, sum) + 
-#   apply(pop$disb, 3, sum) + 
-#   apply(pop$dead, 3, sum) 
+#   apply(wf_active, 3, sum)  + 
+#   apply(wf_retired, 3, sum) + 
+#   apply(wf_term_v, 3, sum)  + 
+#   apply(wf_term_nv, 3, sum) + 
+#   apply(wf_disb, 3, sum)    + 
+#   apply(wf_dead, 3, sum) 
 #   
 # 
 # # summarizing the results
@@ -448,6 +308,10 @@ pop$active
 #  
 
 
+
+
+
+
 # x <- array(0, c(3,3,3,3))
 # for(i in 1:3) x[,,,i] <- i
 # x[,,1,]
@@ -470,32 +334,6 @@ pop$active
 # x[,,1,] %>% apply(c(1,2), sum)
 
 # wf_term[,,2,1]
-
-
-# x <- data.frame(age = 40:120)
-# x %>% mutate(ea = 39,
-#              year.retire = 1,
-#              year = 1,
-#              start.year = 1 - (age - 39),
-#              age.retire = age) 
-
-
-# # Explore shrinking workforce in AZ-PERS
-# 
-# pop$active %>% apply(3, sum)
-# 
-# pop$active[,"120",41] %>% sum
-# 
-# pop$active[,,1]
-# 
-# 
-# actives %>% filter(planname == "LA-CERA-43.fillin.yos", age >=75)
-
-
-
-pop$active[,,]
-
-
 
 
 
