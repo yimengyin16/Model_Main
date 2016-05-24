@@ -79,7 +79,7 @@ if(devMode) source("Dev_Params.R") else {
 #*********************************************************************************************************
 # 1.1 Importing Decrement tables and Calculating Probabilities ####
 #*********************************************************************************************************
-source("Model_Decrements_dev.R")
+source("Model_Decrements.R")
 # Output: Decrement (data.frame)
 
 
@@ -115,7 +115,7 @@ source("Model_Decrements_dev.R")
 # These tables are based on PA-PSERS and some naive assumptions for imputation.
 # Please do NOT source the script below if external salary and benefit tables are used.   
 
-source("Model_Import_Plan_dev.R")
+source("Model_Import_Plan.R")
 
 
 #*********************************************************************************************************
@@ -127,27 +127,27 @@ source("Model_InvReturns.R")
 #*********************************************************************************************************
 # 2. Population ####
 #*********************************************************************************************************
-source("Model_Population_dev.R")
+source("Model_Population.R")
 gc()
 
 
 #*********************************************************************************************************
 # 3. Individual actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-source("Model_IndivLiab_dev.R")
+source("Model_IndivLiab.R")
 gc()
 
 
 #*********************************************************************************************************
 # 4. Aggregate actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-source("Model_AggLiab_dev.R")
+source("Model_AggLiab.R")
 gc()
 
 #*********************************************************************************************************
 # 5.  Simulation ####
 #*********************************************************************************************************
-source("Model_Sim_dev.R")
+source("Model_Sim.R")
 
 
 #*********************************************************************************************************
