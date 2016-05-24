@@ -31,6 +31,9 @@ library(zoo)
 library(grid)
 library(gridExtra)
 library(stringr)
+library(xlsx)
+
+source("Functions.R")
 
 rm(list = ls())
 
@@ -568,6 +571,12 @@ apply(as.matrix(c(228, 535)), 1, gpanel.yy)
 
 ```
 
+
+
+
+
+# Smoothing and contribution shock
+
 ```{r shock}
 
 
@@ -691,7 +700,7 @@ write.xlsx2(table_shock_FR,  file = paste0(IO_folder, "/Shock/table_shock.xlsx")
 
 
 
-# Funding policies: Runs with ERC_PR cap
+# Funding policies: Runs with ERC_PR cap (contribution shirking)
 ```{r cap, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=4}
 prefix <- "A1F075_"
 runs_M1_cap <- c("O30pA5", "O30pA5_cap")
@@ -826,6 +835,8 @@ ggsave(paste0(IO_folder, "/ERC_cap/p_cap_FR.png"), p_cap_FR, width=9.5, height=6
 
 
 
+# Figures in appendix geo vs. arith returns
+
 ```{r geo_v_arith, echo = FALSE, cache = F , eval = TRUE, fig.width=20, fig.height=10}
 
 prefix <- "B1F075_"
@@ -878,7 +889,7 @@ GvA_FR95 %>% ggplot(aes(x = year, y = FR95, color = runname)) +
 
 p_GvA_FR95
 
-
+GvA_ERC %>% str
 p_GvA_ERC <-
 GvA_ERC %>% ggplot(aes(x = year, y = value, color = runname)) + 
              geom_line(aes(linetype = runname), size = 1) +

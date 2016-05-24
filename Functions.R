@@ -352,7 +352,7 @@ get_quantiles <- function( runName,     # character
     
     df_q %<>% mutate(Quantile = rownames(df_q)) %>% gather(year, Value, -Quantile) %>%
       
-      mutate(year = f2n(year),
+      mutate(year = as.numeric(year),   #year = f2n(year),
              Quantile = factor(Quantile)) %>% filter(year <= year.max)
     
     df_q %<>% spread(Quantile, Value)
