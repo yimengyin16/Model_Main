@@ -33,7 +33,7 @@ library("gridExtra") # to create objects to place on graphs
 
 # library("apitools")
 
-library("btools")
+# library("btools")
 
 # devtools::install_github("donboyd5/pdata")
 #  library("pdata")
