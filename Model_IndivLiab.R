@@ -2,7 +2,7 @@
 #                        Individual AL and NC by age and entry age ####
 #*************************************************************************************************************
 # This program calculates actuarial liabilities, normal costs, benefits, and other values that will be used
-# in the simulation model
+# in the simulation model.
 
 
 get_IndivLiab <- function(.salary    = salary, 
@@ -16,17 +16,17 @@ get_IndivLiab <- function(.salary    = salary,
   #  - salary:       Salary  table.  History and prospect salary for all start.year, age and ea combos
   #  - benefit:      Benefit table.  Benefit payments for all age and ea combos at period 1
   #  - decrement:    Decrement table.
-  # Parameters:
-  #  - max.age, min.age
-  #  - nyear
-  #  - range_ea, range_age
-  #  - fasyears
-  #  - benfactor
-  #  - cola
-  #  - r.max, r.min
-  #  - v.yos
-  #  - i
-  #  - actuarial_method     
+  #  - Parameters(in paramlist and Gloabal_paramlist)
+  #   - max.age, min.age
+  #   - nyear
+  #   - range_ea, range_age
+  #   - fasyears
+  #   - benfactor
+  #   - cola
+  #   - r.max, r.min
+  #   - v.yos
+  #   - i
+  #   - actuarial_method     
 # Output
   # liab: a list containing following data frames: 
     # - active: individual liabilities of actives by year, ea, and age
@@ -35,22 +35,25 @@ get_IndivLiab <- function(.salary    = salary,
 # Notes:
   # variables relevant to COLA: B, ax, ALx.r
 
-# assign_parmsList(.Global_paramlist, envir = environment())
-# assign_parmsList(.paramlist,        envir = environment())
 
-assign_parmsList(Global_paramlist, envir = environment())
-assign_parmsList(paramlist,        envir = environment())
+# Run the section below when developing new features.   
+  # .salary    <-  salary 
+  # .benefit   <-  benefit 
+  # .decrement <-  decrement
+  # .paramlist <-  paramlist
+  # .Global_paramlist <-  Global_paramlist  
+  
 
-
-
+assign_parmsList(.Global_paramlist, envir = environment())
+assign_parmsList(.paramlist,        envir = environment())
 
 min.year <- min(1 - (max.age - (r.max - 1)), 1 - (r.max - 1 - min.ea))
 ## Track down to the year that is the smaller one of the two below: 
- # the year a 120-year-old retiree in year 1 entered the workforce at age r.max - 1 (remeber ea = r.max -  is assigned to all inital retirees)
+ # the year a 120-year-old retiree in year 1 entered the workforce at age r.max - 1 (remeber ea = r.max - 1 is assigned to all inital retirees)
  # the year a r.max year old active in year 1 enter the workforce at age min.ea 
 
 liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = range_age) %>%
-  filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. 
+  filter(start.year + max.age - ea >= 1)   %>%  # drop redundant combinations of start.year and ea. (delet those who never reach year 1.) 
   mutate(year = start.year + age - ea) %>%  # year index in the simulation)
   left_join(.salary) %>%
   left_join(.benefit) %>% # must make sure the smallest age in the retirement benefit table is smaller than the single retirement age. (smaller than r.min with multiple retirement ages)
@@ -64,19 +67,21 @@ liab.active <- expand.grid(start.year = min.year:nyear, ea = range_ea, age = ran
     n  = pmin(yos, fasyears),                          # years used to compute fas
     fas= ifelse(yos < fasyears, Sx/n, (Sx - lag(Sx, fasyears))/n), # final average salary
     fas= ifelse(age == min(age), 0, fas),
-    COLA.scale = (1 + cola)^(age - min(age)),          # later we can specify other kinds of COLA scale.
-    Bx = benfactor * yos * fas,                        # accrued benefits payable at age r.max
+    COLA.scale = (1 + cola)^(age - min(age)),          # later we can specify other kinds of COLA scale. Note that these are NOT COLA factors. They are used to derive COLA factors for different retirement ages.
+    Bx = benfactor * yos * fas,                        # accrued benefits
     bx = lead(Bx) - Bx,                                # benefit accrual at age x
-    B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!!
+    
+    # NOT COMPATIBLE WITH MULTIPLE RETIREMENT AGES!!! Need to be moved to the dataframe for retirees. 
+    B  = ifelse(age>=r.max, Bx[age == r.max] * COLA.scale/COLA.scale[age == r.max], 0), # annual benefit
     B.init = ifelse(start.year < 1 & age >= r.max, benefit[which(!is.na(benefit))] * COLA.scale/COLA.scale[which(!is.na(benefit))], 0), # Calculte future benefits of initial retirees.
     B  = rowSums(cbind(B, B.init), na.rm = TRUE),
 
     ax = get_tla(pxm, i, COLA.scale),                  # Since retirees die at max.age for sure, the life annuity with COLA is equivalent to temporary annuity with COLA up to age max.age. 
-    axR = c(get_tla(pxT[age<r.max],i), rep(0, max.age - r.max + 1)),                      # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
-    axRs= c(get_tla(pxT[age<r.max],i, sx[age<r.max]), rep(0, max.age - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
+    axR = c(get_tla(pxT[age < r.max],i), rep(0, max.age - r.max + 1)),                        # aT..{x:r.max-x-|} discount value of r.max at age x, using composite decrement       
+    axRs= c(get_tla(pxT[age < r.max],i, sx[age < r.max]), rep(0, max.age - r.max + 1)),       # ^s_aT..{x:r.max-x-|}
     
-    axr = c(get_tla(pxT[age<r.min],i), rep(0, max.age - r.min + 1)),                      # Similar to axR, but based on r.min        
-    axrs= c(get_tla(pxT[age<r.min],i, sx[age<r.min]), rep(0, max.age - r.min + 1)),       # Similar to axRs, but based on r.min   
+    axr = c(get_tla(pxT[age < r.min],i), rep(0, max.age - r.min + 1)),                      # Similar to axR, but based on r.min.  For calculation of term benefits when costs are spread up to r.min.        
+    axrs= c(get_tla(pxT[age < r.min],i, sx[age<r.min]), rep(0, max.age - r.min + 1)),       # Similar to axRs, but based on r.min. For calculation of term benefits when costs are spread up to r.min.
     
     ayx = c(get_tla2(pxT[age <= r.max], i), rep(0, max.age - r.max)),                     # need to make up the length of the vector up to age max.age
     ayxs= c(get_tla2(pxT[age <= r.max], i,  sx[age <= r.max]), rep(0, max.age - r.max))   # need to make up the length of the vector up to age max.age
@@ -148,19 +153,10 @@ liab.active %<>%
 
 
 
-# Calculate AL and benefit payment for vested terms terminating at different ages.   
-# liab.term <- expand.grid(start.year = (1 - (r.max - 1 - 20)):nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>% # start year no longer needs to start from -89 if we import initial benefit data.
-#   filter(start.year + 110 - ea >= 1, age >= ea, age.term >= ea) %>% # drop redundant combinations of start.year and ea. 
-#   # arrange(start.year, ea, age.term, age) %>% # Very slow. Uncomment it only when we want to examine liab.term.
-#   group_by(start.year, ea, age.term) %>% 
-#   left_join(liab %>% select(start.year, year, ea, age, Bx.v, ax, COLA.scale, pxRm)) %>% 
-#   mutate(year.term = year[age == age.term],
-#          #year.term = year - (age - age.term),
-#          B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
-#          ALx.v = ifelse(age < r.max, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
-#                                   B.v * ax)  
-#          )
 
+
+   
+# Calculate AL and benefit payment for vested terms terminating at different ages.
 # Merge by using data.table: does not save much time, but time consumpton seems more stable than dplyr. The time consuming part is the mutate step.
 liab.term <- expand.grid(start.year = (1 - (r.max - 1 - min.age)):nyear, ea = range_ea[range_ea < r.min], age = range_age, age.term = range_age[range_age < r.max]) %>% # start year no longer needs to start from -89 if we import initial benefit data.
   filter(start.year + max.age - ea >= 1, age >= ea, age.term >= ea) %>% 
@@ -176,9 +172,9 @@ liab.term %<>% as.data.frame %>%
          #year.term = year - (age - age.term),
          B.v   = ifelse(age >= r.max, Bx.v[age == unique(age.term)] * COLA.scale/COLA.scale[age == r.max], 0),  # Benefit payment after r.max  
          ALx.v = ifelse(age < r.max, Bx.v[age == unique(age.term)] * ax[age == r.max] * pxRm * v^(r.max - age),
-                                  B.v * ax)  
+                                     B.v * ax)  
          ) %>% 
-  ungroup %>% 
+  ungroup  %>% 
   select(-start.year, -age.term, -Bx.v, -ax, -COLA.scale, -pxRm) %>% 
   filter(year %in% 1:nyear)
 # liab.term[c("B.v", "ALx.v")] <- colwise(na2zero)(liab.term[c("B.v", "ALx.v")])
@@ -186,8 +182,8 @@ liab.term %<>% as.data.frame %>%
 
 
 # Choosing AL and NC variables corresponding to the chosen acturial methed
-ALx.method <- paste0("ALx.", actuarial_method)
-NCx.method <- paste0("NCx.", actuarial_method)
+ALx.method   <- paste0("ALx.", actuarial_method)
+NCx.method   <- paste0("NCx.", actuarial_method)
 ALx.v.method <- paste0("ALx.", actuarial_method, ".v")
 NCx.v.method <- paste0("NCx.", actuarial_method, ".v")
 

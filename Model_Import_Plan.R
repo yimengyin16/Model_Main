@@ -166,7 +166,7 @@ avgben <- .retirees %>% filter(planname == .planname_retirees) %>% select(age, b
     
 benefit <- avgben %>% filter(age>=r.max) %>% 
            mutate(year = 1,
-                  ea = r.max - 1)
+                  ea = r.min - 1)
 # benefit %>% select(-year) %>% spread(age, benefit)
 
 return(benefit)
@@ -203,7 +203,7 @@ get_initPop <- function (.actives          = actives,
                   spread(age, nactives, fill = 0) %>% select(-ea) %>% as.matrix 
 
   
-  init_retirees <- .retirees %>% filter(planname == .planname_retirees) %>% select(age, nretirees) %>% mutate(ea = r.max - 1)
+  init_retirees <- .retirees %>% filter(planname == .planname_retirees) %>% select(age, nretirees) %>% mutate(ea = r.min - 1)
   init_retirees <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_retirees) %>% 
                    spread(age, nretirees, fill = 0) %>% select(-ea) %>% as.matrix
   #init_retirees %>% spread(age, nretirees)

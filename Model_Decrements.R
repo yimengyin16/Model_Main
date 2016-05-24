@@ -46,7 +46,7 @@ assign_parmsList(.paramlist,        envir = environment())
 ## From the decrements package
 mort <- mortality   %>% filter(tablename == tablename_mortality)   %>% select(age, qxm)
 term <- termination %>% filter(tablename == tablename_termination) %>% select(age, ea, qxt) 
-# term %<>% mutate(qxt = ifelse(age >= r.min & yos >= r.yos, 0, qxt)) # coerce termination rates to 0 when eligible for early retirement. 
+term %<>% mutate(qxt = ifelse(age >= r.min & (age - ea) >= r.yos, 0, qxt)) # coerce termination rates to 0 when eligible for early retirement. 
 
 
 ## From Winklevoss data
@@ -58,17 +58,44 @@ er   <- er   # early retirement
 # Create decrement table and calculate probability of survival
 decrement <- expand.grid(age = range_age, ea = range_ea) %>% 
   left_join(filter(mort, age >= min.age)) %>%    # mortality 
-  left_join(term)  %>%                         # termination
-  left_join(disb)  %>%                         # disability
-  left_join(dbl)   %>%                         # mortality for disabled
-  left_join(er)    %>%                         # early retirement
+  left_join(term)  %>%                           # termination
+  left_join(disb)  %>%                           # disability
+  left_join(dbl)   %>%                           # mortality for disabled
+  left_join(er)    %>%                           # early retirement
   select(ea, age, everything()) %>%          
   arrange(ea, age)  %>% 
   filter(age >= ea) %>%
   group_by(ea) 
 
 decrement$qxr <- na2zero(decrement$qxr)
-decrement$qxr <- ifelse(decrement$age == r.max, 1, 0) # Single retirement age. 
+
+
+
+#*************************************************************************************************************
+# Motifying decrement talbes, mainly for development purposes.
+
+#  decrement$qxr <- ifelse(decrement$age == 65, 1, ifelse(decrement$age == 64, 0.3, 
+#                                                        ifelse(decrement$age == 63, 0.3, 0)
+#                                                        )) # Single retirement age.
+
+# decrement$qxr <- ifelse(decrement$age == 65, 1, ifelse(decrement$age == 64, 0.3, 0))
+
+# decrement$qxr <- ifelse(decrement$age == 65, 1, 0)
+
+# decrement$qxt <- 0 # no terminations 
+#*************************************************************************************************************
+
+
+# Adjustment to the decrement table:
+ # Move qxr.a backward by 1 period.(qxr at t is now assigned to t - 1), the probability of retirement at t - 1 is lead(qxr.a(t))*(1 - qxt.a(t-1) - qxm.a(t-1) - qxd.a(t-1))
+ # For the age right before the max retirement age (r.max - 1), probability of retirement is 1 - qxm.a - qxd.a - qxt.a,
+ # which means all active members who survive all other risks at (r.max - 1) will enter the status "retired" for sure at age r.max (and collect the benefit regardless 
+ # whether they will die at r.max)      
+
+decrement %<>% group_by(ea) %>%  
+  mutate(qxr = ifelse(age == r.max - 1,
+                        1 - qxt - qxm - qxd, 
+                        lead(qxr)*(1 - qxt - qxm - qxd)))
 
 
 ## define decrements for status and calculte survival probabilities. 
@@ -90,15 +117,20 @@ decrement %<>%
   mutate(qxm.d = qxmd ) %>%
   
   # For retired(".r"), the only target status is "dead". Note that in practice retirement mortality may differ from the regular mortality.
-  mutate(qxm.r   = qxm) %>% 
-  
-  # Calculate various survival probabilities
+  mutate(qxm.r   = qxm) 
+
+
+
+# Calculate various survival probabilities
+decrement %<>% 
   mutate( pxm = 1 - qxm,
           pxT = 1 - qxt - qxd - qxm - qxr, #(1 - qxm.p) * (1 - qxt.p) * (1 - qxd.p),
           pxRm = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxm))) # prob of surviving up to r.max, mortality only
           # px65T = order_by(-age, cumprod(ifelse(age >= r.max, 1, pxT))), # prob of surviving up to r.max, composite rate
           # p65xm = cumprod(ifelse(age <= r.max, 1, lag(pxm))))            # prob of surviving to x from r.max, mortality only
   )
+
+
 
 return(decrement)
 }

@@ -16,3 +16,16 @@ install.packages("zoo")
 
 install.packages("devtools")
 
+install.packages(c("magrittr",
+                   "data.table"))
+
+install.packages(c("foreach",
+                   "doParallel",
+                   "microbenchmark",
+                   "readxl",
+                   "stringr"
+                   ))
+
+install.packages("XLConnect")
+install.packages("xlsx")
+

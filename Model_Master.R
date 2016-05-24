@@ -60,6 +60,7 @@
  # Separate different sources of AL and NC 
 
 
+print(paramlist$runname)
 
 #*********************************************************************************************************
 # 0. Parameters   ####
@@ -69,7 +70,7 @@ if(devMode) source("Dev_Params.R") else {
   
   # Define Other parameters that depend on the fundamental parameters just imported. 
   paramlist$range_age <- with(Global_paramlist, min.age:max.age)
-  paramlist$range_ea  <- c(20:(paramlist$r.max - 1))
+  paramlist$range_ea  <- c(Global_paramlist$min.age:(paramlist$r.max - 1))
   
   paramlist$v <- with(paramlist, 1/(1 + i))  # discount factor, just for convenience
   
@@ -78,7 +79,7 @@ if(devMode) source("Dev_Params.R") else {
 #*********************************************************************************************************
 # 1.1 Importing Decrement tables and Calculating Probabilities ####
 #*********************************************************************************************************
-source("Model_Decrements.R")
+source("Model_Decrements_dev.R")
 # Output: Decrement (data.frame)
 
 
@@ -108,13 +109,13 @@ source("Model_Decrements.R")
 #    by age. Once we have that we can assign an arbitrary ea to it an throw it into the model. Note that the AV of NJ-TPAF only contains 
 #    average benefits for retirees and vested terms by age group. Also note that if service retirees and vested terms follow the same mortality table 
 #    and have the same COLA rule, I don't think we need to distinguish between them.     
-#
+
 
 # Artificial salary table and benefit table for testing purpose are imported by sourcing the following script.
 # These tables are based on PA-PSERS and some naive assumptions for imputation.
 # Please do NOT source the script below if external salary and benefit tables are used.   
-# source("Inputs_Salary_Benefit.R")
-source("Model_Import_Plan.R")
+
+source("Model_Import_Plan_dev.R")
 
 
 #*********************************************************************************************************
@@ -126,27 +127,27 @@ source("Model_InvReturns.R")
 #*********************************************************************************************************
 # 2. Population ####
 #*********************************************************************************************************
-source("Model_Population.R")
+source("Model_Population_dev.R")
 gc()
 
 
 #*********************************************************************************************************
 # 3. Individual actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-source("Model_IndivLiab.R")
+source("Model_IndivLiab_dev.R")
 gc()
 
 
 #*********************************************************************************************************
 # 4. Aggregate actuarial liabilities, normal costs and benenfits ####
 #*********************************************************************************************************
-source("Model_AggLiab.R")
+source("Model_AggLiab_dev.R")
 gc()
 
 #*********************************************************************************************************
 # 5.  Simulation ####
 #*********************************************************************************************************
-source("Model_Sim.R")
+source("Model_Sim_dev.R")
 
 
 #*********************************************************************************************************
@@ -157,23 +158,23 @@ options(digits = 4, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
-                 "AL.act_PR", "AL.ret_PR","AL.term_PR", 
-                 "NC.act_PR", "NC.term_PR", 
-                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "PR"#
-                 
+                 "AL.act_PR", "AL.ret_PR","AL.term_PR", "AL.Ben_PR",
+                 "NC.act_PR", "NC.term_PR", "MA_PR", 
+                 #"AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", 
+                 # "PR", "PR.growth", 
                  # "ExF",   
                  # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
-                 #  "ADC", "EEC", "ERC",  "C", "B",     
-                 # "I.r" ,   "I.e", 
-                 # "i",    "i.r",
+                 #"ADC", "EEC", "ERC",  
+                 "C", "B", "B.v", "B.v_B", "B_PR"    
+                 # "I.r" ,   "I.e"
+                 # "i",    "i.r"
                  #, "dERC_PR"
                  # "AM", "PR",
                  # "C_ADC"
 )
 
-r1 <- penSim_results %>% filter(sim == 1, year == 1) %>% select(one_of(var.display))
+r1 <- penSim_results %>% mutate(B.v_B = B.v / B * 100) %>% filter(sim == 2, year %in% 1:105) %>% select(one_of(var.display))
 kable(r1, digits = 3)
-
 
 
 
@@ -216,11 +217,21 @@ Time_loop # the big loop
 #*********************************************************************************************************
 
 
-outputs_list <- list(results     = penSim_results,
-                     ind_act_ret = AggLiab$ind_act_ret, 
-                     ind_term    = AggLiab$ind_term,
-                     paramlist = paramlist, 
+outputs_list <- list(paramlist = paramlist, 
                      Global_paramlist = Global_paramlist,
+  
+                     decrement = decrement,
+                     
+                     results     = penSim_results,
+                     
+                     ind_active  = AggLiab$ind_active, 
+                     ind_retiree = AggLiab$ind_retiree,
+                     ind_term    = AggLiab$ind_term,
+                     demo_summary= pop$demo_summary,
+                     
+                     #liab  = if(paramlist$save.liab) liab else "Not saved",
+                     #demo  = if(paramlist$save.demo) pop else "Not saved",
+                     
                      entrant_dist = entrants_dist)
 
 # Save outputs to specified folder
@@ -229,8 +240,11 @@ if(!file.exists(folder_run)) dir.create(folder_run)
 # filename_outputs <- paste0("Outputs_",  paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
 filename_outputs <- paste0("Outputs_",  paramlist$runname, ".RData")
 
-save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
+ save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
 gc()
+
+
+
 
 

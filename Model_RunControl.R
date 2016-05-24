@@ -3,7 +3,7 @@
 ## This is a frozen version before start developing multiple retirement ages.
 
 #*********************************************************************************************************
-#                      Preamble ####
+#                                               Preamble ####
 #*********************************************************************************************************
 
 rm(list = ls())
@@ -20,7 +20,6 @@ library(tidyr) # gather, spread
 library(foreach)
 library(doParallel)
 library(microbenchmark)
-library(data.table)
 library(readxl)
 library(stringr)
 # library(xlsx)
@@ -31,12 +30,40 @@ library(stringr)
 library(pp.prototypes)
 library(decrements)               # mortality and termination for now
 load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
-# load("Data/example_Salary_benefit.RData")
+
+# Load data for new prototypes before they are in the pp.prototypes package
+load("Data/2015-10-07/actives.rda")
+load("Data/2015-10-07/retirees.rda") 
+
+load("Data/2015-10-07/retrates.rda");  retrates %<>% dplyr::rename(qxr = retrate)
+# load("Data/retrates_AZ.RData"); retrates <- retrate_AZ
+
+load("Data/2015-10-07/salgrowth.rda"); salgrowth %<>% mutate(age = NULL)
+load("Data/2015-10-07/termrates.rda"); termrates %<>% dplyr::rename(qxt = termrate) # %>% mutate(qxt = 0.5*qxt)
+
+load("Data/2015-10-07/mortality.rda")
 
 
 source("Functions.R")
 
 devMode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
+
+
+
+
+#*********************************************************************************************************
+#                      ## Calibration of decrements  ####
+#*********************************************************************************************************
+
+# Calibrate term rates, mortality rates and retirement rates to approximately match workforce flows of AV-PERS
+# in 2013.  
+
+termrates %<>% mutate(qxt = 1.2 * qxt)
+
+mortality %<>% mutate(qxm = 0.6 * qxm) %>% 
+               mutate(qxm.r = qxm)
+
+retrates %<>% mutate(qxr = qxr * 0.7) 
 
 
 
@@ -102,30 +129,40 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 # retirees %<>% mutate(nretirees = 0)
 
 # 4. Only keep a specific age-ea cell of actives
-# actives %<>% mutate(nactives = ifelse(age == 20 & ea == 20, nactives, 0))
+# actives %<>% mutate(nactives = ifelse(ea %in% 20:21 & age %in% 40, 1, 0))
+# actives %<>% mutate(nactives = ifelse(ea == 58 & age == 58,  1, 0))
+# actives %<>% mutate(nactives = 0)
+# actives %>% filter(planname == "underfunded")
 
+# 5. Full set of entry ages and ages. 
+# actives <- expand.grid(ea = 20:64, age = 20:64) %>% filter(age >= ea) %>% mutate(planname = "average", nactives = 1, salary = 1 )
+
+# 6. Lower the initial benefit in LA-CERA (mature1)
+# retirees %<>% mutate(benefit = 0.5 * benefit) 
 
 
 #*********************************************************************************************************
 # Read in Run Control files ####
 #*********************************************************************************************************
 
-folder_run          <- "IO_Dev"
+
+# folder_run <- "IO_M2.1_new" 
+folder_run <- "IO_M1_new"
+# folder_run <- "IO_M2.1history_new" 
+ 
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
 path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)
 
 
 # Import global parameters
-Global_params <- read_excel(path_RunControl, sheet="GlobalParams", skip=1) 
+Global_params <- read_excel(path_RunControl, sheet="GlobalParams", skip = 1) 
 
 
 # Import parameters for all plans
-plan_params        <- read_excel(path_RunControl, sheet="RunControl", skip=4)    %>% filter(!is.na(runname))
-plan_returns       <- read_excel(path_RunControl, sheet="Returns",    skip=0)    %>% filter(!is.na(runname))
+plan_params        <- read_excel(path_RunControl, sheet="RunControl",    skip=4) %>% filter(!is.na(runname))
+plan_returns       <- read_excel(path_RunControl, sheet="Returns",       skip=0) %>% filter(!is.na(runname))
 plan_contributions <- read_excel(path_RunControl, sheet="Contributions", skip=0) %>% filter(!is.na(runname))
-
-
 
 
 #*********************************************************************************************************
@@ -138,8 +175,6 @@ runlist <- plan_params %>% filter(include == TRUE) %>% select(runname) %>% unlis
 # runlist <- runlist[runlist == "average1"|runlist == "average3"]
 # runlist <- runlist[runlist == "average3"]
 runlist
-
-
 
 
 ## Run selected plans 
@@ -167,6 +202,7 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
 ## Run the model
 source("Model_Master.R", echo = TRUE)
 }
+
 
 
 

@@ -100,10 +100,11 @@ get_PVFB <- function(px, v, TC){ # present values of subsets of TC (fixed end)
   
   n <- length(px)
   
-  PVFB <- sapply(seq_len(n), function(j) ifelse(j == n, TC[j], sum(cumprod(c(1, (px[j:(n - 1)] * v))) * TC[j:n])))
+  PVFB <- sapply(seq_len(n), function(j) ifelse(j == n, TC[j], sum(cumprod(c(1, (px[j:(n - 1)] * v))) * TC[j:n], na.rm = TRUE)))
   
   return(PVFB)
 }
+
 
 # microbenchmark(
 # get_PVFB(rep(0.98, 65), 0.08, rep(1.1, 65))
@@ -177,7 +178,7 @@ pmt <- function(p, i, n, end = FALSE){
   return(pmt)  
 }
 
-# pmt(100, 0.08, 1)
+ pmt(100, 0.02, 10)
 # pmt2(100, 0.08, 10, TRUE)
 # pmt2(-100, 0.08, 10)
 
@@ -192,7 +193,7 @@ gaip <- function(p, i, n, g, end = FALSE){
   return(pmt)
 }
 
-# gaip(100, 0.08, 1, 0.04)
+# gaip(100, 0.10, 10, 0.04)
 # gaip3(100, 0.08, 10, 0.02, end = TRUE)
 
 
@@ -255,9 +256,18 @@ memory<-function(maxnobjs=5){
   print(paste("Memory in use after: ",memory.size(),sep=""))
 }
 
-na2zero <- function(x){x[is.na(x)] <- 0 ;return(x)}
+#na2zero <- function(x){x[is.na(x)] <- 0 ;return(x)}
+na2zero <- function(x){replace(x, is.na(x), 0)}
 
-f2n <- function(x) as.numeric(levels(x)[x])
+
+f2n <- function(x) {
+  if(is.numeric(x)|is.integer(x)) x else
+    if(!is.factor(x)) stop("Not a factor") else
+    as.numeric(levels(x)[x])
+}
+  
+  
+  
 #f2n2 <- function(x) as.numeric(as.character(factor(x))) # much slower than f2n
 
 get_geoReturn <- function(x) prod(1 + x)^(1/length(x)) - 1
@@ -317,9 +327,9 @@ trans_cont <- function(cont, run){
 
 
 
-
-
-## Functions for plotting results
+#**********************************************
+#  4. Functions for analyzing results        ####
+#**********************************************
 
 get_quantiles <- function( runName,     # character
                            varName,     # character
@@ -334,7 +344,7 @@ get_quantiles <- function( runName,     # character
   #   qts = c(0.1, 0.25, 0.5, 0.75, 0.9)
   #   
   
-  df <- data %>% filter(runname %in% runName) %>%  
+  df <- data %>% filter(runname %in% runName, sim >= 1) %>%  
     select_("runname",  "sim","year", varName) %>% spread_("year", varName)
   
   fn <- function(df) { 
@@ -342,13 +352,15 @@ get_quantiles <- function( runName,     # character
     
     df_q %<>% mutate(Quantile = rownames(df_q)) %>% gather(year, Value, -Quantile) %>%
       
-      mutate(year = f2n(year),
+      mutate(year = as.numeric(year),   #year = f2n(year),
              Quantile = factor(Quantile)) %>% filter(year <= year.max)
     
     df_q %<>% spread(Quantile, Value)
   }
   
   df <- ldply(split(df, df$runname), fn, .id = "runname")
+  
+  df$runname <- factor(df$runname, levels = runName)
   
   return(df)
   
@@ -364,6 +376,13 @@ draw_quantiles  <- function(runName,     # character
                             ylim = NULL,
                             EEC_line = 5){
   
+#   runName <- c("D1F075-average_gn2","D1F075-average")     # character
+#   varName <- c("C_PR")     # character
+#   data = results_all
+#   year.max = 80
+#   qts = c(0.1, 0.25, 0.5, 0.75, 0.9)
+#   ylim = NULL
+#   EEC_line = 5
 
   col1 <- colorRampPalette(c("darkgreen","yellowgreen", "dodgerblue4", "orangered", "red4"))
   
@@ -377,22 +396,37 @@ draw_quantiles  <- function(runName,     # character
                         qts = qts)  %>% 
     gather(Quantile, Value, -runname, -year) %>% 
     mutate(Quantile = factor(Quantile, levels = paste0(sort(qts, decreasing = TRUE) * 100, "%")))
-    
+  
+  
   
   plot_q <- 
     ggplot(df_q, aes(x = year, y = Value, color = Quantile)) + theme_bw() + 
     geom_point(size = 1.5) + geom_line()+ 
-    labs(y = varName, title = paste0("Quantile plots of ", varName)) + 
-    scale_color_manual(values = color_values)
+    labs(y = varName, title = paste0("Quantile plots of ", varName)) 
+    # scale_color_manual(values = color_values)
   
+
   
-  if(length(runName) > 1) plot_q <- plot_q + facet_grid(. ~ runname) 
-  if(!is.null(ylim))    plot_q <- plot_q + coord_cartesian(ylim = ylim)
-  if(varName == "FR")   plot_q <- plot_q + geom_hline(yintercept = 100,     color = "black", linetype = 2)
-  if(varName == "C_PR") plot_q <- plot_q + geom_hline(yintercept = EEC_line,color = "black", linetype = 2)
+  if (varName %in% c("C_PR","ERC_PR")) {
+    df_NC.rate <- data %>% filter(runname %in% runName, sim == 1, year <= year.max) %>% select(runname, year, NC_PR) %>% 
+                  mutate(Quantile = "Normal Cost Rate",
+                         runname = factor(runname, levels = runName)) %>% 
+                  rename(Value = NC_PR)
+    plot_q <- plot_q + geom_line(data = df_NC.rate, aes(x = year, y = Value), linetype = 1)+ scale_color_manual(values = c(color_values, "black")) 
+  } else {
+    plot_q <- plot_q + scale_color_manual(values = color_values)
+  }
+    
+    
+  if(length(runName) > 1) plot_q <- plot_q + facet_grid(. ~ runname)
+  if(!is.null(ylim))      plot_q <- plot_q + coord_cartesian(ylim = ylim)
+  if(varName == "FR")     plot_q <- plot_q + geom_hline(yintercept = 100,     color = "black", linetype = 2)
+  if(varName == "C_PR")   plot_q <- plot_q + geom_hline(yintercept = EEC_line,color = "black", linetype = 2)
 
   list(df = df_q, plot = plot_q)
 }
+
+
 
 
 draw_quantiles2  <- function(runName,     # character
@@ -419,6 +453,275 @@ draw_quantiles2  <- function(runName,     # character
   
   plot_q
 }
+
+
+
+
+
+
+get_metrics <- function(runs,  year.max, plan_AL, data = results_all ){
+  
+#     runs = runs_investment
+#     #runs = "I6F075-5"
+#     year.max = 30
+#     include.maxChg = FALSE
+#     plan_AL = "I6F075-1" # any plan with 7.5% discount rate will do.
+#   
+  AL_7.5_v <- results_all %>% filter(runname == plan_AL, sim == 1, year <= year.max) %>% select(AL) %>% unlist
+    
+  df_TO <- results_all %>% filter(runname %in% runs, year <= year.max, sim > 0) %>%
+           arrange(runname, sim, year) %>% 
+           group_by(runname, sim) %>% 
+           mutate(AL_7.5 = AL_7.5_v,
+                  FR_MA_7.5 = 100 * MA / AL_7.5) %>% 
+           select(runname, year, sim, AL, AL_7.5, MA, FR_MA, FR_MA_7.5, ERC_PR, C_PR, C, ERC, PR)  
+  
+  ## Measures of funded status *********************************************
+  
+  # 1. Probability of funded ratio falling below X% in 5, 15, 30 years.  
+  # 2. VaR-like measure:  5th percentile of funded ratio in year 5, 15, and 30.
+  # 3. CVaR-like measure: weighted average of funded ratio below 5th percentile in year 5, 15, and 30. 
+  #                       question: how to calculate the weight?  
+  
+  
+  
+  df_ruin <- 
+    df_TO %>% group_by(runname, sim) %>% 
+    mutate(FR50 = cumany(FR_MA  <= 50),
+           FR40 = cumany(FR_MA  <= 40),
+           FR50_7.5 = cumany(FR_MA_7.5  <= 50),
+           FR40_7.5 = cumany(FR_MA_7.5  <= 40)) %>% 
+    filter(year %in% c(15,30,40)) %>% 
+    ungroup %>% group_by(runname, year) %>% 
+    summarise(FR50 = 100 * sum(FR50)/n(),
+              FR40 = 100 * sum(FR40)/n(),
+              FR50_7.5 = 100 * sum(FR50_7.5)/n(),
+              FR40_7.5 = 100 * sum(FR40_7.5)/n()) %>% 
+    gather(variable, value, -runname, -year) %>% 
+    mutate(variable = paste0(variable, "_y", year),
+           year = NULL) %>% 
+    spread(variable, value)
+  
+  df_ruin %>% kable(digits = 3)
+  
+ 
+  
+  ## Measures of contribution volatility *************************************
+  
+  df_sd <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>% 
+    group_by(sim, runname) %>% 
+    summarise(C_PR.sd = sd(C_PR, na.rm = TRUE), ERC_PR.sd = sd(ERC_PR, na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(median)) %>% select(-sim)
+  df_sd
+  
+  
+  df_dsd <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>% 
+    group_by(sim, runname) %>% 
+    summarise(C_PR.dsd = sd(diff(C_PR), na.rm = TRUE), ERC_PR.dsd = sd(diff(ERC_PR), na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(med = median(., na.rm = TRUE), q75 = quantile(., 0.75,na.rm = TRUE), q90 = quantile(., 0.9, na.rm = TRUE)), -sim)
+    # summarise_each(funs(median)) %>% select(-sim)
+  df_dsd
+  
+  
+  df_maxC <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>%  
+    group_by(sim, runname) %>% 
+    summarise(C_PR.max = max(C_PR, na.rm = TRUE), ERC_PR.max = max(ERC_PR, na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9)), -sim)
+    # summarise_each(funs(median)) %>% select(-sim)
+  df_maxC
+  
+  df_minFR <- df_TO %>%
+    select(runname, year, sim, FR_MA, FR_MA_7.5) %>%  
+    group_by(sim, runname) %>% 
+    summarise(FR_MA.min = min(FR_MA),
+              FR_MA_7.5.min = min(FR_MA_7.5)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(med = median, q25 = quantile(., 0.25), q10 = quantile(., 0.1)), -sim)
+  # summarise_each(funs(median)) %>% select(-sim)
+  df_minFR
+  
+  
+  
+  df_final_C <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>%   
+    group_by(sim, runname)    %>% 
+    filter(year == max(year)) %>%
+    rename(C_PR.final = C_PR,
+           ERC_PR.final = ERC_PR) %>% 
+    group_by(runname) %>%
+    summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9)), -sim)
+#     summarise(C_PR.final   = median(C_PR), 
+#               ERC_PR.final = median(ERC_PR))
+    df_final_C
+
+    df_final_FR <- df_TO %>%
+      select(runname, year, sim, FR_MA, FR_MA_7.5) %>%   
+      group_by(sim, runname)    %>% 
+      filter(year == max(year)) %>%
+      rename(FR_MA.final = FR_MA,
+             FR_MA_7.5.final = FR_MA_7.5) %>% 
+      group_by(runname) %>%
+      summarise_each(funs(med = median, q25 = quantile(., 0.25), q10 = quantile(., 0.1)), -sim, -year)
+    #     summarise(C_PR.final   = median(C_PR), 
+    #               ERC_PR.final = median(ERC_PR))
+    df_final_FR
+    
+    
+  df_5yearChg <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>%   
+    group_by(sim, runname)  %>% 
+    mutate_each(funs(. - lag(., 5)), one_of(c("C_PR", "ERC_PR")) ) %>% 
+    summarise(C_PR.5yChg   = max(C_PR,   na.rm = TRUE),
+              ERC_PR.5yChg = max(ERC_PR, na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9) ))  %>% 
+    select(-starts_with("sim"))
+  
+  df_5yearChg
+  
+  
+  df_pctChg <- df_TO %>%
+    select(runname, year, sim, C_PR, ERC_PR) %>%   
+    group_by(sim, runname)  %>% 
+    mutate_each(funs(. / lag(.) - 1  ), one_of(c("C_PR", "ERC_PR"))) %>% 
+    summarise(C_PR.pctChg   = 100 * median(C_PR,   na.rm = TRUE),
+              ERC_PR.pctChg = 100 * median(ERC_PR, na.rm = TRUE)) %>% 
+    group_by(runname) %>% 
+    summarise_each(funs(med = median(., na.rm = TRUE), q75 = quantile(., 0.75, na.rm = TRUE), q90 = quantile(., 0.9, na.rm = TRUE)), -sim) 
+  df_pctChg
+  
+  
+  
+  # with(df_5yearChg, df_5yearChg[runname == "A1F075_O30pA5","C_PR.5yChg"] %>% unlist) %>% hist(breaks = 50)
+  
+  ## Present Value of contribution *************************************
+  
+  df_PVC <- df_TO %>% 
+    select(runname, year, sim, C, ERC, PR) %>% 
+    group_by(sim, runname) %>% 
+    mutate(discount = 1/(1 + 0.075)^(year - 1),
+           discount_L10 = ifelse(max(year) - year >= 10, 0, discount)) %>% 
+    summarise(PV.C   = sum(C * discount),
+              PV.ERC = sum(ERC * discount),
+              PV.PR  = sum(PR * discount),
+              PV.C_L10   = sum(C * discount_L10),
+              PV.ERC_L10 = sum(ERC * discount_L10),
+              PV.PR_L10  = sum(PR * discount_L10)) %>% 
+    group_by(runname) %>% 
+    mutate(PV.C_PR   = 100 * PV.C / PV.PR,
+           PV.ERC_PR = 100 * PV.ERC / PV.PR,
+           PV.C_PR_L10   = 100 * PV.C_L10 / PV.PR_L10,
+           PV.ERC_PR_L10 = 100 * PV.ERC_L10 / PV.PR_L10 ) %>% 
+    summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9)), -sim) 
+  
+  df_PVC
+  
+  df_year1 <- df_TO %>%
+    select(runname, year, sim, FR_MA, FR_MA_7.5, ERC_PR) %>%  
+    filter(year == 1, sim == 1) %>%
+    rename(FR_MA.y1 = FR_MA,
+           FR_MA_7.5.y1 = FR_MA_7.5,
+           ERC_PR.y1 = ERC_PR)
+  df_year1 
+  
+  df_metrics <- join_all(list(df_ruin, 
+                              df_PVC,
+                              df_sd,
+                              df_dsd,
+                              df_maxC,
+                              df_minFR,
+                              df_final_C,
+                              df_final_FR,
+                              df_5yearChg,
+                              df_pctChg,
+                              df_year1))
+  
+  return(df_metrics)
+  
+}
+
+
+get_metrics_maxChg <- function(runs,  year.max, data = results_all){
+# This function only calculate 5-year and 10-year max change of ERC rate.
+  
+  #     runs = runs_investment
+  #     year.max = 30
+  #     include.maxChg = FALSE
+  #     prefix = "I1F075-"
+  
+  df_TO <- results_all %>% filter(runname %in% runs, year <= year.max, sim > 0) %>% 
+    select(runname, year, sim, FR_MA, ERC_PR, C_PR, C, ERC, PR)  
+  
+  ## Measures of funded status *********************************************
+
+
+  
+
+    ## Create functions to calculate max changes in 5-year intervals. 
+    maxChgWithin <- function(y, fn, ...){
+      # max/min change within a single interval.
+      zoo::rollapply(y, rev(seq_along(y)), function(x) fn(x - x[1], ...), fill = NA, align = "left") %>% fn(., ...)
+      #y <- outer(x, x, "-")
+      #y[lower.tri(y)] %>% fn(., ...)  
+    }
+    
+    roll_maxChg <- function(x, fun, width,  ... ){
+      # For a given vector x, calculate the max/min change WITHIN each interval of the width "width" 
+      zoo::rollapply(x, width, maxChgWithin, fn = fun, ...,  fill = NA, align = "right")
+    }
+    
+    
+      df_5yearMaxChg <- df_TO %>%
+        select(runname, year, sim, C_PR, ERC_PR) %>%
+        group_by(sim, runname)  %>% 
+        mutate(C_PR  = roll_maxChg(C_PR,  max, 5),
+               ERC_PR= roll_maxChg(ERC_PR,max, 5)) %>% 
+        summarise(C_PR.5yMaxChg  = max(C_PR,   na.rm = TRUE),
+                  ERC_PR.5yMaxChg= max(ERC_PR, na.rm = TRUE)) %>% 
+        group_by(runname) %>% 
+        summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9) )) %>% 
+        select(-starts_with("sim"))
+
+
+      df_10yearMaxChg <- df_TO %>%
+        select(runname, year, sim, C_PR, ERC_PR) %>%
+        group_by(sim, runname)  %>% 
+        mutate(C_PR  = roll_maxChg(C_PR,  max, 10),
+               ERC_PR= roll_maxChg(ERC_PR,max, 10)) %>% 
+        summarise(C_PR.10yMaxChg  = max(C_PR,   na.rm = TRUE),
+                  ERC_PR.10yMaxChg= max(ERC_PR, na.rm = TRUE)) %>% 
+        group_by(runname) %>% 
+        summarise_each(funs(med = median, q75 = quantile(., 0.75), q90 = quantile(., 0.9) )) %>% 
+        select(-starts_with("sim"))
+  
+  df_maxChg <- join_all(list(df_5yearMaxChg,
+                             df_10yearMaxChg))
+
+  return(df_maxChg)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
