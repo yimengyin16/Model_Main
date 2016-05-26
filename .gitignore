@@ -3,12 +3,11 @@
 .RData
 .rda
 
-
 # ignore output directory
 # Outputs*/*
 IO*/**/*.RData
 IO*/**/*_files
 *_cache
-
 # ignore temporary MS files
 ~$*
+packrat/lib*/
