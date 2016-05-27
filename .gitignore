@@ -11,3 +11,4 @@ IO*/**/*_files
 # ignore temporary MS files
 ~$*
 packrat/lib*/
+packrat/src/
