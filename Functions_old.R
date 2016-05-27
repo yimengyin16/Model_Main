@@ -326,50 +326,6 @@ trans_cont <- function(cont, run){
 
 
 
-create_returns <- function(r.mean, r.sd, period){
-  # Create return series with time varying mean, sd.
-  # Mean and sd in each period are given by "r.mean" and "r.sd". 
-  # Length of each period is given by "period". 
-  i.r <- unlist(mapply(rnorm, period, r.mean, r.sd)) %>% as.vector # when the length of the arguments is 1, need to convert the reusult to vector from a matrix 
-}
-
-
-
-# rolling window return
-
-get_rollingReturns <- function(returnSeries, rolling_type = c("moving", "expanding"), window){
-  # calculate moving window or expanding win dow geometric mean return for a return series. 
-  window_width <- switch(rolling_type,
-                         moving = window,
-                         expanding = seq_along(returnSeries))
-  
-  rollingReturn <- zoo::rollapply(returnSeries, width = window_width, get_geoReturn, fill = NA, align = "right")
-  return(rollingReturn)
-}
-
-
-
-getcell <- function(file, sheet, cell) {
-  require(XLConnect)
-  value <- readWorksheetFromFile(file, sheet=sheet, header=FALSE, region=cell, colTypes="character")
-  return(as.character(value))
-}
-
-
-xlrange <- function(file, sheet, cell1, cell2) {
-  startcell <- getcell(file, sheet, cell1)
-  endcell   <- getcell(file, sheet, cell2)
-  range     <- paste0(startcell, ":", endcell)
-  return(range)
-}
-
-read_ExcelRange <- function(file, sheet, cellStart = "B2", cellEnd = "B3", ...){
-  require(XLConnect)
-  range <- xlrange(file, sheet, cellStart, cellEnd)
-  readWorksheetFromFile(file, sheet = sheet, header=TRUE, region=range, ...)
-}
-
-
 
 #**********************************************
 #  4. Functions for analyzing results        ####
@@ -381,19 +337,12 @@ get_quantiles <- function( runName,     # character
                            year.max = 100,
                            qts = c(0.1, 0.25, 0.5, 0.75, 0.9)){
   
-    # runName = c("R4F1")     # character
-    # varName = "FR"     # character
-    # data = results_all
-    # year.max = 100
-    # qts = c(0.1, 0.25, 0.5, 0.75, 0.9)
-
-  
-    # runName = "C.ADC_r7.25"     # character
-    # varName = "FR.MA"     # character
-    # data = penSim_results
-    # year.max = 100
-    # qts = c(0.1, 0.25, 0.5, 0.75, 0.9)
-    # 
+  #   runName = c("R4F1")     # character
+  #   varName = "FR"     # character
+  #   data = results_all
+  #   year.max = 100
+  #   qts = c(0.1, 0.25, 0.5, 0.75, 0.9)
+  #   
   
   df <- data %>% filter(runname %in% runName, sim >= 1) %>%  
     select_("runname",  "sim","year", varName) %>% spread_("year", varName)
@@ -403,47 +352,19 @@ get_quantiles <- function( runName,     # character
     
     df_q %<>% mutate(Quantile = rownames(df_q)) %>% gather(year, Value, -Quantile) %>%
       
-      mutate(#year = f2n(year),
+      mutate(year = as.numeric(year),   #year = f2n(year),
              Quantile = factor(Quantile)) %>% filter(year <= year.max)
     
     df_q %<>% spread(Quantile, Value)
   }
   
-
   df <- ldply(split(df, df$runname), fn, .id = "runname")
+  
+  df$runname <- factor(df$runname, levels = runName)
   
   return(df)
   
 }
-
-
-# get_quantiles2 <- function(varName,     # character
-#                            data,
-#                            qts = c(0.1, 0.25, 0.5, 0.75, 0.9)){
-# 
-# 
-#   varName = "maxChg5y"     # character
-#   data    = maxChg5y
-#   qts = c(0.1, 0.25, 0.5, 0.75, 0.9)
-#   
-# 
-#   
-#   df <- select_(data, "sim", , varName) %>% spread_("year", varName)
-#   
-#   fn <- function(df){ 
-#     df_q <- sapply(select(df, -sim), function(x) quantile(x, qts, na.rm = TRUE)) %>% as.data.frame
-#     
-#     df_q %<>% mutate(Quantile = rownames(df_q)) %>% gather(year, Value, -Quantile) %>%
-#       
-#     mutate(#year = f2n(year),
-#            Quantile = factor(Quantile)) %>% filter(year <= year.max)
-#     
-#     df_q %<>% spread(Quantile, Value)
-#   }
-#   
-#   df <- fn(df)
-# }
-
 
 
 
@@ -787,18 +708,6 @@ get_metrics_maxChg <- function(runs,  year.max, data = results_all){
 
 
 
-
-maxChgWithin <- function(y, fn, ...){
-  # max/min change within a single interval.
-  zoo::rollapply(y, rev(seq_along(y)), function(x) fn(x - x[1], ...), fill = NA, align = "left") %>% fn(., ...)
-  #y <- outer(x, x, "-")
-  #y[lower.tri(y)] %>% fn(., ...)  
-}
-
-roll_maxChg <- function(x, fun, width,  ... ){
-  # For a given vector x, calculate the max/min change WITHIN each interval of the width "width" 
-  zoo::rollapply(x, width, maxChgWithin, fn = fun, ...,  fill = NA, align = "right")
-}
 
 
 
