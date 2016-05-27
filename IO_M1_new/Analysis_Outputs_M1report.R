@@ -184,6 +184,18 @@ roi.labs.2lines <- c("Deterministic-30-open-5",
                      "30-year\nopen percent asset-5",
                      "SOA Blue\nRibbon")
 
+# slightly different labels for policy brief
+roi.pb <- c("Deterministic", "A1F075_C15d", "A1F075_C30d", "A1F075_O30pA5")
+roi.labs.pb <- c("Deterministic",
+              "15-year closed dollar", 
+              "30-year closed percent",
+              "30-year open percent asset-5")
+
+roi.labs.2lines.pb <- c("Deterministic",
+                     "15-year\nclosed dollar", 
+                     "30-year\nclosed percent",
+                     "30-year\nopen percent asset-5")
+
 
 #****************************************************************************************************
 #                2016 Employer contributions ####
@@ -1020,6 +1032,114 @@ ggsave(file=paste0(outputs.dir, "fig3_indivruns_ir.pdf"), p, width=10, height=5.
 
 
 
+# Policy Brief figure 2 ERC increase > 10% prob ####
+tmp <- probs %>%
+  filter(runname %in% roi, !deterministic | (deterministic & runname=="A1F075_O30pA5" & runname!= "A1F075_soa3")) %>%
+  ungroup %>%
+  mutate(runname=ifelse(deterministic, "Deterministic", as.character(runname)),
+         runname2=factor(runname, levels=roi.pb, labels=roi.labs.pb, ordered=TRUE),
+         runname2lines=factor(runname, levels=roi.pb, labels=roi.labs.2lines.pb, ordered=TRUE))
+xtitle <- "Year"
+ytitle <- "Probability (%)"
+gtitle <- "Probability that employer contributions will rise\nby more than 10% of payroll in a 5-year period"
+p <- ggplot(data=tmp %>% filter(year<=30), aes(x=year, y=ercprdiffgt10, colour=runname2lines)) +
+  theme_bw() +
+  geom_line(size=1.2) +
+  geom_point() +
+  scale_x_continuous(name=xtitle, breaks=seq(0, 100, 5), minor_breaks = seq(0, 100, 1)) +
+  scale_y_continuous(name=ytitle, breaks=seq(0, 100, 10)) +
+  scale_color_manual(values = c(RIG.red, RIG.yellow.dark, RIG.green, RIG.blue)) +
+  ggtitle(gtitle) +
+  theme(plot.title = element_text(size = 14)) +
+  guides(colour=guide_legend(title="Funding scenario:"), size=guide_legend(title=NULL)) +
+  theme(legend.direction = "vertical", 
+        legend.position = "right",
+        legend.key=element_rect(size=4, color="white"),
+        legend.key.size = unit(1.6, "lines"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = 0.5, color = "gray80"))
+
+p
+ggsave(paste0(outputs.dir,"pb.fig2_ercprdiffgt10.png"), p, width=10, height=6, units="in")
+ggsave(paste0(outputs.dir,"pb.fig2_ercprdiffgt10.pdf"), p, width=10, height=6, units="in")
+
+
+
+
+# Policy Brief figure 3 Prob FR < 40% ####
+
+tmp <- probs %>%
+  filter(runname %in% roi, !deterministic | (deterministic & runname=="A1F075_O30pA5" & runname != "A1F075_soa3")) %>%
+  ungroup %>%
+  mutate(runname=ifelse(deterministic, "Deterministic", as.character(runname)),
+         runname2=factor(runname, levels=roi.pb, labels=roi.labs.pb, ordered=TRUE),
+         runname2lines=factor(runname, levels=roi.pb, labels=roi.labs.2lines.pb, ordered=TRUE))
+
+xtitle <- "Year"
+ytitle <- "Probability (%)"
+gtitle <- "Probability that the funded ratio will fall\nbelow 40% during the first 30 years"
+p <- ggplot(data=tmp %>% filter(year<=30), aes(x=year, y=fr7p5lt40, colour=runname2lines)) +
+  theme_bw() +
+  geom_line(size=1.2) +
+  geom_point() +
+  scale_x_continuous(name=xtitle, breaks=seq(0, 100, 5), minor_breaks = seq(0, 100, 1)) +
+  scale_y_continuous(name=ytitle, breaks=seq(0, 20, 2), limits=c(0, 18)) +
+  scale_color_manual(values = c(RIG.red, RIG.yellow.dark, RIG.green, RIG.blue)) +
+  ggtitle(gtitle) +
+  theme(plot.title = element_text(size = 14)) +
+  guides(colour=guide_legend(title="Funding scenario:"), size=guide_legend(title=NULL)) +
+  theme(legend.direction = "vertical", 
+        legend.position = "right",
+        legend.key=element_rect(size=4, color="white"),
+        legend.key.size = unit(1.6, "lines"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = 0.5, color = "gray80"))
+p
+ggsave(paste0(outputs.dir,"pb.fig3_fr7p5lt40.png"), p, width=10, height=6, units="in")
+ggsave(paste0(outputs.dir,"pb.fig3_fr7p5lt40.pdf"), p, width=10, height=6, units="in")
+
+
+# FR probabilities for selected funded-ratio thresholds
+# fr7p5lt40, fr7p5lt50, fr7p5lt60, fr7p5lt70
+xtitle <- "Year"
+ytitle <- "Probability (%)"
+gtitle1 <- "Probability that the funded ratio will fall below a given threshold during the first 30 years"
+gtitle2 <- "under 30-year open level-percent funding, with 5-year asset smoothing"
+gtitle <- paste0(gtitle1, "\n", gtitle2)
+frcut <- c("fr7p5lt70", "fr7p5lt60", "fr7p5lt50", "fr7p5lt40")
+frcut.labs <- c("70%", "60%", "50%", "40%")
+tmp <- probs %>% filter(year<=30, runname=="A1F075_O30pA5", !deterministic) %>%
+  ungroup %>%
+  select(year, starts_with("fr7p")) %>% 
+  gather(variable, value, -year) %>%
+  mutate(varf=factor(variable, levels=frcut, labels=frcut.labs, ordered=TRUE))
+p <- ggplot(data=filter(tmp, variable!="fr7p5lt70"), aes(x=year, y=value, colour=varf)) +
+  theme_bw() +
+  geom_line(size=1.2) +
+  geom_point() +
+  geom_hline(yintercept = 50, linetype="dashed") +
+  scale_x_continuous(name=xtitle, breaks=seq(0, 100, 5), minor_breaks = seq(0, 100, 1)) +
+  scale_y_continuous(name=ytitle, breaks=seq(0, 100, 5)) +
+  scale_color_manual(values = c(RIG.red, RIG.green, RIG.blue)) +
+  ggtitle(gtitle) +
+  theme(legend.direction = "vertical", 
+        legend.position = "right",
+        legend.key=element_rect(size=4, color="white"),
+        legend.key.size = unit(1.6, "lines"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = 0.5, color = "gray80")) +
+  guides(colour=guide_legend(title="Funding threshold"), size=guide_legend(title=NULL))
+p
+
+
+ggsave(paste0(outputs.dir, "fig11_frthresholds.png"), p, width=10, height=6, units="in")
+ggsave(paste0(outputs.dir, "fig11_frthresholds.pdf"), p, width=10, height=6, units="in")
 
 
 
