@@ -30,19 +30,22 @@ library(stringr)
 library(pp.prototypes)
 library(decrements)               # mortality and termination for now
 
-load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
 
-# Load data for new prototypes before they are in the pp.prototypes package
+# Initial actives and retirees 
+  # Load data for new prototypes before they are in the pp.prototypes package
 load("Data/2015-10-07/actives.rda")
 load("Data/2015-10-07/retirees.rda") 
 
+
+# Decrements
 load("Data/2015-10-07/retrates.rda");  retrates %<>% dplyr::rename(qxr = retrate)
 # load("Data/retrates_AZ.RData"); retrates <- retrate_AZ
-
-load("Data/2015-10-07/salgrowth.rda"); salgrowth %<>% mutate(age = NULL)
 load("Data/2015-10-07/termrates.rda"); termrates %<>% dplyr::rename(qxt = termrate) # %>% mutate(qxt = 0.5*qxt)
-
 load("Data/2015-10-07/mortality.rda")
+load("Data/winklevossdata.rdata") # disability, disability mortaity and early retirement
+
+# Salary scale
+load("Data/2015-10-07/salgrowth.rda"); salgrowth %<>% mutate(age = NULL)
 
 
 source("Functions.R")
