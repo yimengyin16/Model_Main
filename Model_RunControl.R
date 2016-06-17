@@ -57,7 +57,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 #                      ## Calibration of decrements  ####
 #*********************************************************************************************************
 
-# Calibrate term rates, mortality rates and retirement rates to approximately match workforce flows of AV-PERS
+# Calibrate term rates, mortality rates and retirement rates to approximately match workforce flows of AZ-PERS
 # in 2013.  
 
 termrates %<>% mutate(qxt = 1.2 * qxt)
