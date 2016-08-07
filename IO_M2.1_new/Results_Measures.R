@@ -301,7 +301,7 @@ q_df %>% gather(qts, value, -runname, -year) %>% filter(year <=30) %>%
   
   
 df <- get_df_results("IO_M2.1_new/", "Outputs_D1F075-mature1_gn1.RData")
-df %>% filter(sim == 1)  
+df %>% filter(sim == 1) %>% select(runname, year, sim, ERC_PR, NC_PR)  
   
 
 
