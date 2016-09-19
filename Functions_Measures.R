@@ -155,46 +155,14 @@
     
   }
   
-  
-  get_measureList <- function(folderName, fileName){
-    
-    # fileName <- "Outputs_D1F075-mature1_gn1.RData"
-    # folderName <- "IO_M2.1_new/"
-    
+  get_df_results <- function(folderName, fileName){
     fileName <- paste0(folderName, fileName) 
     load(fileName)
-    
-    results.stch <- penSim_results %>% filter(sim > 0)
-    
-    runname <- results.stch$runname[1]
-    
-    prob.FR.pctless <- results.stch %>%  calc_FR.pctless
-    prob.FR.pctmore <- results.stch %>%  calc_FR.pctmore(rolling = T)
-    prob.ERCsharpRise <- results.stch %>%  calc_ERCsharpRise
-    prob.ERChighERC <- results.stch %>%  calc_highERC
-    FR.qts <- results.stch %>%  calc_qts("FR")
-    ERC_PR.qts <- results.stch %>%  calc_qts("ERC_PR")
-    
-    
-    assign(paste0("RiskMeasures_", runname), 
-           list( 
-             prob.FR.pctless = prob.FR.pctless,
-             prob.FR.pctmore = prob.FR.pctmore,
-             prob.ERCsharpRise = prob.ERCsharpRise,
-             prob.ERChighERC = prob.ERChighERC,
-             FR.qts  = FR.qts ,
-             ERC_PR.qts = ERC_PR.qts))
-    
-    #  return(get(paste0("RiskMeasures_", runname)))
-    
-    do.call(save, list(paste0("RiskMeasures_", runname), file=paste0(folderName, "RiskMeasures_", runname, ".RData")))
-    
-    #do.call( return, list(get(paste0("RiskMeasures_", runname))))
-    return(get(paste0("RiskMeasures_", runname)))
+    return(outputs_list$results)
     
   }
-  
-  get_measureList2 <- function(df_results){
+
+  get_measureList <- function(df_results){
     
 
     results.stch <- df_results %>% filter(sim > 0)
@@ -226,84 +194,18 @@
     return(get(paste0("RiskMeasures_", runname)))
     
   }
-
-  get_df_results <- function(folderName, fileName){
-    fileName <- paste0(folderName, fileName) 
-    load(fileName)
-    return(outputs_list$results)
+  
+  
     
-  }
-  
-  RiskMeasures_F50mature1_gn1 <- get_df_results("IO_M2.1_new/", "Outputs_D1F050-mature1_gn1.RData") %>%  get_measureList2()
-  RiskMeasures_F50mature2_gn1 <- get_df_results("IO_M2.1_new/", "Outputs_D1F050-mature2_gn1.RData") %>%  get_measureList2()
-  
-  RiskMeasures_F75mature1_gn1 <- get_df_results("IO_M2.1_new/", "Outputs_D1F075-mature1_gn1.RData") %>%  get_measureList2()
-  RiskMeasures_F75mature2_gn1 <- get_df_results("IO_M2.1_new/", "Outputs_D1F075-mature2_gn1.RData") %>%  get_measureList2()
+  # RiskMeasures_F50mature1_gn1 <- get_df_results("IO_M2.1_new/", "Outputs_D1F050-mature1_gn1.RData") %>%  get_measureList()
+  # RiskMeasures_F50mature2_gn1 <- get_df_results("IO_M2.1_new/", "Outputs_D1F050-mature2_gn1.RData") %>%  get_measureList()
+  #
+  # RiskMeasures_F75mature1_gn1 <- get_df_results("IO_M2.1_new/", "Outputs_D1F075-mature1_gn1.RData") %>%  get_measureList()
+  # RiskMeasures_F75mature2_gn1 <- get_df_results("IO_M2.1_new/", "Outputs_D1F075-mature2_gn1.RData") %>%  get_measureList()
    
   
                                   
                                                
-
-  RiskMeasures_F50mature1_gn1$prob.FR.pctless
-  RiskMeasures_F50mature1_gn1$prob.ERCsharpRise
-  RiskMeasures_F50mature1_gn1$prob.ERChighERC
-  RiskMeasures_F50mature1_gn1$FR.qts
-  
-  
-  RiskMeasures_F75mature1_gn1$prob.FR.pctless
-  RiskMeasures_F75mature1_gn1$prob.ERCsharpRise
-  RiskMeasures_F75mature1_gn1$prob.ERChighERC
-  RiskMeasures_F75mature1_gn1$FR.qts
-  
-  
-  
-  RiskMeasures_mature2_gn1$prob.FR.pctless
-  RiskMeasures_mature2_gn1$prob.ERCsharpRise
-  
-  
-
-  
-  # rm(RiskMeasures_sumTiers_RS1)
-  # load("Results/RiskMeasures_sumTiers_RS1.RData", ex <- new.env())
-  # ls.str(ex) 
-  # 
-  
-  
-  df_results50 <- get_df_results("IO_M2.1_new/", "Outputs_D1F050-mature1_gn1.RData")
-  df_results50 %>% filter(sim == 0) %>% select(runname, FR, i.r) %>% as.data.frame
-
-  df_results75 <- get_df_results("IO_M2.1_new/", "Outputs_D1F075-mature1_gn1.RData")
-  df_results75 %>% filter(sim == 0) %>% select(runname, FR, i.r) %>% as.data.frame
-  
-  
-  
-  
-# Plot for Advisory board meeting 7/28/2016
-  
-q_df <- bind_rows(RiskMeasures_F50mature1_gn1$FR.qts,
-                  RiskMeasures_F75mature1_gn1$FR.qts)
-  
-
-q_df %>% gather(qts, value, -runname, -year) %>% filter(year <=30) %>% 
-  mutate(runname = factor(runname, levels = c("D1F075-mature1_gn1", "D1F050-mature1_gn1"),
-                                   labels = c("Mature plan 1 with 75% initial funded ratio", "Mature plan 1 with 50% initial funded ratio")),
-         qts = factor(qts, levels = c("FR.q0.9", "FR.q0.75", "FR.q0.5", "FR.q0.25" , "FR.q0.1"),
-                           label  = c("90th", "75th", "50th", "25th", "10th"))
-                      ) %>% 
-  rename(Percentile = qts) %>% 
-  ggplot(aes(x = year, y = value, color = Percentile)) + theme_bw() + facet_grid(. ~ runname) + 
-  geom_line() + 
-  geom_point() +
-  coord_cartesian(ylim = 0:200)+
-  scale_y_continuous(breaks = seq(0,300, 25)) + 
-  labs(x = "Year", y = "Funded ratio (%)")
-  
-  
-  
-  
-df <- get_df_results("IO_M2.1_new/", "Outputs_D1F075-mature1_gn1.RData")
-df %>% filter(sim == 1) %>% select(runname, year, sim, ERC_PR, NC_PR)  
-  
 
 
 
