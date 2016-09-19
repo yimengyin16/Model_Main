@@ -53,13 +53,11 @@ source("Functions.R")
 devMode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
 
 
-
-
 #*********************************************************************************************************
 #                      ## Calibration of decrements  ####
 #*********************************************************************************************************
 
-# Calibrate term rates, mortality rates and retirement rates to approximately match workforce flows of AV-PERS
+# Calibrate term rates, mortality rates and retirement rates to approximately match workforce flows of AZ-PERS
 # in 2013.  
 
 termrates %<>% mutate(qxt = 1.2 * qxt)
@@ -72,86 +70,12 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 
 
 #*********************************************************************************************************
-#                      Changes for Special Purposes ####
-#*********************************************************************************************************
-
-## 1. For replicating David and Gang's paper
-
-# # 0.04, 0.045, 0.050, 0.0568, 0.06, 0.065, 0.07 
-# dg.rate   <- 0.0568
-# init.rate <- 0.0568 
-# 
-# act.tot <- 108
-# ret.tot <- 54
-# 
-# 
-# salgrowth.hist   <- salgrowth.hist   %>% mutate(sscale.hist.rate   = dg.rate)
-# salgrowth.assume <- salgrowth.assume %>% mutate(sscale.assume.rate = dg.rate)
-# 
-# 
-# df <- expand.grid(age = 20:64, ea = 20:64) %>% 
-#        mutate(planname = "average",
-#          nactives = act.tot/n()) %>% 
-#          group_by(ea) %>% 
-#          mutate(salary = (1 + init.rate)^(0:(length(age) - 1) )) %>% 
-#   filter(age >= ea, age %in% 30:64, ea %in% 30:64)
-# 
-#  # x <- df %>% mutate(f = 0.02 * (65-ea) * max(salary)) %>% ungroup %>% filter(age == 64)
-#  # x$f %>%  mean # average projected benefit
-#  
-# df$salary %>% mean
-# 
-# 
-# actives %<>% filter(planname != "average" ) %>% rbind(df)
-# 
-# 
-# df2 <- data.frame(planname = "average", age = 65:90) %>% 
-#        mutate(nretirees = ret.tot/n(),
-#               benefit   = 2) #  
-# df2
-# retirees %<>% filter(planname != "average" ) %>% rbind(df2)
-# 
-# retirees
-# 
-# # termination rate
-# termination$qxt <- 0
-# 
-# # whether to exclude retirees
-# retirees %<>% mutate(nretirees = 0*nretirees) 
-
-
-# 2. "Uniform for average"
-# da <- actives %>% group_by(planname) %>% summarize(mean = mean(nactives))
-# actives %<>% mutate(nactives = as.numeric(da[1,"mean"]))  
-# # with(actives,sum(age*nactives)/sum(nactives))
-# 
-# dr <- retirees %>% group_by(planname) %>% summarize(mean = mean(nretirees))
-# retirees %<>% mutate(nretirees = as.numeric(dr[1,"mean"]))
-
-
-# 3. No retirees  
-# retirees %<>% mutate(nretirees = 0)
-
-# 4. Only keep a specific age-ea cell of actives
-# actives %<>% mutate(nactives = ifelse(ea %in% 20:21 & age %in% 40, 1, 0))
-# actives %<>% mutate(nactives = ifelse(ea == 58 & age == 58,  1, 0))
-# actives %<>% mutate(nactives = 0)
-# actives %>% filter(planname == "underfunded")
-
-# 5. Full set of entry ages and ages. 
-# actives <- expand.grid(ea = 20:64, age = 20:64) %>% filter(age >= ea) %>% mutate(planname = "average", nactives = 1, salary = 1 )
-
-# 6. Lower the initial benefit in LA-CERA (mature1)
-# retirees %<>% mutate(benefit = 0.5 * benefit) 
-
-
-#*********************************************************************************************************
 # Read in Run Control files ####
 #*********************************************************************************************************
 
 
-# folder_run <- "IO_M2.1_new" 
-folder_run <- "IO_M1_new"
+folder_run <- "IO_M2.1_new" 
+# folder_run <- "IO_M1_new"
 # folder_run <- "IO_M2.1history_new" 
  
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")

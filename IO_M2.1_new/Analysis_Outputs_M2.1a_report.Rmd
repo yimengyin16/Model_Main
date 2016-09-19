@@ -98,7 +98,7 @@ df_plot1 <- df_plot1 %>%
   mutate(FR_MA     = 100 * MA / AL75,
          FR40less  = cumany(FR_MA <= 40),
          ERC_high  = cumany(ERC_PR >= 30), 
-         ERC_hike  = cumany(na2zero(ERC_PR - lag(ERC_PR, 4) >= 10))) %>% 
+         ERC_hike  = cumany(na2zero(ERC_PR - lag(ERC_PR, 5) >= 10))) %>% 
   group_by(runname, year) %>% 
   summarize(FR40less = 100 * sum(FR40less, na.rm = T)/n(),
             ERC_high = 100 * sum(ERC_high, na.rm = T)/n(),
@@ -214,7 +214,7 @@ ggsave(paste0(IO_folder, g.folder, "p.ERC_hike.png"), p.ERC_hike, width=g.width,
 ```{r, echo=FALSE, include = FALSE}
 
 
-runs_all2 <- paste0("I8F075-", 2:4 )
+runs_all2 <- paste0("I8F075-", 2:4)
 
 # runs_all_labels <- c('runname, label.long, label.short 
 # I8F075-1,       The good old days,         The good old days
@@ -241,7 +241,7 @@ df_plot2 <- df_plot2 %>%
   mutate(FR_MA     = 100 * MA / AL75,
          FR40less  = cumany(FR_MA <= 40),
          ERC_high  = cumany(ERC_PR >= 30), 
-         ERC_hike  = cumany(na2zero(ERC_PR - lag(ERC_PR, 4) >= 10))) %>% 
+         ERC_hike  = cumany(na2zero(ERC_PR - lag(ERC_PR, 5) >= 10))) %>% 
   group_by(runname, year) %>% 
   summarize(FR40less = 100 * sum(FR40less, na.rm = T)/n(),
             ERC_high = 100 * sum(ERC_high, na.rm = T)/n(),
@@ -326,7 +326,7 @@ p.ERC_high
 p.ERC_hike <- 
 ggplot(df_plot2, aes(x = year, y = ERC_hike, color = runname, shape = runname)) + theme_bw() + 
   geom_point(size = 3) + geom_line() +
-  coord_cartesian(ylim = c(0, 35)) + 
+  coord_cartesian(ylim = c(0, 40)) + 
   scale_x_continuous(breaks = seq(0,30, 5))+ 
   scale_y_continuous(breaks = seq(0,100, 5)) + 
   labs(x = "Year",
@@ -393,7 +393,7 @@ df_plot3 <- df_plot3 %>%
   mutate(FR_MA     = 100 * MA / AL,
          FR40less  = cumany(FR_MA <= 40),
          ERC_high  = cumany(ERC_PR >= 30), 
-         ERC_hike  = cumany(na2zero(ERC_PR - lag(ERC_PR, 4) >= 10))) %>% 
+         ERC_hike  = cumany(na2zero(ERC_PR - lag(ERC_PR, 5) >= 10))) %>% 
   group_by(runname, year) %>% 
   summarize(FR40less = 100 * sum(FR40less, na.rm = T)/n(),
             ERC_high = 100 * sum(ERC_high, na.rm = T)/n(),

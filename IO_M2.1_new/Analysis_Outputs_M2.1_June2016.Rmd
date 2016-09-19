@@ -1,0 +1,261 @@
+---
+title: "Exploratory Analysis of Model Outputs"
+author: "Yimeng Yin"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+
+```{r mainSet_options, echo=FALSE, cache=FALSE}
+
+# options(width=140)
+# knitr::opts_chunk$set(fig.width=16, fig.height=5, echo=FALSE)
+# # Note: when saving maps (ggsave), width=16, height=9 seems to get rid of white space
+
+```
+
+
+
+
+```{r Preamble, echo = FALSE, include  = FALSE}
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(magrittr) # to use %<>%
+library(zoo)
+library(grid)
+
+rm(list = ls())
+
+run_knitr <- F
+# When knitting HTML files, the working directory will be changed to the on where the .rmd file is located.
+# The relative paths must be modified if they are not relative to the folder the .rmd file is located. 
+# (When running the code line by line, it is covenient to set the paths relative to the folder of main model.)
+
+if(run_knitr) source("../Functions.R") else source("Functions.R")
+
+```
+
+
+```{r Read, echo=FALSE, include = FALSE}
+## Combine selected files into a single list.
+
+IO_folder <- "IO_M2.1_new"
+
+if(run_knitr) IO_folder <- paste0("../", IO_folder)
+
+get_results <- function(IO_folder, pattern){
+  
+  fn <- function(x) {
+    load(paste0(IO_folder, "/", x))
+    outputs_list$results}
+
+  file_select <- dir(IO_folder, pattern = pattern )
+  results_all <- adply(file_select, 1, fn) %>% select(-X1)
+}
+
+results_all <- get_results(IO_folder, "^Outputs_I")
+
+RIG.blue  <- "#003598"
+RIG.red   <- "#A50021"
+RIG.green <- "#009900"
+RIG.yellow <- "#FFFF66"
+RIG.purple <- "#9966FF"
+RIG.yellow.dark <- "#ffc829"
+
+
+dir_outputs <- "IO_M2.1_new/M2.1b_graphs/"
+
+
+
+
+```
+
+
+```{r}
+
+#Selecting runs
+
+# Pure change in SD
+runs_pureSD <- paste0("I8F075-",2:4)
+runs_pureSD_labels <- paste0("Standard deviation = ", c(8, 12, 16), "%")
+
+# Investment policies:
+runs_invPolicies <- c("I7F075-1", "I1F075-6", "I6F075-6")
+runs_invPolicies_lables <- c("The good old days", "Invest in riskier assets", "Lower discount rate")
+
+
+AL_7p5 <- results_all %>% filter(runname == "I7F075-1", sim == 0) %>% select(runname, sim, year, AL)
+
+results_all %<>% filter(runname %in% c(runs_pureSD, runs_invPolicies), sim > 0) %>% 
+  mutate(AL_7p5    = AL_7p5$AL[match(year, AL_7p5$year)],
+         FR_MA_7p5 = 100 * MA / AL_7p5,  
+         runname = factor(runname, levels = c(runs_pureSD, runs_invPolicies), 
+                                   labels = c(runs_pureSD_labels, runs_invPolicies_lables))) 
+  
+  
+  
+
+results_all$runname %>% unique
+results_all %>% head
+
+
+
+```
+
+
+# Caculating percentiles
+```{r}
+
+results_quantiles <- 
+results_all %>% group_by(runname, year) %>% 
+  summarise(FR_MA_q75 = quantile(FR_MA_7p5, 0.75),
+            FR_MA_q50 = quantile(FR_MA_7p5, 0.50),
+            FR_MA_q25 = quantile(FR_MA_7p5, 0.25),
+            
+            ERC_PR_q75 = quantile(ERC_PR, 0.75),
+            ERC_PR_q50 = quantile(ERC_PR, 0.50),
+            ERC_PR_q25 = quantile(ERC_PR, 0.25)
+            )
+
+results_quantiles
+
+
+```
+
+
+# Graphs for pure SD changes
+
+```{r}
+
+# Funded ratio
+
+labels_quantiles <- paste0(c(75, 50, 25), "th percentile")
+
+g1 <- 
+results_quantiles %>%
+  select(runname, year, starts_with("FR_MA")) %>% 
+  filter(runname %in% runs_pureSD_labels, year <= 30) %>% 
+  gather(var, value, -runname, -year) %>% 
+  mutate(var = factor(var, levels = paste0("FR_MA_q", c(75, 50, 25)),
+                           labels = labels_quantiles)) %>%  
+  ggplot(aes(x = year, y = value, color = var, shape = var)) + theme_bw() +  
+  facet_grid(. ~ runname) + 
+  geom_point(size = 1.5) + 
+  geom_line(size = 0.5) + 
+  coord_cartesian(ylim = c(0, 160)) + 
+  scale_x_continuous(breaks = seq(0, 30, 5)) + 
+  scale_color_manual(values = c(RIG.blue, RIG.green, RIG.red), name = NULL) + 
+  scale_shape_manual(values = c(15, 16, 17), name = NULL) + 
+  labs(x = "Year", y = "Funded ratio (%)",
+       title = "Distribution of funded ratio across simulations under different return volatility")
+
+
+
+g2 <- 
+results_quantiles %>%
+  select(runname, year, starts_with("ERC_PR")) %>% 
+  filter(runname %in% runs_pureSD_labels, year <= 30) %>% 
+  gather(var, value, -runname, -year) %>% 
+  mutate(var = factor(var, levels = paste0("ERC_PR_q", c(75, 50, 25)),
+                           labels = labels_quantiles)) %>%  
+  ggplot(aes(x = year, y = value, color = var, shape = var)) + theme_bw() +  
+  facet_grid(. ~ runname) + 
+  geom_point(size = 1.5) + 
+  geom_line(size = 0.5) + 
+  coord_cartesian(ylim = c(0, 25)) + 
+  scale_x_continuous(breaks = seq(0, 30, 5)) + 
+  scale_color_manual(values = c(RIG.red, RIG.green, RIG.blue), name = NULL) + 
+  scale_shape_manual(values = c(17, 16, 15), name = NULL) + 
+  labs(x = "Year", y = "Employer contribution rate (%)",
+       title = "Distribution of employer contribution rate across simulations under different return volatility")
+
+g1
+g2
+
+g.height <- 4
+g.width <- 12
+
+ggsave(file = paste0(dir_outputs, "dist_FR_pureSD.png"), g1, height = g.height, width = g.width)
+ggsave(file = paste0(dir_outputs, "dist_ERC_pureSD.png"), g2, height = g.height, width = g.width)
+
+
+
+```
+
+
+
+
+# Graphs for investment policies
+
+```{r}
+# Funded ratio
+
+labels_quantiles <- paste0(c(75, 50, 25), "th percentile")
+
+g1 <- 
+results_quantiles %>%
+  select(runname, year, starts_with("FR_MA")) %>% 
+  filter(runname %in% runs_invPolicies_lables, year <= 30) %>% 
+  gather(var, value, -runname, -year) %>% 
+  mutate(var = factor(var, levels = paste0("FR_MA_q", c(75, 50, 25)),
+                           labels = labels_quantiles)) %>%  
+  ggplot(aes(x = year, y = value, color = var, shape = var)) + theme_bw() +  
+  facet_grid(. ~ runname) + 
+  geom_point(size = 1.5) + 
+  geom_line(size = 0.5) + 
+  coord_cartesian(ylim = c(0, 140)) + 
+  scale_x_continuous(breaks = seq(0, 30, 5)) + 
+  scale_y_continuous(breaks = seq(0, 200, 25)) + 
+  scale_color_manual(values = c(RIG.blue, RIG.green, RIG.red), name = NULL) + 
+  scale_shape_manual(values = c(15, 16, 17), name = NULL) + 
+  labs(x = "Year", y = "Funded ratio (%)",
+       title = "Distribution of funded ratio across simulations under different scenarios")
+
+
+
+g2 <- 
+results_quantiles %>%
+  select(runname, year, starts_with("ERC_PR")) %>% 
+  filter(runname %in% runs_invPolicies_lables, year <= 30) %>% 
+  gather(var, value, -runname, -year) %>% 
+  mutate(var = factor(var, levels = paste0("ERC_PR_q", c(75, 50, 25)),
+                           labels = labels_quantiles)) %>%  
+  ggplot(aes(x = year, y = value, color = var, shape = var)) + theme_bw() +  
+  facet_grid(. ~ runname) + 
+  geom_point(size = 1.5) + 
+  geom_line(size = 0.5) + 
+  coord_cartesian(ylim = c(0, 50)) + 
+  scale_x_continuous(breaks = seq(0, 30, 5)) + 
+  scale_color_manual(values = c(RIG.red, RIG.green, RIG.blue), name = NULL) + 
+  scale_shape_manual(values = c(17, 16, 15), name = NULL) + 
+  labs(x = "Year", y = "Employer contribution rate (%)",
+       title = "Distribution of employer contribution rate across simulations under different scenarios")
+
+g1
+
+ggsave(file = paste0(dir_outputs, "dist_FR_scenarios.png"), g1, height = g.height, width = g.width)
+ggsave(file = paste0(dir_outputs, "dist_ERC_scenarios.png"), g2, height = g.height, width = g.width)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
