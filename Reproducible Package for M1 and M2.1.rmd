@@ -1,0 +1,30 @@
+---
+title: "Reproducible Package for Report M1 and M2.1"
+author: "Yimeng Yin"
+date: "October 9, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+Run Control file 
+
+
+## Data sources 
+
+# Data for simulation model
+
+# Data for other figures and tables 
+
+
+
+## Running the model and producing simulation data
+
+
+## Figures and data tables in the reports
+
+
