@@ -11,6 +11,7 @@ library(ggplot2)
 library(magrittr)
 library(tidyr) # gather, spread
 library(readxl)
+library(xlsx)
 library(stringr)
 library(extrafont)
 library(pdata)
@@ -18,13 +19,14 @@ library(apitools)
 
 # devtools::install_github("donboyd5/apitools")
 # devtools::install_github("donboyd5/pdata")
+source("Functions.R")
 
 #****************************************************************************************************
 #                System-specific definitions ####
 #****************************************************************************************************
 
 runsd       <- "IO_M1_new/"
-outputs.dir <- "IO_M1_new/M1_figures/"
+outputs.dir <- "IO_M1_new/M1_outputs/"
 
 #****************************************************************************************************
 #                RIG color palette ####
@@ -41,6 +43,14 @@ RIG.yellow.dark <- "#ffc829"
 # loadfonts(device="win")
 # loadfonts(device="pdf")
 
+RIG.theme <- function(){
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = 0.5, color = "gray80"),
+        panel.background = element_rect(fill = "white", color = "grey"),
+        legend.key = element_rect(fill = "white", color = "grey"))
+}
 
 
 #****************************************************************************************************
@@ -114,8 +124,7 @@ df2 <- df %>% select(one_of(keyvars)) %>%
          FR_MA7p5=MA / AL7p5 * 100,
          runname=factor(runname))
 glimpse(df2)
-# tmp <- df2 %>% filter(abs(FR_MA7p5 / FR_MA - 1)>.01) %>% select(runname, year, sim, MA, AL, AL7p5, FR_MA, FR_MA7p5)
-# count(tmp, runname)
+
 
 # now get probabilities
 # Probability that the funded ratio will fall below 40% during the first 30 years
@@ -917,6 +926,27 @@ ercpv2 %>% filter(year==30) %>% select(year, runname, sim, i.rc, ERC_PR2.pvsum)
 
 
 
+##  Data for Table 2
+
+tab2_part1 <- 
+df2 %>% filter(runname == "A1F075_O30pA5", sim %in% c(0, 56, 228), year %in% 1:30) %>%
+  group_by(sim) %>% 
+  summarize(geoReturnY1_15 = get_geoReturn(i.r[year %in% 1:15]),
+            geoReturnY16_30 = get_geoReturn(i.r[year %in% 16:30]),
+            geoReturnY11_30 = get_geoReturn(i.r),
+            FR_Y30 = FR_MA[year == 30])
+
+tab2_part2 <- 
+ercpv2 %>% filter(sim %in% c(0, 56, 228), year == 30) %>% select(runname, year, sim, ERC_PR2.pvsum) %>% 
+  ungroup %>% 
+  mutate(ERC_PR2.pvsum_diff0 = 100 * (ERC_PR2.pvsum - ERC_PR2.pvsum[sim == 0])/ ERC_PR2.pvsum[sim == 0])
+
+tab2 <- left_join(tab2_part1, tab2_part2) %>% 
+  select(runname, sim, everything(), -year)
+tab2
+
+write.xlsx(tab2, file=paste0(outputs.dir, "Tables_raw.xlsx"), sheetName = "table2")
+
 
 # now make presentation quality graphs of i.r (?), FR_MA, and ERC_PR
 
@@ -1025,10 +1055,6 @@ p
 
 ggsave(file=paste0(outputs.dir, "fig3_indivruns_ir.png"), p, width=10, height=5.5, units="in" )
 ggsave(file=paste0(outputs.dir, "fig3_indivruns_ir.pdf"), p, width=10, height=5.5, units="in" )
-
-
-
-
 
 
 

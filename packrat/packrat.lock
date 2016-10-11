@@ -166,6 +166,15 @@ Source: CRAN
 Version: 1.0
 Hash: 72269616f582dc675c90ecd025af2754
 
+Package: fof
+Source: github
+Version: 0.4
+Hash: 66dd495fa91b4f341205cc48c8401552
+GithubRepo: fof
+GithubUsername: donboyd5
+GithubRef: master
+GithubSha1: c750d640e335f063dbc14a4cfb029b801a65b90a
+
 Package: foreach
 Source: CRAN
 Version: 1.4.3
