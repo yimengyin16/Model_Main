@@ -729,9 +729,11 @@ grid.draw(fig.equityShare)
 
 # write_csv(pdata, paste0("./results/invest_equitysharesdb_data.csv"))
 
-#*****************************************************
-## Figure 2 Risk-free rate and assumed return ####
-#*****************************************************
+# #*****************************************************
+# ## Figure 2 Risk-free rate and assumed return ####
+# #*****************************************************
+
+
 
 # FRED
 # DGS10 10-Year Treasury Constant Maturity Rate
@@ -756,7 +758,7 @@ hist.ir.s <- "fyear, value, source
 1998, 7.88, Zorn p.12
 2000, 7.91, Zorn p.12"
 
-# 1990-1992, 1994, 1996, 1998, and 2000 are generally available from 
+# 1990-1992, 1994, 1996, 1998, and 2000 are generally available from
 
 irhist <- read_csv(hist.ir.s) %>% mutate(series="survey")
 irhist
@@ -774,15 +776,15 @@ ht(t10)
 rates <- bind_rows(t10, t30)
 
 # qplot(date, value, data=rates, colour=series, geom=c("point", "line"))
-# 
+#
 # rates %>% group_by(series, year) %>%
 #   summarise(value=mean(value, na.rm=TRUE)) %>%
 #   qplot(year, value, data=., colour=series, geom=c("point", "line"))
-# 
-# rates.fy <- rates %>% mutate(fyear=ifelse(month(date)>=7, year+1, year)) %>%
-#   group_by(series, fyear) %>%
-#   summarise(value=mean(value, na.rm=TRUE))
-# 
+#
+rates.fy <- rates %>% mutate(fyear=ifelse(month(date)>=7, year+1, year)) %>%
+  group_by(series, fyear) %>%
+  summarise(value=mean(value, na.rm=TRUE))
+#
 # rates.fy %>% group_by(series) %>%
 #   mutate(diff=value - value[match(2016, fyear)]) %>%
 #   select(series, fyear, diff) %>%
@@ -801,76 +803,250 @@ saveRDS(rates.all, "./Data/rates.all.rds")
 
 rates.all <- readRDS("./Data/rates.all.rds")
 
-# rates.all %>% qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+
 # 
-# rates.all %>% filter(!series %in% c("DGS10")) %>% 
-#   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# # rates.all %>% qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# # 
+# # rates.all %>% filter(!series %in% c("DGS10")) %>% 
+# #   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# # 
+# # rates.all %>% filter(!series %in% c("DGS30")) %>% 
+# #   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# # 
+# # rates.all %>% filter(!series %in% c("DGS30", "nycrf"), fyear>=1973) %>% 
+# #   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# # 
+# # rates.all %>% filter(!series %in% c("DGS10", "nycrf"), fyear>=1973) %>% 
+# #   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# # 
+# # 
+# # rates.all %>% filter(!series %in% c("DGS30", "nycrf"), fyear>=1983) %>% 
+# #   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# # 
+# # rates.all %>% filter(!series %in% c("DGS10", "nycrf"), fyear>=1983) %>% 
+# #   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# # 
+# # 
+# # rates.all %>% filter(!series %in% c("nycrf"), fyear>=1983) %>% 
+# #   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
 # 
-# rates.all %>% filter(!series %in% c("DGS30")) %>% 
-#   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
 # 
-# rates.all %>% filter(!series %in% c("DGS30", "nycrf"), fyear>=1973) %>% 
-#   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# rates.all %>% filter(series %in% "survey", fyear %in% 1973:1989)
 # 
-# rates.all %>% filter(!series %in% c("DGS10", "nycrf"), fyear>=1973) %>% 
-#   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# levs <- c("DGS10", "survey")
+# labs <- c("10-year Treasury yield", "Average assumed return")
+# pdat <- rates.all %>% filter(series %in% levs, fyear>=1973) %>%
+#   mutate(value=ifelse(fyear<1989 & series=="survey", NA, value),
+#          seriesf=factor(series, levels=levs, labels=labs))
+# xlab1 <- "Pension fund fiscal year"
+# xlab2 <- "Assumed returns not available for 1976-1988 but likely were near dashed line"
+# #xlab <- paste0(xlab1, "\n\n", xlab2)
+# gtitle <- "Assumed investment returns of state and local retirement systems\nand risk-free returns"
+# p <- ggplot(data=pdat, aes(x=fyear, y=value, colour=seriesf)) +
+#   theme_bw() + RIG.theme() + 
+#   geom_line() +
+#   geom_point() +
+#   scale_colour_manual(values = c(RIG.red,RIG.blue)) +
+#   geom_segment(x = 1975, y = 5.0, xend = 1989, yend = 7.6, colour = "blue", linetype="dashed", size=.1) +
+#   geom_point(x=1975, y=5.0, colour="blue") +
+#   scale_y_continuous(name="Percent (%)", breaks=seq(0, 30, 2), limits=c(0, 15)) +
+#   scale_x_continuous(name=xlab1, breaks=seq(1975, 2020, 5)) +
+#   guides(colour=guide_legend(title=NULL)) +
+#   ggtitle(gtitle) + 
+#   theme(plot.margin = unit(c(0,0,3,0), "lines")) # Top, righ, bottom, left
+# p
 # 
 # 
-# rates.all %>% filter(!series %in% c("DGS30", "nycrf"), fyear>=1983) %>% 
-#   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# noteLine1 <- "Note: Assumed returns not available for 1976-1988 but likely were near dashed line"
+# noteLine2 <- "See text for sources"
+# # "Sources: Public Plans Database (2001-2014), Public Pension Coordinating Council surveys (1990-2000), Congressional Pension Task Force Report - 1978 (1975"
+# footNote <- paste0(noteLine1, noteLine2)
 # 
-# rates.all %>% filter(!series %in% c("DGS10", "nycrf"), fyear>=1983) %>% 
-#   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# 
+# p <-  p + geom_text(aes(label = noteLine1, x = 1975, y = -Inf), hjust = 0.125, vjust = 4.7 + 1, size = 3.5, color = "black")
+# p <-  p + geom_text(aes(label = noteLine2, x = 1975, y = -Inf), hjust = 0.52,   vjust = 6.2 + 1, size = 3.5, color = "black")
 # 
 # 
-# rates.all %>% filter(!series %in% c("nycrf"), fyear>=1983) %>% 
-#   qplot(fyear, value, data=., colour=series, geom=c("point", "line"))
+# # Turning off clipping
+# gt <- ggplot_gtable(ggplot_build(p))
+# gt$layout$clip[gt$layout$name == "panel"] <- "off"
+# grid.draw(gt)
+# 
+# ggsave(paste0(IO_folder, outputs.folder, "fig2.png"),gt, width=10, height=6, units="in")
+# 
 
 
-rates.all %>% filter(series %in% "survey", fyear %in% 1973:1989)
+
+
+# Public pension funds' earnings assumptions
+
+linesize <- 1.1
+pointsize <- 1.1
+legend <- guides(colour=guide_legend(title=NULL))
+
+
+## Longer time period
+
+rates.all <- readRDS("./data/rates.all.rds")
+
+# rates.all %>% filter(series %in% "survey", fyear %in% 1973:1989)
 
 levs <- c("DGS10", "survey")
 labs <- c("10-year Treasury yield", "Average assumed return")
-pdat <- rates.all %>% filter(series %in% levs, fyear>=1973) %>%
+pdata <- rates.all %>% filter(series %in% levs, fyear>=1973) %>%
   mutate(value=ifelse(fyear<1989 & series=="survey", NA, value),
          seriesf=factor(series, levels=levs, labels=labs))
-xlab1 <- "Pension fund fiscal year"
-xlab2 <- "Assumed returns not available for 1976-1988 but likely were near dashed line"
-#xlab <- paste0(xlab1, "\n\n", xlab2)
+# xlab1 <- "Pension fund fiscal year"
+# xlab2 <- "Assumed returns not available for 1976-1988 but likely were near dashed blue line"
+# xlab <- paste0(xlab1, "\n\n", xlab2)
+xlab <- "Pension fund fiscal year"
 gtitle <- "Assumed investment returns of state and local retirement systems\nand risk-free returns"
-p <- ggplot(data=pdat, aes(x=fyear, y=value, colour=seriesf)) +
-  theme_bw() + RIG.theme() + 
-  geom_line() +
-  geom_point() +
-  scale_colour_manual(values = c(RIG.red,RIG.blue)) +
+p <- ggplot(data=pdata, aes(x=fyear, y=value, colour=seriesf)) +
+  theme_bw() +
+  # theme(axis.title.x = element_text(hjust=0.5, face="bold", size=rel(1))) +
+  theme(legend.justification=c(0, 1), legend.position=c(.75, 1),
+        legend.background = element_rect(color = "grey",  size=0.5, linetype=1)) +
+  geom_line(size=linesize) +
+  geom_point(size=pointsize) +
+  scale_colour_manual(values = c("darkgreen", "blue")) +
   geom_segment(x = 1975, y = 5.0, xend = 1989, yend = 7.6, colour = "blue", linetype="dashed", size=.1) +
-  geom_point(x=1975, y=5.0, colour="blue") +
+  geom_point(x=1975, y=5.0, colour="blue", size=pointsize) +
   scale_y_continuous(name="Percent (%)", breaks=seq(0, 30, 2), limits=c(0, 15)) +
-  scale_x_continuous(name=xlab1, breaks=seq(1975, 2020, 5)) +
-  guides(colour=guide_legend(title=NULL)) +
-  ggtitle(gtitle) + 
-  theme(plot.margin = unit(c(0,0,3,0), "lines")) # Top, righ, bottom, left
-p
+  scale_x_continuous(name=xlab, breaks=seq(1975, 2020, 5)) +
+  legend +
+  ggtitle(gtitle)
+q <- p + annotate("text", label="...no data...", x=1982, y=6.5, angle=15, size=3)
+
+# do this when we need both an axis label (centered) and a source note (left justified, not bold)
+# theme(axis.title.x = element_text(hjust=0.5, face="bold", size=rel(1))) +
+grid.newpage()
+note <- "\nNote: Assumed returns not available for 1976-1988 but likely were near dashed blue line"
+g <- arrangeGrob(q, bottom = textGrob(note, x = 0, hjust = -0.1, vjust=0.1, 
+                                      gp = gpar(fontface = "plain", fontsize = 12)))
+grid.draw(g)
+
+# ggsave("./results/invest_erorvsriskfree.png", g, width=gwidth, height=gheight, units="in")
+# write_csv(pdata, paste0("./results/invest_erorvsriskfree_data.csv"))
 
 
-noteLine1 <- "Note: Assumed returns not available for 1976-1988 but likely were near dashed line"
-noteLine2 <- "See text for sources"
-# "Sources: Public Plans Database (2001-2014), Public Pension Coordinating Council surveys (1990-2000), Congressional Pension Task Force Report - 1978 (1975"
-footNote <- paste0(noteLine1, noteLine2)
+## Shorter time period
+
+rates.all <- readRDS("./data/rates.all.rds")
+
+# rates.all %>% filter(series %in% "survey", fyear %in% 1973:1989)
+
+levs <- c("DGS10", "survey")
+labs <- c("10-year Treasury yield", "Average assumed return")
+pdata <- rates.all %>% filter(series %in% levs, fyear>=1990) %>%
+  mutate(value=ifelse(fyear<1989 & series=="survey", NA, value),
+         seriesf=factor(series, levels=levs, labels=labs))
+# xlab1 <- "Pension fund fiscal year"
+# xlab2 <- "Assumed returns not available for 1976-1988 but likely were near dashed blue line"
+# xlab <- paste0(xlab1, "\n\n", xlab2)
+xlab <- "Pension fund fiscal year"
+gtitle <- "Assumed investment returns of state and local retirement systems\nand risk-free returns"
+p <- ggplot(data=pdata, aes(x=fyear, y=value, colour=seriesf)) +
+  theme_bw() +
+  # theme(axis.title.x = element_text(hjust=0.5, face="bold", size=rel(1))) +
+  theme(legend.justification=c(0, 1), legend.position=c(.75, 1),
+        legend.background = element_rect(color = "grey",  size=0.5, linetype=1)) +
+  geom_line(size=linesize) +
+  geom_point(size=pointsize) +
+  scale_colour_manual(values = c("darkgreen", "blue")) +
+  scale_y_continuous(name="Percent (%)", breaks=seq(0, 30, 2), limits=c(0, 15)) +
+  scale_x_continuous(name=xlab, breaks=seq(1975, 2020, 5)) +
+  legend +
+  ggtitle(gtitle)
+
+# do this when we need both an axis label (centered) and a source note (left justified, not bold)
+# theme(axis.title.x = element_text(hjust=0.5, face="bold", size=rel(1))) +
+grid.newpage()
+note <- "\nNote: Assumed returns not available for 1976-1988 but likely were near dashed blue line"
+g <- arrangeGrob(p, bottom = textGrob(note, x = 0, hjust = -0.1, vjust=0.1, 
+                                      gp = gpar(fontface = "plain", fontsize = 12)))
+grid.draw(g)
+#ggsave("./results/invest_erorvsriskfree_short.png", p, width=gwidth, height=gheight, units="in")
 
 
-p <-  p + geom_text(aes(label = noteLine1, x = 1975, y = -Inf), hjust = 0.125, vjust = 4.7 + 1, size = 3.5, color = "black")
-p <-  p + geom_text(aes(label = noteLine2, x = 1975, y = -Inf), hjust = 0.52,   vjust = 6.2 + 1, size = 3.5, color = "black")
 
 
-# Turning off clipping
-gt <- ggplot_gtable(ggplot_build(p))
-gt$layout$clip[gt$layout$name == "panel"] <- "off"
-grid.draw(gt)
+## Shorter time period with private assumptions
+rates.all <- readRDS("./data/rates.all.rds")
 
-ggsave(paste0(IO_folder, outputs.folder, "fig2.png"),gt, width=10, height=6, units="in")
+# private rates are from Andonov, Bauer, Cremers 2016
+private <- read_csv(
+  "fyear, value
+  1993, 8.214
+  1994, 8.145
+  1995, 7.987
+  1996, 7.972
+  1997, 7.71
+  1998, 7.495
+  1999, 7.961
+  2000, 8.052
+  2001, 7.761
+  2002, 7.469
+  2003, 7.267
+  2004, 6.816
+  2005, 6.643
+  2006, 6.472
+  2007, 6.307
+  2008, 6.512
+  2009, 6.181
+  2010, 5.721
+  2011, 5.112
+  2012, 4.36") %>% mutate(series="privmean")
+private
 
+# rates.all %>% filter(series %in% "survey", fyear %in% 1973:1989)
 
+levs <- c("survey", "privmean", "DGS10")
+labs <- c("State-local average assumed return", "Private average assumed return", "10-year Treasury yield")
+pdata <- rates.all %>% filter(series %in% levs, fyear>=1990) %>%
+  bind_rows(private) %>%
+  mutate(seriesf=factor(series, levels=levs, labels=labs))
+# xlab1 <- "Pension fund fiscal year"
+# xlab2 <- "Assumed returns not available for 1976-1988 but likely were near dashed blue line"
+# xlab <- paste0(xlab1, "\n\n", xlab2)
+xlab <- "Pension fund fiscal year"
+gtitle <- "Assumed investment returns of public and private retirement systems\nand risk-free returns"
+fig.rates_short_priv <- ggplot(data=pdata, aes(x=fyear, y=value, colour=seriesf)) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  # theme(axis.title.x = element_text(hjust=0.5, face="bold", size=rel(1))) +
+  theme(legend.justification=c(1, 1), legend.position=c(1, 1),
+        legend.background = element_rect(color = "grey",  size=0.5, linetype=1)) +
+  geom_line(size=linesize) +
+  geom_point(size=pointsize) +
+  scale_colour_manual(values = c(RIG.blue, RIG.green, RIG.purple)) +
+  scale_y_continuous(name="Percent (%)", breaks=seq(0, 30, 2), limits=c(0, 15)) +
+  scale_x_continuous(name=xlab, breaks=seq(1975, 2020, 5)) +
+  legend +
+  ggtitle(gtitle)
+fig.rates_short_priv
+
+# # do this when we need both an axis label (centered) and a source note (left justified, not bold)
+# # theme(axis.title.x = element_text(hjust=0.5, face="bold", size=rel(1))) +
+# grid.newpage()
+# note <- "\nNote: Assumed returns not available for 1976-1988 but likely were near dashed blue line"
+# g <- arrangeGrob(q, bottom = textGrob(note, x = 0, hjust = -0.1, vjust=0.1, 
+#                                       gp = gpar(fontface = "plain", fontsize = 12)))
+# grid.draw(g)
+
+# ggsave("./results/invest_eror_pubpriv_vsriskfree_short_wide.png", p, width=11, height=6.8, units="in")
+
+grid.newpage()
+n0 <- "\n\n  Sources:"
+n1 <- "\n  State-local assumed return from Public Plans Database"
+n2 <- "\n Private assumed returns provided by Andonov, Bauer, and Cremers"
+n3 <- "\n10-Year Treasury yield from Federal Reserve Bank of St. Louis (FRED)"
+note <- paste0(n0, n1, n2, n3)
+fig.rates_short_priv <- arrangeGrob(fig.rates_short_priv, bottom = textGrob(note, x = 0, hjust = -0.1, vjust=0.1, 
+                                      gp = gpar(fontface = "plain", fontsize = 9)))
+grid.draw(fig.rates_short_priv)
+
+#ggsave("./results/invest_eror_pubpriv_vsriskfree_short.png", g, width=gwidth, height=gheight, units="in")
+#write_csv(pdata, paste0("./results/invest_eror_pubpriv_vsriskfree_short_data.csv"))
 
 
 #*****************************************************
@@ -883,6 +1059,10 @@ ggsave(paste0(IO_folder, outputs.folder, "fig2.png"),gt, width=10, height=6, uni
 # Fig 1
 ggsave(paste0(IO_folder, outputs.folder, "fig1_equityShare.png"), fig.equityShare, width=10*0.8, height=8*0.8, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "fig1_equityShare.pdf"), fig.equityShare, width=10*0.8, height=8*0.8, units="in")
+
+# Fig 2
+ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.png"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.pdf"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
 
  
  
