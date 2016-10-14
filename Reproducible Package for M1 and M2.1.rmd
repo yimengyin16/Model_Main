@@ -13,13 +13,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Run Control file 
 
-
 ## Data sources 
 
 # Data for simulation model
 
 # Data for other figures and tables 
-
 
 
 ## Running the model and producing simulation data

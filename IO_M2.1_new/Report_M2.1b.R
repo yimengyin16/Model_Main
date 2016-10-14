@@ -548,121 +548,123 @@ fig_shortfall.ERC_PR.med
 # #*****************************************************
 # ## Figure 1 Equity share ####
 # #*****************************************************
-# 
-# vnames.vec <- "snamex, shortname
-# 
-# # general variables
-# FA206210001, other.slgperscurtax
-# FA206240001, other.slgprodimptax
-# FA086902005, other.gdp
-# FL213162005, other.munisec
-# FL213162400, other.stdebt
-# FL214090005, other.slgfinass
-# FL214190005, other.slgfinliab
-# FL653064100, other.mfcorpequity_old
-# LM653064100, other.mfcorpequity
-# FL654090005, other.mfassets_old
-# LM654090000, other.mfassets
-# 
-# # private DB pension funds
-# FL574090045, ppfdb.finassets
-# FL573065043, ppfdb.mortgages
-# FL573064143, ppfdb.corpequity
-# FL573064243, ppfdb.mfshares
-# FL573073005, ppfdb.claims
-# FL573093043, ppfdb.otherassets
-# FL574190043, ppfdb.entitlement
-# FL575035005, ppfdb.redirect
-# 
-# # SLG DB funds
-# FL224090045, slgdb.finassets
-# FL223065043, slgdb.mortgages
-# FL223064145, slgdb.corpequity
-# FL223064243, slgdb.mfshares
-# FL223073045, slgdb.claims
-# FL223093043, slgdb.otherassets
-# FL224190043, slgdb.entitlement
-# FL225035043, slgdb.redirect
-# "
-# 
+
+vnames.vec <- "snamex, shortname
+
+# general variables
+FA206210001, other.slgperscurtax
+FA206240001, other.slgprodimptax
+FA086902005, other.gdp
+FL213162005, other.munisec
+FL213162400, other.stdebt
+FL214090005, other.slgfinass
+FL214190005, other.slgfinliab
+FL653064100, other.mfcorpequity_old
+LM653064100, other.mfcorpequity
+FL654090005, other.mfassets_old
+LM654090000, other.mfassets
+
+# private DB pension funds
+FL574090045, ppfdb.finassets
+FL573065043, ppfdb.mortgages
+FL573064143, ppfdb.corpequity
+FL573064243, ppfdb.mfshares
+FL573073005, ppfdb.claims
+FL573093043, ppfdb.otherassets
+FL574190043, ppfdb.entitlement
+FL575035005, ppfdb.redirect
+
+# SLG DB funds
+FL224090045, slgdb.finassets
+FL223065043, slgdb.mortgages
+FL223064145, slgdb.corpequity
+FL223064243, slgdb.mfshares
+FL223073045, slgdb.claims
+FL223093043, slgdb.otherassets
+FL224190043, slgdb.entitlement
+FL225035043, slgdb.redirect
+"
+
 # x <- fof %>% filter(variable == "FL223064145") %>% arrange(year, freq)
 # x
-# vnames <- read_csv(vnames.vec) %>% 
-#   setNames(str_trim(names(.))) %>%
-#   mutate_each(funs(str_trim)) %>%
-#   filter(!is.na(shortname), !str_detect(snamex, "#"))
-# # vnames
-# # anyDuplicated(vnames)
-# # vnames[duplicated2(vnames)]
-# 
-# glimpse(fof)
-# 
-# fof1 <- fof %>% group_by(variable, year) %>% 
-#   mutate(Keep = ifelse(freq == "A" | date == max(date), 1, 0)) %>% 
-#   filter(Keep == 1) %>% 
+
+vnames <- read_csv(vnames.vec) %>%
+  setNames(str_trim(names(.))) %>%
+  mutate_each(funs(str_trim)) %>%
+  filter(!is.na(shortname), !str_detect(snamex, "#"))
+# vnames
+# anyDuplicated(vnames)
+# vnames[duplicated2(vnames)]
+
+glimpse(fof)
+
+# fof1 <- fof %>% group_by(variable, year) %>%
+#   mutate(Keep = ifelse(freq == "A" | date == max(date), 1, 0)) %>%
+#   filter(Keep == 1) %>%
 #   ungroup
 # 
-# fof1 <- fof1[!duplicated(fof1[c("variable", "year")]),] 
-# 
-# #x <- fof1 %>% filter(variable == "FL223073045") %>% arrange(year, freq) 
-# #x <- x[!duplicated(x[c("variable", "year")]),]  
-# 
-# 
-# 
-# 
-# # df <- fof %>% filter(variable %in% paste0(vnames$snamex, ".A")) %>%
-# df <- fof1 %>% filter(variable %in% paste0(vnames$snamex)) %>%
-#   mutate(year=year(date),
-#          vname=vnames$shortname[match(str_sub(variable, 1, -1), vnames$snamex)]) %>%
-#   select(vname, year, value) %>%
-#   separate(vname, c("slgppf", "vname"), sep="\\.", extra="merge", remove=TRUE) %>% # so we can track public plans, private plans, other data
-#   select(slgppf, year, vname, value)
-# ht(df)
-# count(df, vname)
-# 
-# df %>% filter(str_detect(vname, "mfcorpequity")) %>% spread(vname, value)
-# #df %>% filter(str_detect(vname, "mfcorpequity")) %>% arrange(year)
-# #df %>% filter(freq %in% "Q") %>% arrange(vname, slgppf, year)
-# 
-# dfothr <- filter(df, slgppf=="other") %>%
-#   spread(vname, value) %>%
-#   mutate(mfstockshare=mfcorpequity / mfassets) # economywide share of mutual fund assets that are in corp equities
-# 
-# 
-# # No corpequity?
-# dfshares <- df %>% filter(slgppf!="other") %>%
-#   spread(vname, value) %>%
-#   left_join(select(dfothr, year, gdp, mfstockshare)) %>%
-#   mutate(invassets=entitlement - claims,
-#          redirect=invassets - (finassets - claims), # redirect seems to have disappeared from the data, so compute
-#          fr.mv=invassets / entitlement * 100,
-#          equity1=corpequity + mortgages + (mfshares+otherassets) * mfstockshare, # +otherassets
-#          equity2=corpequity + mfshares * mfstockshare / 100,
-#          equity3=corpequity + (mfshares+otherassets) * mfstockshare / 100 + redirect, # I think this is prob best 6/13/2016
-#          equityshare1=equity1 / invassets * 100,
-#          equityshare2=equity2 / invassets * 100,
-#          equityshare3=equity3 / invassets * 100,
-#          equitygdpshare=equity1/gdp *100)
-# 
-# dfshares %>% select(year, slgppf, starts_with("equity")) %>% 
-#   qplot(year, equityshare3, data=., colour=slgppf, geom=c("point", "line"))
-# 
-# pdat2 <- dfshares %>% filter(year>=1973) %>% select(year, slgppf, equityshare3) %>%
-#   mutate(slgppf_f=factor(slgppf, levels=c("slgdb", "ppfdb"), labels=c("State & local", "Private")))
-# xlab <- "Calendar year\n\nSource: Authors' analysis of Financial Accounts of the United States, Federal Reserve Board"
-# p2 <- ggplot(data=pdat2, aes(x=year, y=equityshare3, colour=slgppf_f)) +
-#   theme_bw() +
-#   geom_line() +
-#   geom_point() +
-#   scale_colour_manual(values=c("red", "blue")) +
-#   scale_y_continuous(name="Percent (%)", breaks=seq(0, 80, 5), limits=c(0, 70)) +
-#   scale_x_continuous(name=xlab, breaks=seq(1940, 2020, 5)) +
-#   guides(colour=guide_legend(title=NULL)) +
-#   ggtitle("Equity-like investments as percentage of invested assets\nDefined benefit plans")
-# p2
-# ggsave("./Results/invest_equityshare_slgprivdb_1973p.png", p2, width=8, height=6, units="in")
-# 
-# 
+# fof1 <- fof1[!duplicated(fof1[c("variable", "year")]),]
+
+#x <- fof1 %>% filter(variable == "FL223073045") %>% arrange(year, freq)
+#x <- x[!duplicated(x[c("variable", "year")]),]
+
+count(fof, variable)
+fof$variable %>% str_detect(".A$") %>% match(TRUE, .)
+
+
+ df <- fof %>% filter(variable %in% paste0(vnames$snamex, ".A")) %>%
+#df <- fof1 %>% filter(variable %in% paste0(vnames$snamex)) %>%
+  mutate(year=year(date),
+         vname=vnames$shortname[match(str_sub(variable, 1, -1), vnames$snamex)]) %>%
+  select(vname, year, value) %>%
+  separate(vname, c("slgppf", "vname"), sep="\\.", extra="merge", remove=TRUE) %>% # so we can track public plans, private plans, other data
+  select(slgppf, year, vname, value)
+ht(df)
+count(df, vname)
+
+df %>% filter(str_detect(vname, "mfcorpequity")) %>% spread(vname, value)
+#df %>% filter(str_detect(vname, "mfcorpequity")) %>% arrange(year)
+#df %>% filter(freq %in% "Q") %>% arrange(vname, slgppf, year)
+
+dfothr <- filter(df, slgppf=="other") %>%
+  spread(vname, value) %>%
+  mutate(mfstockshare=mfcorpequity / mfassets) # economywide share of mutual fund assets that are in corp equities
+
+
+# No corpequity?
+dfshares <- df %>% filter(slgppf!="other") %>%
+  spread(vname, value) %>%
+  left_join(select(dfothr, year, gdp, mfstockshare)) %>%
+  mutate(invassets=entitlement - claims,
+         redirect=invassets - (finassets - claims), # redirect seems to have disappeared from the data, so compute
+         fr.mv=invassets / entitlement * 100,
+         equity1=corpequity + mortgages + (mfshares+otherassets) * mfstockshare, # +otherassets
+         equity2=corpequity + mfshares * mfstockshare / 100,
+         equity3=corpequity + (mfshares+otherassets) * mfstockshare / 100 + redirect, # I think this is prob best 6/13/2016
+         equityshare1=equity1 / invassets * 100,
+         equityshare2=equity2 / invassets * 100,
+         equityshare3=equity3 / invassets * 100,
+         equitygdpshare=equity1/gdp *100)
+
+dfshares %>% select(year, slgppf, starts_with("equity")) %>%
+  qplot(year, equityshare3, data=., colour=slgppf, geom=c("point", "line"))
+
+pdat2 <- dfshares %>% filter(year>=1973) %>% select(year, slgppf, equityshare3) %>%
+  mutate(slgppf_f=factor(slgppf, levels=c("slgdb", "ppfdb"), labels=c("State & local", "Private")))
+xlab <- "Calendar year\n\nSource: Authors' analysis of Financial Accounts of the United States, Federal Reserve Board"
+p2 <- ggplot(data=pdat2, aes(x=year, y=equityshare3, colour=slgppf_f)) +
+  theme_bw() +
+  geom_line() +
+  geom_point() +
+  scale_colour_manual(values=c("red", "blue")) +
+  scale_y_continuous(name="Percent (%)", breaks=seq(0, 80, 5), limits=c(0, 70)) +
+  scale_x_continuous(name=xlab, breaks=seq(1940, 2020, 5)) +
+  guides(colour=guide_legend(title=NULL)) +
+  ggtitle("Equity-like investments as percentage of invested assets\nDefined benefit plans")
+p2
+ggsave("./Results/invest_equityshare_slgprivdb_1973p.png", p2, width=8, height=6, units="in")
+
+
 
 
 #*****************************************************

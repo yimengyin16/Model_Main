@@ -223,6 +223,29 @@ fig.FR.med <-
 fig.FR.med
 
 
+## Figure 7(rescale) Funded ratios of plans with high initial asset-payroll ratio and plans with declining workforce recover slower
+fig.title <- "Median funded ratio"
+fig.FR.med_rescale <- 
+  ggplot(df_demo, aes(x = year, y = FR.q50, color = runname)) + theme_bw() + RIG.theme() + 
+  geom_point(size = 2) + geom_line() +
+  geom_hline(yintercept = 100, linetype = 2, color = "black") + 
+  coord_cartesian(ylim = c(50, 100)) + 
+  scale_x_continuous(breaks = seq(0,30, 5))+ 
+  scale_y_continuous(breaks = seq(0,200, 10)) + 
+  scale_color_manual(values = demo.color6) +
+  labs(x = "Year",
+       y = "Funded ratio (%)",
+       title = "Median funded ratio") + 
+  guides(col = guide_legend(title = "Plan type")) 
+# theme(# legend.justification=c(0,1), legend.position=c(0,1),
+#       legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
+fig.FR.med_rescale
+
+
+
+
+
+
 
 ## Figures of risk measures not shown in the report
 
@@ -596,6 +619,10 @@ ggsave(paste0(IO_folder, outputs.folder, "fig6_FR40less.pdf"),fig.FR40less, widt
 # Fig 7
 ggsave(paste0(IO_folder, outputs.folder, "fig7_FR.med.png"),fig.FR.med, width=fig.width, height=fig.height, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "fig7_FR.med.pdf"),fig.FR.med, width=fig.width, height=fig.height, units="in")
+
+# Fig 7 rescaled
+ggsave(paste0(IO_folder, outputs.folder, "fig7_FR.med_rescaled.png"),fig.FR.med_rescale, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig7_FR.med_rescaled.pdf"),fig.FR.med_rescale, width=fig.width, height=fig.height, units="in")
 
 
 # Appendix Fig 1
