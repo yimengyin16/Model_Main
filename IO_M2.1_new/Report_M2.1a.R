@@ -183,6 +183,12 @@ fig.ERC_high <-
 fig.ERC_high
 
 
+grid.newpage()
+note <- 'Note: The lines for "Average, 2% growth" and "Immature plan" are overlapped.'
+fig.ERC_high <- arrangeGrob(fig.ERC_high, bottom = textGrob(note, x = 0, hjust = -0.1, vjust=0.1, 
+                                                                            gp = gpar(fontface = "plain", fontsize = 9)))
+grid.draw(fig.ERC_high)
+
 
 ## Figure 6 Plans with high initial asset-payroll ratios and plans with a declining workforces have 
    #greatest risk of severe underfunding
