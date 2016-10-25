@@ -173,7 +173,7 @@ fig_pureVol.FR40less
 
 
 ## risk of ERC sharp increases
-fig.title <- "Probability of employer contribution rising by more than \n10% of payroll at any time prior to and including the given year"
+fig.title <- "Probability of employer contribution rising by more than \n10% of payroll in any 5-year period up to the given year"
 fig_pureVol.ERC_hike <- 
   df_inv1 %>% 
   ggplot(aes(x = year, y = ERC_hike, color = runname, shape = runname)) +  RIG.theme() + 
@@ -232,7 +232,8 @@ fig_pureVol.FRDist <-
   guides(col = guide_legend(title = NULL), shape = guide_legend(title = NULL))
 
 
-fig.title <- "Distribution of employer contributions across simulations under different return volatility"
+fig.title <- "Distribution of employer contribution rates across simulations under different return volatility"
+pctile.labels <- c("75th percentile", "50th percentile", "25th percentile")
 fig_pureVol.ERCDist <- 
   df_inv1 %>%  select(runname, year, ERC_PR.q25, ERC_PR.q50, ERC_PR.q75) %>% 
   gather(pctile, value, -runname, -year) %>%
@@ -280,7 +281,7 @@ fig_response.FR40less
 
 
 ## risk of ERC sharp increases
-fig.title <- "Probability of employer contribution rising by more than \n10% of payroll at any time prior to and including the given year"
+fig.title <- "Probability of employer contribution rising by more than \n10% of payroll in any 5-year period up to the given year"
 fig_response.ERC_hike <- 
   df_inv2 %>% 
   ggplot(aes(x = year, y = ERC_hike, color = runname, shape = runname)) +  RIG.theme() + 
@@ -320,7 +321,7 @@ fig_response.ERC_high
 
 # Distribution of funded ratios
 pctile.labels <- c("75th percentile", "50th percentile", "25th percentile")
-fig.title <- "Distribution of funded ratios across simulations under different return volatility"
+fig.title <- "Distribution of funded ratios across simulations under different scenarios"
 fig_response.FRDist <- 
   df_inv2 %>%  select(runname, year, FR.q25, FR.q50, FR.q75) %>% 
   gather(pctile, value, -runname, -year) %>%
@@ -340,7 +341,7 @@ fig_response.FRDist
 
 
 # Distribution of ERC rate
-fig.title <- "Distribution of employer contributions across simulations under different return volatility"
+fig.title <- "Distribution of employer contribution rates across simulations under different scenarios"
 fig_response.ERCDist <- 
   df_inv2 %>%  select(runname, year, ERC_PR.q25, ERC_PR.q50, ERC_PR.q75) %>% 
   gather(pctile, value, -runname, -year) %>%
@@ -428,7 +429,7 @@ fig_shortfall.FR40less
 
 
 ## risk of ERC sharp increases
-fig.title <- "Probability of employer contribution rising by more than \n10% of payroll at any time prior to and including the given year"
+fig.title <- "Probability of employer contribution rising by more than \n10% of payroll in any 5-year period up to the given year"
 fig_shortfall.ERC_hike <- 
   df_inv3 %>% 
   ggplot(aes(x = year, y = ERC_hike, color = runname, shape = runname)) +  RIG.theme() + 
@@ -468,17 +469,18 @@ fig_shortfall.ERC_high
 
 # Distribution of funded ratios
 pctile.labels <- c("75th percentile", "50th percentile", "25th percentile")
-fig.title <- "Distribution of funded ratios across simulations under different return volatility"
+fig.title <- "Distribution of funded ratios across simulations under true expected compound returns"
 fig_shortfall.FRDist <- 
   df_inv3 %>%  select(runname, year, FR.q25, FR.q50, FR.q75) %>% 
   gather(pctile, value, -runname, -year) %>%
   mutate(pctile = factor(pctile, levels = c("FR.q75", "FR.q50", "FR.q25"), labels = pctile.labels)) %>% 
   ggplot(aes(x = year, y = value, color = pctile, shape = pctile)) + theme_bw() +  RIG.theme() + facet_grid(.~runname) + 
   geom_point(size = 2) + geom_line() +
+  geom_hline(yintercept = 100, linetype = 2) + 
   coord_cartesian(ylim = c(0, 130)) + 
   scale_x_continuous(breaks = seq(0,30, 5))+ 
   scale_y_continuous(breaks = seq(0,250, 25)) + 
-  scale_color_manual(values = RIG.3colors) +
+  scale_color_manual(values = c(RIG.green, RIG.blue, RIG.red)) +
   labs(x = "Year",
        y = "Funded ratio (%)",
        title = fig.title) + 
@@ -487,7 +489,7 @@ fig_shortfall.FRDist
 
 
 # Distribution of ERC rate
-fig.title <- "Distribution of employer contributions across simulations under different return volatility"
+fig.title <- "Distribution of employer contribution rates across simulations \nunder different true expected compound returns"
 fig_shortfall.ERCDist <- 
   df_inv3 %>%  select(runname, year, ERC_PR.q25, ERC_PR.q50, ERC_PR.q75) %>% 
   gather(pctile, value, -runname, -year) %>%
@@ -1133,11 +1135,11 @@ ggsave(paste0(IO_folder, outputs.folder, "fig15_shortfall.ERC_PR.med.pdf"),fig_s
 
 # Figures not shown in the report
 
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.png"),fig_shortfall.FRDist, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.pdf"),fig_shortfall.FRDist, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.png"),fig_shortfall.FRDist, width=11*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.pdf"),fig_shortfall.FRDist, width=11*.8, height=5*.8, units="in")
 
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERCDist.png"),fig_shortfall.ERCDist, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERCDist.pdf"),fig_shortfall.ERCDist, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERCDist.png"),fig_shortfall.ERCDist, width=11*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERCDist.pdf"),fig_shortfall.ERCDist, width=11*.8, height=5*.8, units="in")
 
 ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_high.png"),fig_shortfall.ERC_high, width=fig.width, height=fig.height, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_high.pdf"),fig_shortfall.ERC_high, width=fig.width, height=fig.height, units="in")

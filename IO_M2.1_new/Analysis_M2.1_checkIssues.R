@@ -1,25 +1,32 @@
-# This script looks at
+# This script checks various technical issues in M2.1a and M2.1b
   # 1. the compound annual return for simulations with median funded ratio.
   # 2. funded ratios of various demographic scenarios when 30-year compound annual return meets the earnings assumption. 
-
+  # 3. Make sure we understand Fig 4 in M2.1a: Decline in AAL around age 60 
+  # 4. Make sure we understand the decline in median ERC rate in Fig 5 M2.1b
 
 #*****************************************************
 ##  Packages and Functions  ####
 #*****************************************************
 
 
-library(reshape2)
-library(plyr)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(knitr)
 library(magrittr) # to use %<>%
-library(zoo)
+
+library(knitr)
+
 library(grid)
 library(gridExtra)
-library(stringr)
+
+library(reshape2)
+library(forcats)
+library("plyr") # needed for ldply; must be loaded BEFORE dplyr
+library("tidyverse")
+options(tibble.print_max = 60, tibble.print_min = 60) # if more than 60 rows, print 60 - enough for states
+# hms tidyr tibble readr stringr purrr dplyr ggplot2 grid gtable scales DBI Rcpp colorspace
+
+library(zoo)
 library(xlsx)
+
+library(pp.prototypes)
 
 source("Functions.R")
 source("Functions_Measures.R")
@@ -108,15 +115,78 @@ results_all %>% filter(sim %in% c(56, 228), year <=30, runname %in% runs_demo.al
 
 
 
+#*************************************************************************************************
+##  Make sure we understand Fig 4 in M2.1a: Decline in AAL around age 60 ####
+#*************************************************************************************************
+
+load(paste0(IO_folder, "/Outputs_D1F075-average.RData"))
+df_actives <- outputs_list$ind_active
+
+df_actives %>% filter(ea == 20, year - (age - ea) == 1 ) %>% 
+  mutate(ALx.av = ALx + ALx.v,
+         NCx.av = NCx + NCx.v,
+         AL_sx = 100 * ALx.av / sx,
+         growth.AL = 100 * (ALx.av - lag(ALx.av))/lag(ALx.av),
+         growth.sx = 100 * (sx - lag(sx))/lag(sx),
+         growth.NCx = 100 * (NCx.av - lag(NCx.av))/lag(NCx.av),
+         growth.diff = growth.AL - growth.sx,
+         growth.AL_sx = (AL_sx - lag(AL_sx))) %>% 
+  select(year, ea, age, ALx, ALx.av, sx, AL_sx, NCx, growth.AL, growth.sx, growth.diff, growth.NCx, growth.AL_sx)
+
+# Growth of AL slows dramatically at age 60 and then recovers gradually. 
+# One possible explanation is that the early retirement panelty on benefit only applies untile age 60, after which AL loses a source of growth.
 
 
 
 
+#*************************************************************************************************
+##  Make sure we understand the decline in median ERC rate in Fig 5 M2.1b ####
+#*************************************************************************************************
+
+load(paste0(IO_folder, "/Outputs_I8F075-3.RData"))
+
+df_results <- outputs_list$results
+
+df_results %>% filter(sim == 0) %>% 
+  mutate(SC_PR = 100 * SC / PR) %>% 
+  select(sim, year, NC_PR, SC_PR, C_PR)
+
+# The declining ERC rate is caused by declining SC rate. 
 
 
 
+#*************************************************************************************************
+##  Check normal cost for various demographic scenarios ####
+#*************************************************************************************************
+
+## Check why mature plan 2 has very high NC rate. 
+load(paste0(IO_folder, "/Outputs_D1F075-average.RData"))
+df_actives_avg <- outputs_list$ind_active
+
+df_actives_avg %>% 
+  group_by(ea) %>% 
+  filter(year - (age - ea) == 1, age == ea + 1) %>%
+  mutate(NC_PR =  (NCx + NCx.v)/sx ) %>% 
+  select(year, ea, age, NC_PR)
+  
+
+load(paste0(IO_folder, "/Outputs_D1F050-mature2_gn1.RData"))
+df_actives_m2 <- outputs_list$ind_active
+
+df_actives_m2 %>% 
+  group_by(ea) %>% 
+  filter(year - (age - ea) == 1, age == ea + 1) %>%
+  mutate(NC_PR =  (NCx + NCx.v)/sx ) %>% 
+  select(year, ea, age, NC_PR)
 
 
+load("./Data/2015-10-07/salgrowth.rda")
+salgrowth %>% filter(planname %in% c("AZ-PERS-6.yos", "LA-CERA-43.yos", "OH-PERS-85.yos")) %>% 
+  spread(planname, salgrowth)
+
+salgrowth %>% filter(planname %in% c("AZ-PERS-6.yos", "LA-CERA-43.yos", "OH-PERS-85.yos")) %>% 
+  group_by(planname) %>% 
+  summarise(sal60 = prod(1 + salgrowth))
 
 
 
