@@ -1133,8 +1133,19 @@ ggsave(paste0(IO_folder, outputs.folder, "fig15_shortfall.ERC_PR.med.png"),fig_s
 ggsave(paste0(IO_folder, outputs.folder, "fig15_shortfall.ERC_PR.med.pdf"),fig_shortfall.ERC_PR.med, width=fig.width, height=fig.height, units="in")
 
 
-# Figures not shown in the report
+## Figures not shown in the report
 
+# Pure volatility
+ggsave(paste0(IO_folder, outputs.folder, "figX_pureVol.ERC_high.png"),fig_pureVol.ERC_high, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_pureVol.ERC_high.pdf"),fig_pureVol.ERC_high, width=fig.width, height=fig.height, units="in")
+
+
+# Policy response
+ggsave(paste0(IO_folder, outputs.folder, "figX_response.ERC_high.png"),fig_response.ERC_high, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_response.ERC_high.pdf"),fig_response.ERC_high, width=fig.width, height=fig.height, units="in")
+
+
+# True return falls short of the assumption
 ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.png"),fig_shortfall.FRDist, width=11*.8, height=5*.8, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.pdf"),fig_shortfall.FRDist, width=11*.8, height=5*.8, units="in")
 
@@ -1146,5 +1157,15 @@ ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_high.pdf"),fig_shor
 
 ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_hike.png"),fig_shortfall.ERC_hike, width=fig.width, height=fig.height, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_hike.pdf"),fig_shortfall.ERC_hike, width=fig.width, height=fig.height, units="in")
+
+
+
+
+
+
+
+
+
+
 
 
