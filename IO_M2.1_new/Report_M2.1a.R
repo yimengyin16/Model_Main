@@ -287,7 +287,7 @@ fig.ERC_PR.med <-
 fig.ERC_PR.med
 
 ## ERC rising sharply in a short time period
-fig.title <- "Probability that employer contribution rises by more than \n10% of payroll in any year up to the given year "
+fig.title <- "Probability of employer contribution rising by more than \n10% of payroll in any 5-year period year up to the given year "
 fig.ERC_hike <- 
   ggplot(df_demo, aes(x = year, y = ERC_hike, color = runname, shape = runname)) + theme_bw() + RIG.theme() + 
   geom_point(size = 2) + geom_line() +
