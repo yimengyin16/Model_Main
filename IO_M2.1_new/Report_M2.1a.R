@@ -82,6 +82,14 @@ demo.color6 <- c(RIG.red,
                  RIG.blue,
                  RIG.yellow.dark)
 
+demo.color5 <- c(RIG.red,    # average -1%
+                 RIG.orange, # average 0%
+                 RIG.yellow.dark, # average +1% 
+                 RIG.blue,   # mature plan
+                 RIG.green   # immature plan
+                 )
+demo.shape5 <- c(16, 16, 16, 15, 17) # 16-average, 15-mature, 17-immature 
+
 
 RIG.theme <- function(){
              theme(panel.grid.major.x = element_blank(),
@@ -109,16 +117,28 @@ runs_demo.all_labels <- c("Average, 2% decline",
                           "Average, constant workforce",
                           "Average, 1% growth",
                           "Average, 2% growth",
-                          "Mature plan 1 (high asset-payroll ratio)",
+                          "Mature plan (high asset-payroll ratio)",
                           "Mature plan 2 (high normal cost)",
-                          "Immature plan")
+                          "Immature plan (low asset-payroll ratio)" )
 
 
-runs_demo <- setdiff(runs_demo.all, c("D1F075-average_gn1","D1F075-average_g1"))
-runs_demo_labels <- setdiff(runs_demo.all_labels, c("Average, 1% decline", "Average, 1% growth"))
+runs_demo <- setdiff(runs_demo.all, c("D1F075-average_gn1",
+                                      "D1F075-average_g1", 
+                                      "D1F075-mature2_gn1"))
+runs_demo_labels <- setdiff(runs_demo.all_labels, c("Average, 1% decline", 
+                                                    "Average, 1% growth", 
+                                                    "Mature plan 2 (high normal cost)"))
 
-runs_demo2 <- setdiff(runs_demo.all, c("D1F075-average_gn1","D1F075-average_g1", "D1F075-average_gn2","D1F075-average_g2"))
-runs_demo2_labels <- setdiff(runs_demo.all_labels, c("Average, 1% decline", "Average, 1% growth", "Average, 2% decline", "Average, 2% growth"))
+runs_demo2 <- setdiff(runs_demo.all, c("D1F075-average_gn1",
+                                       "D1F075-average_g1", 
+                                       "D1F075-average_gn2",
+                                       "D1F075-average_g2", 
+                                       "D1F075-mature2_gn1"))
+runs_demo2_labels <- setdiff(runs_demo.all_labels, c("Average, 1% decline", 
+                                                     "Average, 1% growth", 
+                                                     "Average, 2% decline", 
+                                                     "Average, 2% growth",
+                                                     "Mature plan 2 (high normal cost)"))
 
 
 df_demo.all <- results_all  %>% 
@@ -150,12 +170,13 @@ df_demo.all %<>%
             ERC_PR.q75 = quantile(ERC_PR, 0.75),
             ERC_PR.q90 = quantile(ERC_PR, 0.9)
   ) %>% 
-  ungroup() %>% 
+  ungroup() %>%
   mutate(runname = factor(runname, 
                           levels = runs_demo.all, 
                           labels = runs_demo.all_labels))
 
 df_demo <- df_demo.all %>% filter(runname %in% runs_demo_labels)
+
 
 
 #*****************************************************
@@ -168,16 +189,18 @@ df_demo <- df_demo.all %>% filter(runname %in% runs_demo_labels)
    # the greatest risk of a high employer contribution rate
 fig.title <- "Probability that employer contribution exceeds 30% of payroll \nin any year up to the given year "
 fig.ERC_high <- 
-  ggplot(df_demo, aes(x = year, y = ERC_high, color = runname)) + theme_bw() + RIG.theme() + 
+  ggplot(df_demo, aes(x = year, y = ERC_high, color = runname, shape = runname)) + theme_bw() + RIG.theme() + 
   geom_point(size = 2) + geom_line() +
   coord_cartesian(ylim = c(0, 50)) + 
   scale_x_continuous(breaks = seq(0,30, 5))+ 
   scale_y_continuous(breaks = seq(0,100, 10)) + 
-  scale_color_manual(values = demo.color6) +
+  scale_color_manual(values = demo.color5) +
+  scale_shape_manual(values = demo.shape5, name = NULL ) +
   labs(x = "Year",
        y = "Probability that employer contribution exceeds 30%",
        title = fig.title ) + 
-  guides(col = guide_legend(title = "Plan type")) 
+  guides(col   = guide_legend(title = "Plan type"),
+         shape = guide_legend(title = "Plan type")) 
 # theme(#legend.justification=c(0,1), legend.position=c(0,1),
 #       legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
 fig.ERC_high
@@ -194,16 +217,18 @@ grid.draw(fig.ERC_high)
    #greatest risk of severe underfunding
 fig.title <- "Probability that funded ratio falls below 40% \nin any year up to the given year"
 fig.FR40less <- 
-  ggplot(df_demo, aes(x = year, y = FR40less, color = runname)) + theme_bw() + RIG.theme() + 
+  ggplot(df_demo, aes(x = year, y = FR40less, color = runname, shape = runname)) + theme_bw() + RIG.theme() + 
   geom_point(size = 2) + geom_line() +
   coord_cartesian(ylim = c(0, 32)) + 
   scale_x_continuous(breaks = seq(0,30, 5))+ 
   scale_y_continuous(breaks = seq(0,50, 5)) + 
-  scale_color_manual(values = demo.color6) +
+  scale_color_manual(values = demo.color5) +
+  scale_shape_manual(values = demo.shape5, name = NULL ) +
   labs(x = "Year",
        y = "Probability of falling below 40%",
        title = fig.title) + 
-  guides(col = guide_legend(title = "Plan type")) 
+  guides(col = guide_legend(title = "Plan type"),
+         shape = guide_legend(title = "Plan type")) 
   # theme(#legend.justification=c(0,1), legend.position=c(0,1),
   #       legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
 fig.FR40less
@@ -213,42 +238,29 @@ fig.FR40less
 ## Figure 7 Funded ratios of plans with high initial asset-payroll ratio and plans with declining workforce recover slower
 fig.title <- "Median funded ratio"
 fig.FR.med <- 
-  ggplot(df_demo, aes(x = year, y = FR.q50, color = runname)) + theme_bw() + RIG.theme() + 
+  ggplot(df_demo, aes(x = year, y = FR.q50, color = runname, shape = runname)) + theme_bw() + RIG.theme() + 
   geom_point(size = 2) + geom_line() +
   geom_hline(yintercept = 100, linetype = 2, color = "black") + 
   coord_cartesian(ylim = c(0, 100)) + 
   scale_x_continuous(breaks = seq(0,30, 5))+ 
   scale_y_continuous(breaks = seq(0,200, 25)) + 
-  scale_color_manual(values = demo.color6) +
+  scale_color_manual(values = demo.color5) +
+  scale_shape_manual(values = demo.shape5, name = NULL ) +
   labs(x = "Year",
        y = "Funded ratio (%)",
        title = "Median funded ratio") + 
-  guides(col = guide_legend(title = "Plan type")) 
+  guides(col = guide_legend(title = "Plan type"),
+         shape = guide_legend(title = "Plan type")) 
   # theme(# legend.justification=c(0,1), legend.position=c(0,1),
   #       legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
 fig.FR.med
 
 
 ## Figure 7(rescale) Funded ratios of plans with high initial asset-payroll ratio and plans with declining workforce recover slower
-fig.title <- "Median funded ratio"
-fig.FR.med_rescale <- 
-  ggplot(df_demo, aes(x = year, y = FR.q50, color = runname)) + theme_bw() + RIG.theme() + 
-  geom_point(size = 2) + geom_line() +
-  geom_hline(yintercept = 100, linetype = 2, color = "black") + 
+fig.FR.med_rescale <- fig.FR.med + 
   coord_cartesian(ylim = c(50, 100)) + 
-  scale_x_continuous(breaks = seq(0,30, 5))+ 
-  scale_y_continuous(breaks = seq(0,200, 10)) + 
-  scale_color_manual(values = demo.color6) +
-  labs(x = "Year",
-       y = "Funded ratio (%)",
-       title = "Median funded ratio") + 
-  guides(col = guide_legend(title = "Plan type")) 
-# theme(# legend.justification=c(0,1), legend.position=c(0,1),
-#       legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
+  scale_y_continuous(breaks = seq(0,200, 10))
 fig.FR.med_rescale
-
-
-
 
 
 
@@ -258,16 +270,18 @@ fig.FR.med_rescale
 ## Median ERC
 fig.title <- "Median employer contribution as a percentage of payroll"
 fig.ERC_PR.med <- 
-  ggplot(df_demo, aes(x = year, y = ERC_PR.q50, color = runname)) + theme_bw() + RIG.theme() +
+  ggplot(df_demo, aes(x = year, y = ERC_PR.q50, color = runname, shape = runname)) + theme_bw() + RIG.theme() +
   geom_point(size = 2) + geom_line() +
   coord_cartesian(ylim = c(0, 25)) + 
   scale_x_continuous(breaks = seq(0,30, 5))+ 
   scale_y_continuous(breaks = seq(0,60, 5)) + 
-  scale_color_manual(values = demo.color6) +
+  scale_color_manual(values = demo.color5) +
+  scale_shape_manual(values = demo.shape5, name = NULL ) +
   labs(x = "Year",
        y = "Employer contribution rate (%)",
        title = fig.title) + 
-  guides(col = guide_legend(title = "Plan type")) 
+  guides(col = guide_legend(title = "Plan type"),
+         shape = guide_legend(title = "Plan type")) 
   # theme(#legend.justification=c(0,1), legend.position=c(0,1),
   #       legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
 fig.ERC_PR.med
@@ -275,16 +289,18 @@ fig.ERC_PR.med
 ## ERC rising sharply in a short time period
 fig.title <- "Probability that employer contribution rises by more than \n10% of payroll in any year up to the given year "
 fig.ERC_hike <- 
-  ggplot(df_demo, aes(x = year, y = ERC_hike, color = runname)) + theme_bw() + RIG.theme() + 
+  ggplot(df_demo, aes(x = year, y = ERC_hike, color = runname, shape = runname)) + theme_bw() + RIG.theme() + 
   geom_point(size = 2) + geom_line() +
   coord_cartesian(ylim = c(0, 60)) + 
   scale_x_continuous(breaks = seq(0,30, 5))+ 
   scale_y_continuous(breaks = seq(0,100, 10)) + 
-  scale_color_manual(values = demo.color6) +
+  scale_color_manual(values = demo.color5) +
+  scale_shape_manual(values = demo.shape5, name = NULL ) +
   labs(x = "Year",
        y = "Probability (%)",
        title = fig.title ) + 
-  guides(col = guide_legend(title = "Plan type")) 
+  guides(col = guide_legend(title = "Plan type"),
+         shape = guide_legend(title = "Plan type")) 
   # theme(#legend.justification=c(0,1), legend.position=c(0,1),
   #       legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
 fig.ERC_hike
@@ -364,7 +380,7 @@ tab2 <- tab1 %>% select(runname, abratio_year1, NC_PR_year1, MA_PR_year1, MA_PR_
 
 runName_list <- c("D1F075-average",
                   "D1F075-mature1_gn1", 
-                  "D1F075-mature2_gn1", 
+                  # "D1F075-mature2_gn1", 
                   "D1F075-immature_g1")
 
 
@@ -391,7 +407,7 @@ df_ageDist_all %>% filter(runname %in% runs_demo2, year == 1 , age <= 74) %>%
        y = "percent",
        title = fig.title) + 
   facet_grid(.~runname)
-
+fig.ageDist
 
 fig.title <- "Entry Age Distribution of Actives"
 fig.eaDist <- 
@@ -404,6 +420,7 @@ df_eaDist_all %>% filter(runname %in% runs_demo2, year %in% c(1) , age <= 74) %>
        y = "percent",
        title = fig.title) + 
   facet_grid(.~runname)
+fig.eaDist
 
 # Appendix Figure 5
 fig.title <- "Year of Service Distribution of Actives"
@@ -417,7 +434,7 @@ df_yosDist_all %>% filter(runname %in% runs_demo2, year %in% c(1), yos <= 55) %>
        y = "percent",
        title = fig.title) + 
   facet_grid(.~runname)
-
+fig.yosDist
 
 fig.title <- "Age Distribution of New Entrants"
 names(df_entDist_all)[3] <-  "pct_age"
@@ -431,7 +448,7 @@ df_entDist_all %>% filter(runname %in% runs_demo2) %>%
        y = "percent",
        title = fig.title) + 
   facet_grid(.~runname)
-
+fig.entDist
 
 
 # Appendix Figure 2 and Figure 3
