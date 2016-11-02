@@ -190,6 +190,26 @@ salgrowth %>% filter(planname %in% c("AZ-PERS-6.yos", "LA-CERA-43.yos", "OH-PERS
 
 
 
+#*************************************************************************************************
+##  Check normal cost and contribution rates for various investment return scenarios ####
+#*************************************************************************************************
+
+load(paste0(IO_folder, "/Outputs_I1F075-6.RData")) # Invest in riskier assets
+
+outputs_list$results %>% filter(sim == 1, year <= 30) %>% 
+  select(runname, NC_PR, ERC_PR) %>% 
+  data.frame()
+
+
+load(paste0(IO_folder, "/Outputs_I7F075-1.RData")) # lower discount rate
+
+outputs_list$results %>% filter(sim == 1, year <= 30) %>% 
+  select(runname, year, NC_PR, ERC_PR) %>% 
+  data.frame()
+
+
+
+
 
 
 
