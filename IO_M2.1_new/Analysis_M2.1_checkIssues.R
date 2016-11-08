@@ -203,7 +203,7 @@ outputs_list$results %>% filter(sim == 1, year <= 30) %>%
 
 load(paste0(IO_folder, "/Outputs_I7F075-1.RData")) # lower discount rate
 
-outputs_list$results %>% filter(sim == 1, year <= 30) %>% 
+outputs_list$results %>% filter(sim == 0, year <= 30) %>% 
   select(runname, year, NC_PR, ERC_PR) %>% 
   data.frame()
 

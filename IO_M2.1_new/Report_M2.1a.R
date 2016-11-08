@@ -632,20 +632,23 @@ ggsave(paste0(IO_folder, outputs.folder, "fig4_AL_ea.pdf"),fig.AL_ea, width=fig.
 ggsave(paste0(IO_folder, outputs.folder, "fig5_ERC_high.png"),fig.ERC_high, width=fig.width, height=fig.height, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "fig5_ERC_high.pdf"),fig.ERC_high, width=fig.width, height=fig.height, units="in")
 
-
 # Fig 6
-
-ggsave(paste0(IO_folder, outputs.folder, "fig6_FR40less.png"),fig.FR40less, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig6_FR40less.pdf"),fig.FR40less, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig6_ERC_hike.png"),fig.ERC_hike, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig6_ERC_hike.pdf"),fig.ERC_hike, width=fig.width, height=fig.height, units="in")
 
 
 # Fig 7
-ggsave(paste0(IO_folder, outputs.folder, "fig7_FR.med.png"),fig.FR.med, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig7_FR.med.pdf"),fig.FR.med, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig7_FR40less.png"),fig.FR40less, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig7_FR40less.pdf"),fig.FR40less, width=fig.width, height=fig.height, units="in")
 
-# Fig 7 rescaled
-ggsave(paste0(IO_folder, outputs.folder, "fig7_FR.med_rescaled.png"),fig.FR.med_rescale, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig7_FR.med_rescaled.pdf"),fig.FR.med_rescale, width=fig.width, height=fig.height, units="in")
+
+# Fig 8
+ggsave(paste0(IO_folder, outputs.folder, "fig8_FR.med.png"),fig.FR.med, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig8_FR.med.pdf"),fig.FR.med, width=fig.width, height=fig.height, units="in")
+
+# Fig 8 rescaled
+ggsave(paste0(IO_folder, outputs.folder, "fig8_FR.med_rescaled.png"),fig.FR.med_rescale, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig8_FR.med_rescaled.pdf"),fig.FR.med_rescale, width=fig.width, height=fig.height, units="in")
 
 
 # Appendix Fig 1
@@ -679,8 +682,6 @@ ggsave(paste0(IO_folder, outputs.folder, "figA5b_entDist.pdf"),fig.entDist, widt
 
 
 # Risk measure figures not shown in the report
-ggsave(paste0(IO_folder, outputs.folder, "figX1_ERC_hike.png"),fig.ERC_hike, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "figX1_ERC_hike.pdf"),fig.ERC_hike, width=fig.width, height=fig.height, units="in")
 
 ggsave(paste0(IO_folder, outputs.folder, "figX2_ERC_PR.med.png"),fig.ERC_PR.med, width=fig.width, height=fig.height, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "figX2_ERC_PR.med.pdf"),fig.ERC_PR.med, width=fig.width, height=fig.height, units="in")
