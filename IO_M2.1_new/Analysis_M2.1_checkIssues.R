@@ -189,6 +189,8 @@ salgrowth %>% filter(planname %in% c("AZ-PERS-6.yos", "LA-CERA-43.yos", "OH-PERS
   summarise(sal60 = prod(1 + salgrowth))
 
 
+load(paste0(IO_folder, "/Outputs_D1F075-mature1_gn1.RData"))
+outputs_list$results %>% filter(sim  == 1) %>% select(year, sim, ERC_PR, NC_PR)
 
 #*************************************************************************************************
 ##  Check normal cost and contribution rates for various investment return scenarios ####
