@@ -103,8 +103,11 @@ runs_inv_labels2 <- c("The good old days",
                       "Invest in riskier assets",
                       "Lower assumed return")
 
-runs_inv_labels3 <- c("True expected compound return = 7.5%",
-                      "True expected compound return = 6%")
+# runs_inv_labels3 <- c("True expected compound return = 7.5%",
+#                       "True expected compound return = 6%")
+
+runs_inv_labels3 <- c("Expected compound return: assumed = 7.5%, true = 7.5%",
+                      "Expected compound return: assumed = 7.5%, true = 6%")
 
 
 #*****************************************************
@@ -141,7 +144,6 @@ df_inv.all <- results_all  %>%
             ERC_PR.q90 = quantile(ERC_PR, 0.9)
   ) %>% 
   ungroup()
-
 
 
 
@@ -397,6 +399,16 @@ fig_response.ERC_PR.med <-
         legend.background = element_rect(color = "grey",  size=0.5, linetype=1))
 fig_response.ERC_PR.med 
 
+
+#****************************************************************************
+## Table: Policy response to deline in risk-free rate            ####
+#****************************************************************************
+df_inv2 %>% filter(year %in% c(1, 30)) %>% select(runname, year, FR40less, FR.q50, ERC_hike, ERC_PR.q50) %>% 
+  gather(variable, value, -runname, -year) %>% 
+  mutate(var_year = paste0(variable, "_y", year)) %>% 
+  select(-variable, -year) %>% 
+  spread(var_year, value) %>% 
+  select(-ERC_hike_y1, -FR40less_y1)
 
 
 
@@ -1049,6 +1061,9 @@ grid.draw(fig.rates_short_priv)
 
 #ggsave("./results/invest_eror_pubpriv_vsriskfree_short.png", g, width=gwidth, height=gheight, units="in")
 #write_csv(pdata, paste0("./results/invest_eror_pubpriv_vsriskfree_short_data.csv"))
+
+
+
 
 
 #*****************************************************
