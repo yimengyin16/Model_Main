@@ -106,8 +106,12 @@ runs_inv_labels2 <- c("The good old days",
 # runs_inv_labels3 <- c("True expected compound return = 7.5%",
 #                       "True expected compound return = 6%")
 
-runs_inv_labels3 <- c("Expected compound return: assumed = 7.5%, true = 7.5%",
+
+runs_inv_labels3.1line  <- c("Expected compound return: assumed = 7.5%, true = 7.5%",
                       "Expected compound return: assumed = 7.5%, true = 6%")
+
+runs_inv_labels3.2lines <- c("Expected compound return: \nassumed = 7.5%, true = 7.5%",
+                       "Expected compound return: \nassumed = 7.5%, true = 6%")
 
 
 #*****************************************************
@@ -418,7 +422,8 @@ df_inv2 %>% filter(year %in% c(1, 30)) %>% select(runname, year, FR40less, FR.q5
 
 
 df_inv3 <- df_inv.all %>% filter(runname %in% runs_inv3) %>% 
-  mutate(runname = factor(runname, levels = runs_inv3, labels = runs_inv_labels3))
+  mutate(runname.2lines = factor(runname, levels = runs_inv3, labels = runs_inv_labels3.2lines),
+         runname = factor(runname, levels = runs_inv3, labels = runs_inv_labels3.1line))
 
 ## Risk of low funded ratio
 fig.title <- "Probability of funded ratio falling below 40% \nat any time prior to and including the given year"
@@ -483,10 +488,10 @@ fig_shortfall.ERC_high
 pctile.labels <- c("75th percentile", "50th percentile", "25th percentile")
 fig.title <- "Distribution of funded ratios across simulations under true expected compound returns"
 fig_shortfall.FRDist <- 
-  df_inv3 %>%  select(runname, year, FR.q25, FR.q50, FR.q75) %>% 
-  gather(pctile, value, -runname, -year) %>%
+  df_inv3 %>%  select(runname.2lines, year, FR.q25, FR.q50, FR.q75) %>% 
+  gather(pctile, value, -runname.2lines, -year) %>%
   mutate(pctile = factor(pctile, levels = c("FR.q75", "FR.q50", "FR.q25"), labels = pctile.labels)) %>% 
-  ggplot(aes(x = year, y = value, color = pctile, shape = pctile)) + theme_bw() +  RIG.theme() + facet_grid(.~runname) + 
+  ggplot(aes(x = year, y = value, color = pctile, shape = pctile)) + theme_bw() +  RIG.theme() + facet_grid(.~runname.2lines) + 
   geom_point(size = 2) + geom_line() +
   geom_hline(yintercept = 100, linetype = 2) + 
   coord_cartesian(ylim = c(0, 130)) + 
@@ -499,14 +504,18 @@ fig_shortfall.FRDist <-
   guides(col = guide_legend(title = NULL), shape = guide_legend(title = NULL))
 fig_shortfall.FRDist
 
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.png"),fig_shortfall.FRDist, width=11*.9, height=5*.9, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.pdf"),fig_shortfall.FRDist, width=11*.9, height=5*.9, units="in")
+
+
 
 # Distribution of ERC rate
 fig.title <- "Distribution of employer contribution rates across simulations \nunder different true expected compound returns"
 fig_shortfall.ERCDist <- 
-  df_inv3 %>%  select(runname, year, ERC_PR.q25, ERC_PR.q50, ERC_PR.q75) %>% 
-  gather(pctile, value, -runname, -year) %>%
+  df_inv3 %>%  select(runname.2lines, year, ERC_PR.q25, ERC_PR.q50, ERC_PR.q75) %>% 
+  gather(pctile, value, -runname.2lines, -year) %>%
   mutate(pctile = factor(pctile, levels = c("ERC_PR.q75", "ERC_PR.q50", "ERC_PR.q25"), labels = pctile.labels)) %>% 
-  ggplot(aes(x = year, y = value, color = pctile, shape = pctile)) + theme_bw() +  RIG.theme() + facet_grid(.~runname) + 
+  ggplot(aes(x = year, y = value, color = pctile, shape = pctile)) + theme_bw() +  RIG.theme() + facet_grid(.~runname.2lines) + 
   geom_point(size = 2) + geom_line() +
   #coord_cartesian(ylim = c(0, 35)) + 
   scale_x_continuous(breaks = seq(0,30, 5))+ 
@@ -1077,75 +1086,72 @@ grid.draw(fig.rates_short_priv)
 ggsave(paste0(IO_folder, outputs.folder, "fig1_equityShare.png"), fig.equityShare, width=10*0.8, height=8*0.8, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "fig1_equityShare.pdf"), fig.equityShare, width=10*0.8, height=8*0.8, units="in")
 
+
 # Fig 2
 ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.png"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.pdf"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
 
  
- 
 # Fig 3
-ggsave(paste0(IO_folder, outputs.folder, "fig3_pureVol.FR40less.png"),fig_pureVol.FR40less, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig3_pureVol.FR40less.pdf"),fig_pureVol.FR40less, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig3_pureVol.FRDist.png"),fig_pureVol.FRDist, width=15*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig3_pureVol.FRDist.pdf"),fig_pureVol.FRDist, width=15*.8, height=5*.8, units="in")
 
 
 # Fig 4
-ggsave(paste0(IO_folder, outputs.folder, "fig4_pureVol.FRDist.png"),fig_pureVol.FRDist, width=15*.8, height=5*.8, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig4_pureVol.FRDist.pdf"),fig_pureVol.FRDist, width=15*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig4_pureVol.FR40less.png"),fig_pureVol.FR40less, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig4_pureVol.FR40less.pdf"),fig_pureVol.FR40less, width=fig.width, height=fig.height, units="in")
 
 
 # Fig 5
-ggsave(paste0(IO_folder, outputs.folder, "fig5_pureVol.ERC_hike.png"),fig_pureVol.ERC_hike, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig5_pureVol.ERC_hike.pdf"),fig_pureVol.ERC_hike, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig5_pureVol.ERCDist.png"),fig_pureVol.ERCDist, width=15*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig5_pureVol.ERCDist.pdf"),fig_pureVol.ERCDist, width=15*.8, height=5*.8, units="in")
 
 
 # Fig 6
-ggsave(paste0(IO_folder, outputs.folder, "fig6_pureVol.ERCDist.png"),fig_pureVol.ERCDist, width=15*.8, height=5*.8, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig6_pureVol.ERCDist.pdf"),fig_pureVol.ERCDist, width=15*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig6_pureVol.ERC_hike.png"),fig_pureVol.ERC_hike, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig6_pureVol.ERC_hike.pdf"),fig_pureVol.ERC_hike, width=fig.width, height=fig.height, units="in")
 
 
 # Fig 7
-ggsave(paste0(IO_folder, outputs.folder, "fig7_response.FR.med.png"),fig_response.FR.med, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig7_response.FR.med.pdf"),fig_response.FR.med, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig7_response.FRDist.png"),fig_response.FRDist, width=15*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig7_response.FRDist.pdf"),fig_response.FRDist, width=15*.8, height=5*.8, units="in")
 
 
 # Fig 8
-ggsave(paste0(IO_folder, outputs.folder, "fig8_response.FRDist.png"),fig_response.FRDist, width=15*.8, height=5*.8, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig8_response.FRDist.pdf"),fig_response.FRDist, width=15*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig8_response.FR40less.png"),fig_response.FR40less, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig8_response.FR40less.pdf"),fig_response.FR40less, width=fig.width, height=fig.height, units="in")
 
 
 # Fig 9
-ggsave(paste0(IO_folder, outputs.folder, "fig9_response.FR40less.png"),fig_response.FR40less, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig9_response.FR40less.pdf"),fig_response.FR40less, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig9_response.ERCDist.png"),fig_response.ERCDist, width=15*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig9_response.ERCDist.pdf"),fig_response.ERCDist, width=15*.8, height=5*.8, units="in")
 
 
 # Fig 10
-ggsave(paste0(IO_folder, outputs.folder, "fig10_response.ERC_PR.med.png"),fig_response.ERC_PR.med, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig10_response.ERC_PR.med.pdf"),fig_response.ERC_PR.med, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig10_response.ERC_hike.png"),fig_response.ERC_hike, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig10_response.ERC_hike.pdf"),fig_response.ERC_hike, width=fig.width, height=fig.height, units="in")
 
 
 # Fig 11
-ggsave(paste0(IO_folder, outputs.folder, "fig11_response.ERCDist.png"),fig_response.ERCDist, width=15*.8, height=5*.8, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig11_response.ERCDist.pdf"),fig_response.ERCDist, width=15*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig11_shortfall.FRDist.png"),fig_shortfall.FRDist, width=11*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig11_shortfall.FRDist.pdf"),fig_shortfall.FRDist, width=11*.8, height=5*.8, units="in")
 
 
 # Fig 12
-ggsave(paste0(IO_folder, outputs.folder, "fig12_response.ERC_hike.png"),fig_response.ERC_hike, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig12_response.ERC_hike.pdf"),fig_response.ERC_hike, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig12_shortfall.FR40less.png"),fig_shortfall.FR40less, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig12_shortfall.FR40less.pdf"),fig_shortfall.FR40less, width=fig.width, height=fig.height, units="in")
 
 
 # Fig 13
-ggsave(paste0(IO_folder, outputs.folder, "fig13_shortfall.FR.med.png"),fig_shortfall.FR.med, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig13_shortfall.FR.med.pdf"),fig_shortfall.FR.med, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig13_shortfall.ERCDist.png"),fig_shortfall.ERCDist, width=11*.8, height=5*.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig13_shortfall.ERCDist.pdf"),fig_shortfall.ERCDist, width=11*.8, height=5*.8, units="in")
 
 
 # Fig 14
-ggsave(paste0(IO_folder, outputs.folder, "fig14_shortfall.FR40less.png"),fig_shortfall.FR40less, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig14_shortfall.FR40less.pdf"),fig_shortfall.FR40less, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig14_shortfall.ERC_hike.png"),fig_shortfall.ERC_hike, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig14_shortfall.ERC_hike.pdf"),fig_shortfall.ERC_hike, width=fig.width, height=fig.height, units="in")
 
 
-# Fig 15
-ggsave(paste0(IO_folder, outputs.folder, "fig15_shortfall.ERC_PR.med.png"),fig_shortfall.ERC_PR.med, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig15_shortfall.ERC_PR.med.pdf"),fig_shortfall.ERC_PR.med, width=fig.width, height=fig.height, units="in")
 
 
 ## Figures not shown in the report
@@ -1159,20 +1165,24 @@ ggsave(paste0(IO_folder, outputs.folder, "figX_pureVol.ERC_high.pdf"),fig_pureVo
 ggsave(paste0(IO_folder, outputs.folder, "figX_response.ERC_high.png"),fig_response.ERC_high, width=fig.width, height=fig.height, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "figX_response.ERC_high.pdf"),fig_response.ERC_high, width=fig.width, height=fig.height, units="in")
 
+ggsave(paste0(IO_folder, outputs.folder, "figX_response.ERC_PR.med.png"),fig_response.ERC_PR.med, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_response.ERC_PR.med.pdf"),fig_response.ERC_PR.med, width=fig.width, height=fig.height, units="in")
+
+ggsave(paste0(IO_folder, outputs.folder, "figX_response.FR.med.png"),fig_response.FR.med, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_response.FR.med.pdf"),fig_response.FR.med, width=fig.width, height=fig.height, units="in")
+
+
 
 # True return falls short of the assumption
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.png"),fig_shortfall.FRDist, width=11*.8, height=5*.8, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FRDist.pdf"),fig_shortfall.FRDist, width=11*.8, height=5*.8, units="in")
-
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERCDist.png"),fig_shortfall.ERCDist, width=11*.8, height=5*.8, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERCDist.pdf"),fig_shortfall.ERCDist, width=11*.8, height=5*.8, units="in")
 
 ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_high.png"),fig_shortfall.ERC_high, width=fig.width, height=fig.height, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_high.pdf"),fig_shortfall.ERC_high, width=fig.width, height=fig.height, units="in")
 
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_hike.png"),fig_shortfall.ERC_hike, width=fig.width, height=fig.height, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_hike.pdf"),fig_shortfall.ERC_hike, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_PR.med.png"),fig_shortfall.ERC_PR.med, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.ERC_PR.med.pdf"),fig_shortfall.ERC_PR.med, width=fig.width, height=fig.height, units="in")
 
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FR.med.png"),fig_shortfall.FR.med, width=fig.width, height=fig.height, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "figX_shortfall.FR.med.pdf"),fig_shortfall.FR.med, width=fig.width, height=fig.height, units="in")
 
 
 
