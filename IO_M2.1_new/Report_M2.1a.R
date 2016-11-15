@@ -177,7 +177,7 @@ df_demo.all %<>%
 
 df_demo <- df_demo.all %>% filter(runname %in% runs_demo_labels)
 
-
+df_demo %>% filter(year == 1)
 
 #*****************************************************
 ## Figure 5-7: risk measures  ####
@@ -460,28 +460,29 @@ expand_apply <- function(x, fun, ...){
 
 gpanel <- function(simnum, runs = runs_single, det.runs = "D1F075_average", label = runs_single_labels){
   
-  #   runs_single <- c("D1F075-average", "D1F075_mature1-gn1", "D1F075_mature2-gn1", "D1F075-immature_g1")
-  #   simnum <- 56
-  #   det.runs = "D1F075_average"
-  #    label <- runs_single_labels
+    # runs <- c("D1F075-average", "D1F075-mature1_gn1", "D1F075-immature_g1")
+    # simnum <- 56
+    # det.runs = "D1F075_average"
+    # label <- runs_single_labels
   
-  df_single <- results_all %>%  filter(runname %in% runs_single, year <= 30) %>% 
+  df_single <- results_all %>%  filter(runname %in% runs, year <= 30) %>% 
     filter(sim == simnum) %>%
     left_join(label) %>% 
     mutate(run.label = ifelse(is.na(run.label), runname, run.label),
            runname   = ifelse(sim == 0, paste0(runname,   "-Determ"), runname),
            run.label = ifelse(sim == 0, paste0(run.label, "-Determ"), run.label)) %>%  
     group_by(runname, sim) %>% 
-    mutate(ir.gm   = expand_apply(i.r, get_geoReturn)) 
+    mutate(ir.gm   = expand_apply(i.r, get_geoReturn),
+           run.label = factor(run.label, levels = label[["run.label"]])) 
   
   
-  gmval <- df_single %>% filter(year == 30, sim == simnum, runname == runs_single[1]) %>% ungroup %>% select(ir.gm) %>% unlist
+  gmval <- df_single %>% filter(year == 30, sim == simnum, runname == runs[1]) %>% ungroup %>% select(ir.gm) %>% unlist
   gmval <- 100*round(gmval, 3)
   
   ls <- 1.25 # linesize
   ps <- 2.25 # pointsize
   
-  p1 <- ggplot(data=filter(df_single, sim == simnum, runname == runs_single[1]) %>% # any run will do
+  p1 <- ggplot(data=filter(df_single, sim == simnum, runname == runs[1] ) %>% # any run will do
                  select(year, i.r, ir.gm) %>% 
                  gather(variable, value, -year, -runname, -sim),
                aes(x = year, y = value*100, group = variable)) +
@@ -598,12 +599,21 @@ gpanel <- function(simnum, runs = runs_single, det.runs = "D1F075_average", labe
   invisible(ml)
 }
 
-runs_single <- c("D1F075-average", "D1F075-mature1_gn1", "D1F075-mature2_gn1", "D1F075-immature_g1")
+# runs_single <- c("D1F075-average", "D1F075-mature1_gn1", "D1F075-mature2_gn1", "D1F075-immature_g1")
+# runs_single_labels <- c('runname,                run.label, key.feature
+#                          D1F075-average,          Average,    Average
+#                          D1F075-mature1_gn1,      Mature1,    Mature1                       
+#                          D1F075-mature2_gn1,      Mature2,    Mature2
+#                          D1F075-immature_g1,      Immature,   Immature')
+
+runs_single <- c("D1F075-average", "D1F075-mature1_gn1", "D1F075-immature_g1")
 runs_single_labels <- c('runname,                run.label, key.feature
                          D1F075-average,          Average,    Average
-                         D1F075-mature1_gn1,      Mature1,    Mature1                       
-                         D1F075-mature2_gn1,      Mature2,    Mature2
+                         D1F075-mature1_gn1,      Mature,    Mature
                          D1F075-immature_g1,      Immature,   Immature')
+
+
+
 runs_single_labels <- read.table(text = runs_single_labels, header = TRUE, sep = ",", stringsAsFactors = F) %>% 
   mutate_each(funs(str_trim))
 
@@ -611,8 +621,8 @@ runs_single_labels <- read.table(text = runs_single_labels, header = TRUE, sep =
 fig.singleRun56 <- gpanel(56)
 fig.singleRun228 <- gpanel(228)
 
-#fig.singleRun56
-#fig.singleRun228
+# fig.singleRun56
+# fig.singleRun228
 
 
 
