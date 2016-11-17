@@ -20,6 +20,7 @@ library(grid)
 library(gridExtra)
 library(stringr)
 library(xlsx)
+library(pdata)
 
 source("Functions.R")
 source("Functions_Measures.R")
@@ -318,6 +319,7 @@ df_AL_sx_all %>% filter(runname == "D1F075-average", ea %in% seq(0,65, 10)) %>%
   ggplot(aes(x = age, y = AL_sx ,color = factor(ea), shape = factor(ea))) + theme_bw() + RIG.theme() + 
   geom_line() + geom_point(size = 2) + 
   scale_color_manual(values = demo.color6[-2]) + 
+  scale_x_continuous(breaks = seq(20, 60, 10)) + 
   labs(x = "Age",
        y = "Accrued liability as % of salary",
        title = fig.title) + 
@@ -364,6 +366,10 @@ tab1 %<>% gather(variable, value, -year, -runname) %>%
   left_join(data.frame(runname = runs_demo.all, order = seq_along(runs_demo.all))) %>% 
   arrange(order) %>% 
   select(-order)
+
+
+ppd %>% names
+
 
 
 #*****************************************************

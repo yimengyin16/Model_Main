@@ -1,0 +1,332 @@
+---
+title: "Public Plans Database summary stats"
+author: "Don Boyd"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+```{r runall, eval=FALSE, echo=FALSE}
+# When we want a final report, run the following code selectively "by hand" (interactively) -- NEVER using Knit with eval=TRUE
+
+rmdfn <- "./_main.rmd" # this file
+outfn <- paste0("./results/PPDStats_", format(Sys.time(), "%Y-%m-%d"), ".html")
+rmarkdown::render(rmdfn, output_format="html_document", output_file=outfn)
+
+# Note that it is safest to fully exit RStudio and restart it before running the whole thing. Otherwise knitr can get confused
+# and include repetitive information in the output html file.
+
+ 
+```
+
+
+```{r mainSet options, echo=FALSE, cache=FALSE}
+options(width=120)
+knitr::opts_chunk$set(fig.width=14, fig.height=10, echo=FALSE)
+# Note: when saving maps (ggsave), width=16, height=9 seems to get rid of white space
+
+```
+
+
+```{r libs, message=FALSE}
+
+library("magrittr")
+library("plyr") # needed for ldply; must be loaded BEFORE dplyr
+library("tidyverse")
+options(tibble.print_max = 60, tibble.print_min = 60) # if more than 60 rows, print 60 - enough for states
+# ggplot2 tibble tidyr readr purrr dplyr
+
+library("hms") # hms, for times.
+library("stringr") # stringr, for strings.
+library("lubridate") # lubridate, for date/times.
+library("forcats") # forcats, for factors.
+library("readxl") # readxl, for .xls and .xlsx files.
+library("haven") # haven, for SPSS, SAS and Stata files.
+
+library("grDevices")
+library("knitr")
+
+library("zoo") # for rollapply
+
+library("btools") # library that I created (install from github)
+library("bdata")
+
+# devtools::install_github("donboyd5/pdata")
+library("pdata")
+# devtools::install_github("donboyd5/ptools")
+# devtools::install_github("donboyd5/btools")
+
+# data(package="pdata")
+
+# CRR locations for CAFRs and AVs
+# http://publicplansdata.org/reports/  for all
+# http://publicplansdata.org/resources/download-avs-cafrs/  menu system
+
+
+```
+
+
+```{r defines}
+resultsdir <- "./results/"
+
+cat("PPD file name prepended with download date:\n")
+comment(ppd)
+
+```
+
+
+```{r findvars}
+# create a df from the ppd, with constructed vars needed for prototype analysis
+
+# start by setting up tools to find needed variables, given how many are in the ppd
+ppdvars <- ppdvars # now we can look at it in the viewer
+# glimpse(ppd)
+# names(ppd)
+findvars <- function(text) {
+  # note that there may be some discrepancies between variables found in the "variables" file
+  # and those actually in the data
+  df <- ppdvars %>% filter(grepl(text, `Variable Label`, ignore.case=TRUE) | 
+                             grepl(text, `Variable Name`, ignore.case=TRUE)) %>% 
+    select(`Variable Label`, `Variable Name`)
+  return(df)
+}
+# grep("salar", names(ppd), ignore.case=TRUE, value=TRUE) # search for variable names with desired text - use actual data file
+# temp <- findvars("salar") # now use viewer to look at temp
+# findvars("age")
+# d <- findvars("amort")
+
+# summary(filter(select(ppd, fy, ActFundedRatio_GASB), fy==2013)) # look for NAs by year
+# beneficiaries_tot
+
+# get missing count by year for a single variable
+mv <- function(var) {
+  ppd %>% select(fy, one_of(var)) %>%
+    group_by(fy) %>%
+    do(qtiledf(.[[var]]))
+}
+# mv("beneficiaries_tot")
+
+# variable choices when there are multiple options (results from analysis that isn't always shown below)
+# assets: many NA for MktAssets_ActRpt; MktAssets_net looks better
+# age variables: there are many: ActiveAge_avg, BeneficiaryAge_avg, ServiceRetireeAge_avg, ServiceRetAge_avg
+#   but ALL have many missing values
+#   ActiveAge_avg has fewest missing values - 110 not NA's in the median of 2009-2013; others are much worse
+# so, do not use age in the analysis, but do look at it by cluster after plans are clustered
+
+# another way to get at this may be through pvfb
+# PVFB_active, PVFB_retiree
+# explore:
+# ppd %>% select(fy, ppd_id, contains("PVFB")) %>%
+#   gather(variable, value, -fy, -ppd_id) %>%
+#   group_by(variable, fy) %>% 
+#   mutate(value=cton(value)) %>% 
+#   do(qtiledf(.$value)) %>%
+#   data.frame
+# almost all values are missing; a few exceptions:
+#  - we have 119 non-missing PVFB-active in 2012; not really as many as I would like
+#  - PVFB-retiree is pretty good in most years, including 140 nonmissing in 2012
+# so best we could do is retire/active ratio for maybe 119 plans
+# ppd %>% mutate(rapvfb=PVFB_retiree/PVFB_active) %>%
+#   group_by(fy) %>%
+#   do(qtiledf(.$rapvfb))
+# some big differences but probably not usable in clustering
+
+# Classifiers:
+# PlanType 1-PERS or SERS, 2- TRS, 3- Police/Fire/Safety
+# AdministeringGovt  0-State, 1-County, 2-City, 5- School
+# ptlevs <- c(1, 2, 3); ptlabs <- c("General emp", "Teachers", "Safety")
+# adlevs <- c(0, 1, 2, 5); adlabs <- c("State", "County", "City", "School")
+
+```
+
+
+# Continuous variables
+```{r}
+# glimpse(ppd)
+# get ready
+  
+f <- function(var, df) {
+  out <- df %>% select_("fy", var) %>%
+    group_by(fy) %>%
+    do(qtiledf(.[[var]])) %>%
+    mutate(vname=var) %>%
+    select(vname, everything()) %>%
+    kable(digits=4, caption=var)
+  return(out)
+}
+
+f2 <- f <- function(var, df) {
+  out <- df %>% select_("fy", var) %>%
+    group_by(fy) %>%
+    do(qtiledf(.[[var]])) %>%
+    mutate(vname=var) %>%
+    select(vname, everything())
+  return(out)
+}
+  
+```
+
+
+```{r modelall, eval=FALSE}
+# str_subset(names(ppd), coll("benef", ignore_case=TRUE))
+voi <- c("", "", "", "", "", "", "", "", "", "", "", "", "")
+voi <- c("actives_tot", "ActiveSalaries", "ActiveAge_avg", "ActiveTenure_avg", "ActiveSalary_avg")
+voi <- c("InactiveVestedMembers", "InactiveNonVested")
+# NOTE the uc/lc of vars below - different than ppd docs show
+voi <- c("beneficiaries_tot", "benefits_tot", "BeneficiaryAge_avg", 
+         "BeneficiaryBenefit_avg", "beneficiaries_ServiceRetirees", "benefits_ServiceRetirees")
+
+voi <- c("ServiceRetireeAge_avg", "ServiceRetireeBenefit_avg", "ServiceRetAge_avg", "ServiceRetTenure_avg", "ServiceRetBenefit_avg")
+
+voi <- c("ActAssets_GASB", "ActLiabilities_GASB", "ActFundedRatio_GASB", "UAAL_GASB")
+
+voi <- c("PVFB_active", "PVFB_InactiveVested", "PVFB_InactiveNonVested", "PVFB_retiree", "PVFB_other")
+
+voi <- c("PVFNC_tot", "PVFNC_EE", "PVFNC_ER", "PVFS")
+
+for(var in voi) print(f(var, ppd))
+
+
+f("payroll", ppd)
+
+
+```
+
+
+
+## Selected summary information
+```{r}
+# str_subset(names(ppd), coll("age", ignore_case=TRUE))
+voi <- c("ActFundedRatio_GASB", "NormCostRate_tot", "NormCostRate_EE", "NormCostRate_ER", 
+         "ReqContRate_ER", "ReqContRate_tot")
+
+for(var in voi) print(f(var, ppd))
+
+
+
+
+```
+
+
+## Plan demographics
+```{r}
+
+# str_subset(names(ppd), coll("age", ignore_case=TRUE))
+
+df <- ppd %>% group_by(ppd_id) %>%
+  mutate(actives_growth=actives_tot / actives_tot[match(fy-1, fy)] * 100 - 100,
+         rets_growth=beneficiaries_ServiceRetirees / beneficiaries_ServiceRetirees[match(fy-1, fy)] * 100 - 100,
+         abratio=actives_tot / beneficiaries_tot,
+         apratio=MktAssets_net / payroll,
+         xcfpct2=(contrib_tot + expense_net) / MktAssets_net * 100) %>%
+  ungroup
+
+# payroll seems to be the best (most nonmissing) of the payroll variables: "payroll", "ProjectedPayroll", "ActiveSalaries"
+# head(select(df, fy, PlanName, actives_tot, actives_growth), 20)
+
+voi <- c("ActiveAge_avg", "ActiveTenure_avg", "ActiveSalary_avg", 
+         "BeneficiaryAge_avg", "BeneficiaryBenefit_avg",
+         "ServiceRetireeAge_avg", "ServiceRetAge_avg", "ServiceRetTenure_avg",
+         "actives_growth", "rets_growth",
+         "abratio", "apratio", "xcfpct2")
+cat("ServiceRetireeAge_avg is avg age of retirees, ServiceRetAge_avg is age AT retirement, ")
+for(var in voi) print(f(var, df))
+
+
+
+```
+
+
+
+## Key actuarial assumptions
+```{r}
+
+df <- ppd %>% mutate(realreturnassumption=InvestmentReturnAssumption_GASB - InflationAssumption_GASB)
+
+voi <- c("InvestmentReturnAssumption_GASB", "InflationAssumption_GASB", "realreturnassumption",
+         "PayrollGrowthAssumption", "WageInflation")
+
+for(var in voi) print(f(var, df))
+
+```
+
+
+## Plan funding parameters
+```{r}
+voi <- c("UAALAmortPeriod_GASB", "TotAmortPeriod", "RemainingAmortPeriod", 
+         "AssetSmoothingPeriod_GASB", "PercentReqContPaid")
+
+for(var in voi) print(f(var, ppd))
+
+```
+
+
+## Investment returns
+```{r}
+df <- ppd %>% mutate(cashfixed=FixedIncome_tot + CashAndShortTerm)
+voi <- c("InvestmentReturn_1yr", "InvestmentReturn_5yr", "InvestmentReturn_10yr", "InvestmentReturn_20yr", "InvestmentReturn_30yr",
+         "equities_tot", "FixedIncome_tot", "CashAndShortTerm", "cashfixed")
+for(var in voi) print(f(var, df))
+
+```
+
+
+# Selected variables by plan type
+```{r}
+glimpse(ppd)
+count(ppd, planf)
+
+var <- c("ActiveAge_avg", "BeneficiaryAge_avg")
+tmp <- ppd %>% filter(fy>=2010) %>%
+  select(ppd_id, PlanName, fy, planf, one_of(c(var))) %>%
+  mutate(agediff=BeneficiaryAge_avg - ActiveAge_avg) %>%
+  gather(variable, value, -c(ppd_id, PlanName, fy, planf)) %>%
+  group_by(fy, planf, variable) %>%
+  summarise(n=n(), n.notna=sum(!is.na(value)), median=median(value, na.rm=TRUE)) %>%
+  gather(measure, value, n, n.notna, median) %>%
+  spread(planf, value) %>%
+  mutate(measure=factor(measure, levels=c("median", "n.notna", "n"))) %>%
+  arrange(variable, fy, measure)
+tmp %>% filter(measure=="median")
+tmp %>% arrange(variable, measure, fy)
+
+tmp <- ppd %>% filter(fy==2014) %>%
+  group_by (pctdollf) %>%
+  summarise (n=n(), uaal=sum(UAAL_GASB, na.rm=TRUE) / 1e6) %>%
+  mutate(rel.freq = n/sum(n) * 100, uaal.pct=uaal/sum(uaal) * 100) %>%
+  arrange(-uaal.pct)
+
+```
+
+
+```{r}
+# str_subset(names(ppd), coll("age", ignore_case=TRUE))
+
+df <- ppd %>% group_by(ppd_id) %>%
+  mutate(actives_growth=actives_tot / actives_tot[match(fy-1, fy)] * 100 - 100,
+         rets_growth=beneficiaries_ServiceRetirees / beneficiaries_ServiceRetirees[match(fy-1, fy)] * 100 - 100,
+         abratio=actives_tot / beneficiaries_tot,
+         apratio=MktAssets_net / payroll,
+         xcfpct2=(contrib_tot + expense_net) / MktAssets_net * 100) %>%
+  ungroup
+
+# payroll seems to be the best (most nonmissing) of the payroll variables: "payroll", "ProjectedPayroll", "ActiveSalaries"
+# head(select(df, fy, PlanName, actives_tot, actives_growth), 20)
+
+voi <- c("ActiveAge_avg", "ActiveTenure_avg", "ActiveSalary_avg", 
+         "BeneficiaryAge_avg", "BeneficiaryBenefit_avg",
+         "ServiceRetireeAge_avg", "ServiceRetAge_avg", "ServiceRetTenure_avg",
+         "actives_growth", "rets_growth",
+         "abratio", "apratio", "xcfpct2",
+         "NormCostRate_tot")
+cat("ServiceRetireeAge_avg is avg age of retirees, ServiceRetAge_avg is age AT retirement, ")
+
+
+out.df <- lapply(voi, f2, df = df) %>% bind_rows()
+
+out.df %>% filter(fy == 2013)
+
+```
+
