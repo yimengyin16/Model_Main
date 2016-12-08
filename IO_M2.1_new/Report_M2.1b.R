@@ -1177,7 +1177,7 @@ fig.rates_short_priv <- ggplot(data=pdata, aes(x=fyear, y=value, colour=seriesf)
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5)) +
   # theme(axis.title.x = element_text(hjust=0.5, face="bold", size=rel(1))) +
-  theme(legend.justification=c(1, 1), legend.position=c(1, 1),
+  theme(legend.justification=c(1, 1), legend.position=c(0.99, 0.99),
         legend.background = element_rect(color = "grey",  size=0.5, linetype=1)) +
   geom_line(size=linesize) +
   geom_point(size=pointsize) +
@@ -1212,6 +1212,8 @@ grid.draw(fig.rates_short_priv)
 #write_csv(pdata, paste0("./results/invest_eror_pubpriv_vsriskfree_short_data.csv"))
 
 
+ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.png"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.pdf"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
 
 
 
