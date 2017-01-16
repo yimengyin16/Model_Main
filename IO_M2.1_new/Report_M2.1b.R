@@ -872,7 +872,7 @@ srcnote <- "\nSource: Authors' analysis of Z.1 Financial Accounts of the United 
 fig.equityShare <- pdata %>%
   ggplot(aes(x=date, y=equityshare, colour=slgppf)) +
   geom_line(size=rel(1)) +
-  geom_point(size=rel(1)) +
+  geom_point(size=rel(1.4)) +
   scale_y_continuous(name="Percent (%)", breaks=seq(0, 100, 5), limits=c(0, 75)) +
   scale_x_date(breaks=seq.Date(as.Date("1900-01-01"), as.Date("2020-01-01"), "5 years"), date_labels = "%Y") +
   scale_colour_manual(values=c(RIG.blue, RIG.green), name = "") +
@@ -880,13 +880,15 @@ fig.equityShare <- pdata %>%
   labs(x=xlab, caption=srcnote) +
   ggtitle(label=gtitle1, subtitle=gtitle2) +
   theme_bw() +
+  #RIG.theme() + 
   theme(plot.title = element_text(size=rel(1.3), face="bold", hjust = 0.5)) +
   theme(plot.subtitle = element_text(size=rel(1), face="bold", hjust = 0.5)) +
   theme(axis.title = element_text(face="bold", size=rel(1))) +
   theme(axis.text = element_text(face="bold", size=rel(1))) +
-  theme(plot.caption = element_text(hjust=0, size=rel(.7))) +
-  geom_line(size=rel(1)) +
-  geom_point(size=rel(1))
+  theme(plot.caption = element_text(hjust=0, size=rel(.7))) + 
+  theme(panel.grid.minor.x = element_blank()) + 
+  theme(panel.grid.minor.y = element_blank())
+ 
 fig.equityShare
 
 
@@ -1179,13 +1181,15 @@ fig.rates_short_priv <- ggplot(data=pdata, aes(x=fyear, y=value, colour=seriesf)
   # theme(axis.title.x = element_text(hjust=0.5, face="bold", size=rel(1))) +
   theme(legend.justification=c(1, 1), legend.position=c(0.99, 0.99),
         legend.background = element_rect(color = "grey",  size=0.5, linetype=1)) +
-  geom_line(size=linesize) +
-  geom_point(size=pointsize) +
+  geom_line(size=rel(1)) +
+  geom_point(size=rel(1.5)) +
   scale_colour_manual(values = c(RIG.blue, RIG.green, RIG.purple)) +
   scale_y_continuous(name="Percent (%)", breaks=seq(0, 30, 2), limits=c(0, 15)) +
   scale_x_continuous(name=xlab, breaks=seq(1975, 2020, 5)) +
   legend +
-  ggtitle(gtitle)
+  ggtitle(gtitle) + 
+  theme(panel.grid.minor.x = element_blank()) 
+  # theme(panel.grid.minor.y = element_blank())
 fig.rates_short_priv
 
 # # do this when we need both an axis label (centered) and a source note (left justified, not bold)
@@ -1225,13 +1229,13 @@ ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.pdf"), fig.rates
  fig.height = 5.5
 
 # Fig 1
-ggsave(paste0(IO_folder, outputs.folder, "fig1_equityShare.png"), fig.equityShare, width=10*0.8, height=8*0.8, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig1_equityShare.pdf"), fig.equityShare, width=10*0.8, height=8*0.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig1_equityShare.png"), fig.equityShare, width=10*0.8, height=6*0.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig1_equityShare.pdf"), fig.equityShare, width=10*0.8, height=6*0.8, units="in")
 
 
 # Fig 2
-ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.png"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
-ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.pdf"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.png"), fig.rates_short_priv, width=10*0.75, height=8*0.75, units="in")
+ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.pdf"), fig.rates_short_priv, width=10*0.75, height=8*0.75, units="in")
 
  
 # Fig 3
