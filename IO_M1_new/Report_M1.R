@@ -1035,8 +1035,8 @@ fig5
 fig5_4<- marrangeGrob(list(fig5, fig4), nrow=2, ncol=1, top=NULL)
 fig5_4
 
-ggsave(file=paste0(outputs.dir, "fig5_4_indivruns.png"), fig5_4, width=8, height=11, units="in" )
-ggsave(file=paste0(outputs.dir, "fig5_4_indivruns.pdf"), fig5_4, width=8, height=11, units="in" )
+ggsave(file=paste0(outputs.dir, "fig5_4_indivruns.png"), fig5_4, width=9, height=11, units="in" )
+ggsave(file=paste0(outputs.dir, "fig5_4_indivruns.pdf"), fig5_4, width=9, height=11, units="in" )
 
 
 
