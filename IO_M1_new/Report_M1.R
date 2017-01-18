@@ -17,6 +17,9 @@ library(extrafont)
 library(pdata)
 library(apitools)
 
+library("grid")
+library("gridExtra")
+
 # devtools::install_github("donboyd5/apitools")
 # devtools::install_github("donboyd5/pdata")
 source("Functions.R")
@@ -49,8 +52,11 @@ RIG.theme <- function(){
         panel.grid.minor.y = element_blank(),
         panel.grid.major.y = element_line(size = 0.5, color = "gray80"),
         panel.background = element_rect(fill = "white", color = "grey"),
-        legend.key = element_rect(fill = "white", color = "grey"))
+        legend.key = element_rect(fill = "white", color = "grey"),
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 }
+
 
 
 #****************************************************************************************************
@@ -970,7 +976,7 @@ p <- ggplot(data=tmp, aes(x=year, y=ERC_PR, group=simf)) +
   geom_hline(yintercept=tmp$ERC_PR[tmp$year==1 & tmp$sim==0], linetype="dashed", colour="black") +
   labs(colour="", linetype="", shape="") +
   scale_color_manual(values = c(RIG.red, RIG.green, RIG.blue)) + 
-  theme_bw() +
+  theme_bw() + RIG.theme() + 
   ggtitle(gtitle) + #theme(plot.title=element_text(size=12, face="bold")) +
   scale_x_continuous(breaks=seq(0, 50, 5), name="Year") +
   theme(axis.title.x=element_text(size=10, colour="black")) +
@@ -988,6 +994,8 @@ p
 ggsave(file=paste0(outputs.dir, "fig4_indivruns_ercpr.png"), p, width=10, height=6, units="in" )
 ggsave(file=paste0(outputs.dir, "fig4_indivruns_ercpr.pdf"), p, width=10, height=6, units="in" )
 
+fig4 <- p
+
 
 t1 <- "Funded ratio for 3 simulations each with"
 t2 <- "compound annual return of 7.5% over 30 years"
@@ -1000,7 +1008,7 @@ p <- ggplot(data=tmp, aes(x=year, y=FR_MA, group=simf)) +
   geom_hline(yintercept=75, linetype="dashed", colour="black") +
   scale_color_manual(values = c(RIG.red, RIG.green, RIG.blue)) +
   labs(colour="", linetype="", shape="") +
-  theme_bw() +
+  theme_bw() + RIG.theme() + 
   ggtitle(gtitle) + #theme(plot.title=element_text(size=12, face="bold")) +
   scale_x_continuous(breaks=seq(0, 50, 5), name="Year") +
   theme(axis.title.x=element_text(size=10, colour="black")) +
@@ -1016,8 +1024,19 @@ p <- ggplot(data=tmp, aes(x=year, y=FR_MA, group=simf)) +
         panel.grid.major.y = element_line(size = 0.5, color = "gray80")) 
 p
 
+fig5 <- p
+
 ggsave(file=paste0(outputs.dir, "fig5_indivruns_fr.png"), p, width=10, height=6, units="in" )
 ggsave(file=paste0(outputs.dir, "fig5_indivruns_fr.pdf"), p, width=10, height=6, units="in" )
+
+fig4
+fig5
+
+fig5_4<- marrangeGrob(list(fig5, fig4), nrow=2, ncol=1, top=NULL)
+fig5_4
+
+ggsave(file=paste0(outputs.dir, "fig5_4_indivruns.png"), fig5_4, width=8, height=11, units="in" )
+ggsave(file=paste0(outputs.dir, "fig5_4_indivruns.pdf"), fig5_4, width=8, height=11, units="in" )
 
 
 
