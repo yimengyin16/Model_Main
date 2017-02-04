@@ -1192,6 +1192,9 @@ fig.rates_short_priv <- ggplot(data=pdata, aes(x=fyear, y=value, colour=seriesf)
   # theme(panel.grid.minor.y = element_blank())
 fig.rates_short_priv
 
+
+
+
 # # do this when we need both an axis label (centered) and a source note (left justified, not bold)
 # # theme(axis.title.x = element_text(hjust=0.5, face="bold", size=rel(1))) +
 # grid.newpage()
@@ -1219,7 +1222,9 @@ grid.draw(fig.rates_short_priv)
 ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.png"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
 ggsave(paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.pdf"), fig.rates_short_priv, width=10*0.8, height=8*0.8, units="in")
 
-
+# pdata %>% select(fyear, value, seriesf) %>% spread(seriesf, value) %>% 
+#   write.csv(file = paste0(IO_folder, outputs.folder, "fig2_rates_short_priv.csv"))
+# 
 
 #*****************************************************
 ## Saving outputs  ####
