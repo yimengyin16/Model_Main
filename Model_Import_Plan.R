@@ -337,6 +337,6 @@ entrants_dist <- get_entrantsDist()
 # data.frame(ea = paramlist$range_ea, average = dist1, underfunded = dist2) %>% gather(plan, pct, -ea) %>% 
 # ggplot(aes(x = ea, y = pct, color = plan)) + geom_point(size = 3.5) + geom_line(linetype = 3) + theme_bw()
 # plot(entrants_dist)
-
+# save(entrants_dist, file = "entrants_dist.average.RData")
 
 
