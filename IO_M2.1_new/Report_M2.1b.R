@@ -891,7 +891,7 @@ fig.equityShare <- pdata %>%
  
 fig.equityShare
 
-
+# write.csv(fig.equityShare$data %>% select(date, equityshare, slgppf), file = "equityShare.csv")
 
 
 # #*****************************************************
