@@ -22,7 +22,7 @@ library(doParallel)
 library(microbenchmark)
 library(readxl)
 library(stringr)
-# library(xlsx)
+library(xlsx)
 # library(XLConnect) # slow but convenient because it reads ranges
 # devtools::install_github("donboyd5/decrements")
 # devtools::install_github("donboyd5/pp.prototypes")
@@ -74,8 +74,8 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 #*********************************************************************************************************
 
 
-# folder_run <- "IO_M2.1_new" 
-folder_run <- "IO_M1_new"
+folder_run <- "IO_M2.1_new" 
+# folder_run <- "IO_M1_new"
 # folder_run <- "IO_M2.1history_new" 
  
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
