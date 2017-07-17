@@ -52,6 +52,13 @@ source("Functions.R")
 
 devMode <- FALSE # Enter development mode if true. Parameters and initial population will be imported from Dev_Params.R instead of the RunControl file. 
 
+#retirees %<>% mutate(nretirees = 0)
+#actives %<>% mutate(nactives = 0) 
+#actives
+retrates %<>% mutate(qxr = ifelse(age == 65, 1, 0)) 
+
+
+
 
 #*********************************************************************************************************
 #                      ## Calibration of decrements  ####
@@ -128,10 +135,9 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
 }
 
 ## Run the model
-source("Model_Master.R", echo = TRUE)
+ source("Model_Master.R", echo = TRUE)
 }
 
 
-paramlist
 
 
