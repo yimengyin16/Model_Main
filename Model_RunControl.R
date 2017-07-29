@@ -130,12 +130,12 @@ Global_paramlist <- Global_params %>% as.list
 if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
     (paramlist$return_type == "internal" &  all(paramlist$plan_returns$ir.sd == 0))|
     (paramlist$return_type == "external")){
-  
+
   Global_paramlist$nsim <- 1
 }
 
 ## Run the model
- source("Model_Master.R", echo = TRUE)
+# source("Model_Master.R", echo = TRUE)
 }
 
 
