@@ -55,7 +55,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 #retirees %<>% mutate(nretirees = 0)
 #actives %<>% mutate(nactives = 0) 
 #actives
-retrates %<>% mutate(qxr = ifelse(age == 65, 1, 0)) 
+#retrates %<>% mutate(qxr = ifelse(age == 65, 1, 0)) 
 
 
 
