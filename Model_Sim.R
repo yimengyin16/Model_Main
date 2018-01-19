@@ -89,6 +89,7 @@ run_sim <- function(      .i.r = i.r,
            EEC  = 0, #
            ERC  = 0, #
            ADC  = 0, #
+           ADC_original = 0, 
            ADC.ER = 0, #
            C    = 0, #
            C_ADC= 0, #
@@ -102,6 +103,8 @@ run_sim <- function(      .i.r = i.r,
            i    = i,
            i.r  = 0,
            PR   = 0,
+           PVFS = 0,
+           ADC_rate_AGG = 0, # ADC rate under aggregate cost method
            ADC_PR = 0,
            C_PR = 0,
            nactives  = 0,
@@ -130,7 +133,6 @@ run_sim <- function(      .i.r = i.r,
   penSim0$AL.Ben  <- .AggLiab$retiree[,"ALx.r.sum"]  + .AggLiab$term[, "ALx.v.sum"]
   penSim0$AL      <- .AggLiab$active[, "ALx.av.sum"] + .AggLiab$term[, "ALx.v.sum"] + .AggLiab$retiree[,"ALx.r.sum"] 
   
-  .AggLiab$active[, "ALx.v.sum"]
   
   # NC(j)
   penSim0$NC.act  <- .AggLiab$active[, "NCx.a.sum"]
@@ -143,6 +145,14 @@ run_sim <- function(      .i.r = i.r,
   
   # PR(j)
   penSim0$PR <- .AggLiab$active[, "PR.sum"]
+  
+  # PVFB(j)
+  penSim0$PVFB <- .AggLiab$active[, "PVFBx.sum"]
+  
+  # PVFS(j)
+  penSim0$PVFS <- .AggLiab$active[, "PVFSx.sum"]
+  
+  
   
   # nactives, nretirees, nterms
   penSim0$nactives  <- .AggLiab$active[,  "nactives"]
@@ -225,10 +235,25 @@ run_sim <- function(      .i.r = i.r,
       # Employee contribution, based on payroll. May be adjusted later. 
       penSim$EEC[j] <- with(penSim, PR[j] * EEC_rate)
       
+      
+      
+      # Aggregate cost method (for NYSLRS)
+          # total contribution rate: (PVFB - AVA) / PVFS
+      
+      penSim$ADC_rate_AGG[j] <- (penSim$PVFB[j] + penSim$AL.ret[j] - penSim$AA[j])/penSim$PVFS[j]
+      
+      
       # ADC(j)
+      if(use_AGG) {
+        penSim$ADC_original[j] <- penSim$ADC_rate_AGG[j] * penSim$PR[j]
+      } else {
+        penSim$ADC_original[j] <- with(penSim, NC[j] + SC[j])
+        }
+      
+      
       
       if(nonNegC){
-        penSim$ADC[j]    <- with(penSim, max(0, NC[j] + SC[j])) 
+        penSim$ADC[j]    <- with(penSim, max(0, ADC_original[j])) 
         penSim$ADC.ER[j] <- with(penSim, ifelse(ADC[j] > EEC[j], ADC[j] - EEC[j], 0)) 
         
         # Adjustment of EEC
@@ -236,7 +261,7 @@ run_sim <- function(      .i.r = i.r,
         
       } else {
         # Allow for negative ADC and C  
-        penSim$ADC[j]    <- with(penSim, NC[j] + SC[j]) 
+        penSim$ADC[j]    <- with(penSim, ADC_original[j]) 
         
         if(EEC_fixed) {penSim$ADC.ER[j] <- with(penSim, ADC[j] - EEC[j]) # EEC is fixed
         # EEC is not fixed

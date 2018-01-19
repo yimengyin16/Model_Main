@@ -1,6 +1,6 @@
-## Run control file for pension simulation model
-## 9/8/2015
-## This is a frozen version before start developing multiple retirement ages.
+## Run control file for demo simulations for NYSLRS
+## 1/16/2018
+
 
 #*********************************************************************************************************
 #                                               Preamble ####
@@ -81,8 +81,8 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 #*********************************************************************************************************
 
 
-folder_run <- "IO_M2.1_new" 
-# folder_run <- "IO_M1_new"
+# folder_run <- "IO_M2.1_new" 
+folder_run <- "IO_M1_new"
 # folder_run <- "IO_M2.1history_new" 
  
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")

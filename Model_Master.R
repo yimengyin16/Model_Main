@@ -1,6 +1,6 @@
 # Actuarial Valuation in a simple setting
 # Yimeng Yin
-# 5/27/2015
+# 1/16/2018
 
 
 # This program consists of following files:
@@ -61,6 +61,22 @@
 
 
 print(paramlist$runname)
+
+
+
+
+#*********************************************************************************************************
+#  Calibration for NYSLRS   ####
+#*********************************************************************************************************
+# increase benefit factor by 30%
+paramlist$benfactor <- paramlist$benfactor * 1.3
+
+
+
+
+
+
+
 
 #*********************************************************************************************************
 # 0. Parameters   ####
@@ -158,14 +174,14 @@ options(digits = 4, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
 var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
-                 "AL.act_PR", "AL.ret_PR","AL.term_PR", "AL.Ben_PR",
-                 "NC.act_PR", "NC.term_PR", "MA_PR", 
-                 #"AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", 
+                 #"AL.act_PR", "AL.ret_PR","AL.term_PR", "AL.Ben_PR",
+                 #"NC.act_PR", "NC.term_PR", "MA_PR", 
+                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "nactives", "ADC_original", "PVFB", "AL.ret",
                  # "PR", "PR.growth", 
                  # "ExF",   
                  # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  #"ADC", "EEC", "ERC",  
-                 "C", "B", "B.v", "B.v_B", "B_PR"    
+                 "C" #"B", "B.v", "B.v_B", "B_PR"    
                  # "I.r" ,   "I.e"
                  # "i",    "i.r"
                  #, "dERC_PR"
@@ -173,7 +189,7 @@ var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  # "C_ADC"
 )
 
-r1 <- penSim_results %>% mutate(B.v_B = B.v / B * 100) %>% filter(sim == 2, year %in% 1:105) %>% select(one_of(var.display))
+r1 <- penSim_results %>% mutate(B.v_B = B.v / B * 100) %>% filter(sim == 0, year %in% 1:105) %>% select(one_of(var.display))
 kable(r1, digits = 3)
 
 

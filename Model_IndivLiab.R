@@ -115,7 +115,10 @@ liab.active %<>%
          Bx.r  = gx.r * Bx,  # This is the benefit level if the employee starts to CLAIM benefit at age x, not internally retire at age x. 
          TCx.r = lead(Bx.r) * qxr.a * lead(ax.r) * v,  # term cost of retirement at the internal retirement age x (start to claim benefit at age x + 1)
          # TCx.r = Bx.r * qxr.a * ax,
+         
          PVFBx.r  = c(get_PVFB(pxT[age <= r.max], v, TCx.r[age <= r.max]), rep(0, max.age - r.max)),
+         PVFSx    = c(get_PVFB(pxT[age <= r.max], v, sx[age <= r.max]),    rep(0, max.age - r.max)),
+         
 
          ## NC and AL of UC
          # TCx.r1 = gx.r * qxe * ax,  # term cost of $1's benefit
@@ -330,7 +333,7 @@ NCx.method   <- paste0("NCx.", actuarial_method)
 ALx.v.method <- paste0("ALx.", actuarial_method, ".v")
 NCx.v.method <- paste0("NCx.", actuarial_method, ".v")
 
-var.names <- c("sx", ALx.method, NCx.method, ALx.v.method, NCx.v.method, "PVFBx.r")
+var.names <- c("sx", ALx.method, NCx.method, ALx.v.method, NCx.v.method, "PVFBx.r", "PVFBx.v", "PVFSx")
 liab.active %<>% 
   filter(year %in% 1:nyear) %>%
   select(year, ea, age, one_of(var.names)) %>%

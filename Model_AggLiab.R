@@ -31,11 +31,14 @@ get_AggLiab <- function(  .liab   = liab,
                      ALx.v.tot = ALx.v * number.a,
                      ALx.av.tot  = ALx.a.tot + ALx.v.tot,
                      
-                     NCx.a.tot = NCx * number.a,
-                     NCx.v.tot = NCx.v * number.a,
+                     NCx.a.tot =  NCx * number.a,
+                     NCx.v.tot =  NCx.v * number.a,
                      NCx.av.tot = NCx.a.tot + NCx.v.tot,
                      
                      PR.tot  = sx * number.a,
+                     
+                     PVFBx.tot = (PVFBx.r + PVFBx.v)  * number.a,
+                     PVFSx.tot = PVFSx * number.a,
                      
                      runname = runname)
 
@@ -51,6 +54,9 @@ active.agg <- .liab$active %>%
                         NCx.av.sum   = sum(NCx.av.tot, na.rm = TRUE),
                         
                         PR.sum    = sum(PR.tot,  na.rm = TRUE),
+                        
+                        PVFBx.sum = sum(PVFBx.tot, na.rm = TRUE),
+                        PVFSx.sum = sum(PVFSx.tot, na.rm = TRUE),
                         
                         nactives  = sum(number.a,  na.rm = TRUE)) %>% 
                # mutate(runname  = runname) %>% 
@@ -100,6 +106,7 @@ retiree.agg <- .liab$retiree %>%
 .liab$term %<>% 
             mutate(ALx.v.tot = ALx.v * number.v,
                    B.v.tot   = B.v  * number.v,
+                  
                    runname = runname)
             
   
