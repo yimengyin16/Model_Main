@@ -68,12 +68,12 @@ print(paramlist$runname)
 #*********************************************************************************************************
 #  Calibration for NYSLRS   ####
 #*********************************************************************************************************
-# increase benefit factor by 30%
-paramlist$benfactor <- paramlist$benfactor * 1.3
+# calibrate contribution rate to 21%: increase benefit factor by 32.8%
+paramlist$benfactor <- paramlist$benfactor * 1.455
 
 
-
-
+# calibrate PVFB to $200B:  initial salaries
+actives %<>% mutate(salary =  0.85 * salary) 
 
 
 
@@ -176,12 +176,12 @@ options(digits = 4, scipen = 6)
 var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  #"AL.act_PR", "AL.ret_PR","AL.term_PR", "AL.Ben_PR",
                  #"NC.act_PR", "NC.term_PR", "MA_PR", 
-                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "nactives", "ADC_original", "PVFB", "AL.ret",
+                 "AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", "ADC_original", "PVFB", "AL.ret", "PVFS", "PR"
                  # "PR", "PR.growth", 
                  # "ExF",   
                  # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  #"ADC", "EEC", "ERC",  
-                 "C" #"B", "B.v", "B.v_B", "B_PR"    
+                 #"C" #"B", "B.v", "B.v_B", "B_PR"    
                  # "I.r" ,   "I.e"
                  # "i",    "i.r"
                  #, "dERC_PR"

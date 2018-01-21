@@ -45,13 +45,13 @@ get_AggLiab <- function(  .liab   = liab,
 active.agg <- .liab$active %>%  
                group_by(year) %>% 
                summarise(
-                        ALx.a.sum = sum(ALx.a.tot, na.rm = TRUE),
-                        ALx.v.sum = sum(ALx.v.tot, na.rm = TRUE),
-                        ALx.av.sum = sum(ALx.av.tot, na.rm = TRUE), 
+                        ALx.a.sum = sum(ALx.a.tot,  na.rm = TRUE),
+                        ALx.v.sum = sum(ALx.v.tot,  na.rm = TRUE),
+                        ALx.av.sum = sum(ALx.av.tot,na.rm = TRUE), 
                         
-                        NCx.a.sum = sum(NCx.a.tot, na.rm = TRUE),
-                        NCx.v.sum = sum(NCx.v.tot, na.rm = TRUE),
-                        NCx.av.sum   = sum(NCx.av.tot, na.rm = TRUE),
+                        NCx.a.sum   = sum(NCx.a.tot,  na.rm = TRUE),
+                        NCx.v.sum   = sum(NCx.v.tot,  na.rm = TRUE),
+                        NCx.av.sum  = sum(NCx.av.tot, na.rm = TRUE),
                         
                         PR.sum    = sum(PR.tot,  na.rm = TRUE),
                         
