@@ -35,7 +35,7 @@ library(decrements)               # mortality and termination for now
   # Load data for new prototypes before they are in the pp.prototypes package
 load("Data/2015-10-07/actives.rda")
 load("Data/2015-10-07/retirees.rda") 
-
+actives0 <- actives     # for calibration
 
 # Decrements
 load("Data/2015-10-07/retrates.rda");  retrates %<>% dplyr::rename(qxr = retrate)

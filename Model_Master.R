@@ -68,14 +68,12 @@ print(paramlist$runname)
 #*********************************************************************************************************
 #  Calibration for NYSLRS   ####
 #*********************************************************************************************************
-# calibrate contribution rate to 21%: increase benefit factor by 32.8%
-paramlist$benfactor <- paramlist$benfactor * 1.455
+# calibrate contribution rate to 21%: increase benefit factor by -1%
+paramlist$benfactor <- paramlist$benfactor * 0.99
 
 
 # calibrate PVFB to $200B:  initial salaries
-actives %<>% mutate(salary =  0.85 * salary) 
-
-
+actives <- actives0 %>% mutate(salary =  1.25 * salary) 
 
 
 #*********************************************************************************************************
