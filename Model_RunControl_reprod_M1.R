@@ -1,6 +1,6 @@
 ## Run control file for pension simulation model
-## 9/8/2015
-## This is a frozen version before start developing multiple retirement ages.
+## 8/2017
+
 
 #*********************************************************************************************************
 #                                               Preamble ####
@@ -75,7 +75,6 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 
 
 folder_run <- "IO_M1_new" 
-#filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 filename_RunControl <-"Reprod_RunControl_M1_new.xlsx"
 
 path_RunControl <- paste0(folder_run, "/" ,filename_RunControl)
@@ -97,9 +96,6 @@ plan_contributions <- read_excel(path_RunControl, sheet="Contributions", skip=0)
 
 ## select plans
 runlist <- plan_params %>% filter(include == TRUE) %>% select(runname) %>% unlist
-# runlist <- runlist[runlist == "R4F3"]
-# runlist <- runlist[runlist == "average1"|runlist == "average3"]
-# runlist <- runlist[runlist == "average3"]
 runlist
 
 

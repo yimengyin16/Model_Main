@@ -1,6 +1,6 @@
 ## Run control file for pension simulation model
-## 9/8/2015
-## This is a frozen version before start developing multiple retirement ages.
+## 8/2017
+
 
 #*********************************************************************************************************
 #                                               Preamble ####
@@ -32,7 +32,7 @@ library(decrements)               # mortality and termination for now
 
 
 # Initial actives and retirees 
-  # Load data for new prototypes before they are in the pp.prototypes package
+# Load data for new prototypes before they are in the pp.prototypes package
 load("Data/2015-10-07/actives.rda")
 load("Data/2015-10-07/retirees.rda") 
 

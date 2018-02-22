@@ -1,6 +1,6 @@
 ## Run control file for pension simulation model
-## 9/8/2015
-## This is a frozen version before start developing multiple retirement ages.
+## 8/2017
+
 
 #*********************************************************************************************************
 #                                               Preamble ####
