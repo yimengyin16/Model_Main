@@ -41,8 +41,8 @@ library("stringr")
 library("zoo") # for rollapply
 library("devtools")
 
-library("bdata")
-library("btools")
+#library("bdata")
+#library("btools")
 
 
 #****************************************************************************************************

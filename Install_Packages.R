@@ -29,3 +29,5 @@ install.packages(c("foreach",
 install.packages("XLConnect")
 install.packages("xlsx")
 
+#devtools::install_github("donboyd5/pdata")
+#devtools::install_github("donboyd5/ptools")
