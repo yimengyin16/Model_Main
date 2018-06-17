@@ -81,8 +81,8 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 #*********************************************************************************************************
 
 
-folder_run <- "IO_M2.1_new" 
-# folder_run <- "IO_M1_new"
+#folder_run <- "IO_M2.1_new" 
+ folder_run <- "IO_M1_new"
 # folder_run <- "IO_M2.1history_new" 
  
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
@@ -137,6 +137,52 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
 ## Run the model
 # source("Model_Master.R", echo = TRUE)
 }
+
+
+# T distributions with fixed mean and variance
+# sd_t = [v/(v-2)]^0.5 for v > 2
+# v = 2*sd^2/(sd^2 - 1)
+
+# get_tv <- function(v, sd_target) sd_target / (v/(v-2))^0.5
+# 
+# v <- 1
+# sd <- 0.12
+# m  <- 0.075
+# nsim <- 1e5
+# 
+# get_tv(3, sd)
+# 
+# sd(get_tv(v, sd)*rt(10000, v) + 0.075)
+# 
+# t3 <- sd(get_tv(3, sd)*rt(nsim, 3) + m)
+# t5 <- sd(get_tv(5, sd)*rt(nsim, 5) + m)
+# t20 <- sd(get_tv(30, sd)*rt(nsim, 30) + m)
+# normal <- rnorm(nsim, m, sd)
+# st5 <-  rt(nsim, 20) + m
+# 
+# df_dists <- data.frame(
+#   t3 = t3,
+#   t5 = t5,
+#   t20 = t20,
+#   st5 = st5,
+#   normal = normal)
+# 
+# df_dists %>% 
+#   ggplot(aes(normal)) + geom_density()
+# 
+# df_dists %>% 
+#   ggplot(aes(st5)) + geom_density()
+# 
+# 
+# df_dists %>% 
+#   ggplot(aes(t20)) + geom_density()
+# 
+
+
+
+
+
+
 
 
 
