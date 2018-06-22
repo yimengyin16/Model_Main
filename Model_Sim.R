@@ -152,6 +152,9 @@ run_sim <- function(      .i.r = i.r,
   cl <- makeCluster(ncore) 
   registerDoParallel(cl)
   
+  #clusterEvalQ(cl, .libPaths("C:/Users/Yimeng Yin/Documents/R/win-library/3.4"))
+  
+  
   #penSim_results <- list()
   #for(k in 1:nsim){
   
@@ -384,5 +387,4 @@ Time_loop
 # x[1, "ALx.tot"],
 # x[1, 2], # fastest
 # liab_tot_active$ALx.tot[1] , times = 10000)
-
 
