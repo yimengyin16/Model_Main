@@ -81,9 +81,11 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 #*********************************************************************************************************
 
 
-#folder_run <- "IO_M2.1_new" 
- folder_run <- "IO_M1_new"
+# folder_run <- "IO_M2.1_new" 
+# folder_run <- "IO_M1_new"
 # folder_run <- "IO_M2.1history_new" 
+folder_run <- "IO_penSimMacro"
+
  
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
@@ -135,7 +137,7 @@ if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
 }
 
 ## Run the model
-# source("Model_Master.R", echo = TRUE)
+source("Model_Master.R", echo = TRUE)
 }
 
 

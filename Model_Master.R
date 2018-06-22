@@ -116,7 +116,8 @@ source("Model_Import_Plan.R")
 #*********************************************************************************************************
 # 1.3  Actual investment return. ####
 #*********************************************************************************************************
-source("Model_InvReturns.R")
+# source("Model_InvReturns.R")
+source("Model_InvReturns_simMacro(2).R")
 
 
 #*********************************************************************************************************
@@ -160,9 +161,9 @@ var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  # "ExF",   
                  # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  #"ADC", "EEC", "ERC",  
-                 "C", "B", "B.v", "B.v_B", "B_PR"    
+                 "C", "B", "B.v", "B.v_B", "B_PR",    
                  # "I.r" ,   "I.e"
-                 # "i",    "i.r"
+                 "i",    "i.r"
                  #, "dERC_PR"
                  # "AM", "PR",
                  # "C_ADC"
@@ -238,6 +239,73 @@ filename_outputs <- paste0("Outputs_",  paramlist$runname, ".RData")
  save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
 gc()
+
+
+
+#*********************************************************************************************************
+# 8. Showing risk measures ####
+#*********************************************************************************************************
+
+# 
+# load("IO_penSimMacro/Outputs_B_O30pA5_port70_30.RData")
+# load("IO_penSimMacro/Outputs_A_O30pA5_port70_30.RData")
+# 
+# 
+# 
+# outputs_list$results %>% head
+# 
+# df_all.stch <-  
+#   outputs_list$results %>%
+#   filter(sim >= 0, year <= 30)
+# 
+# 
+# df_all.stch %<>%
+#   select(runname, sim, year, AL, MA, EEC, PR, ERC_PR) %>%
+#   group_by(runname, sim) %>%
+#   mutate(FR_MA     = 100 * MA / AL,
+#          FR40less   = cumany(FR_MA <= 40),
+#          FR100more  = cumany(FR_MA >= 100),
+#          FR100more2 = FR_MA >= 100,
+#          ERC_high   = cumany(ERC_PR >= 50),
+#          ERC_hike   = cumany(na2zero(ERC_PR - lag(ERC_PR, 5) >= 10))) %>%
+#   group_by(runname, year) %>%
+#   summarize(FR40less = 100 * sum(FR40less, na.rm = T)/n(),
+#             FR100more = 100 * sum(FR100more, na.rm = T)/n(),
+#             FR100more2= 100 * sum(FR100more2, na.rm = T)/n(),
+#             ERC_high = 100 * sum(ERC_high, na.rm = T)/n(),
+#             ERC_hike = 100 * sum(ERC_hike, na.rm = T)/n(),
+# 
+#             FR.q10   = quantile(FR_MA, 0.1,na.rm = T),
+#             FR.q25   = quantile(FR_MA, 0.25, na.rm = T),
+#             FR.q50   = quantile(FR_MA, 0.5, na.rm = T),
+#             FR.q75   = quantile(FR_MA, 0.75, na.rm = T),
+#             FR.q90   = quantile(FR_MA, 0.9, na.rm = T),
+# 
+#             ERC_PR.q10 = quantile(ERC_PR, 0.1, na.rm = T),
+#             ERC_PR.q25 = quantile(ERC_PR, 0.25, na.rm = T),
+#             ERC_PR.q50 = quantile(ERC_PR, 0.5, na.rm = T),
+#             ERC_PR.q75 = quantile(ERC_PR, 0.75, na.rm = T),
+#             ERC_PR.q90 = quantile(ERC_PR, 0.9, na.rm = T)
+# 
+# 
+#   ) %>%
+#   ungroup()
+# 
+# df_all.stch %>% filter(year %in% c(1, 10, 20, 30))
+# 
+# 
+# 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
