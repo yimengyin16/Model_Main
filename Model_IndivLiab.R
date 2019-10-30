@@ -134,7 +134,9 @@ liab.active %<>%
          # NC and AL of EAN.CP
          NCx.EAN.CP = ifelse(age < r.max, sx * PVFBx.r[age == min(age)]/(sx[age == min(age)] * ayxs[age == r.max]), 0),
          PVFNC.EAN.CP = NCx.EAN.CP * axRs,
-         ALx.EAN.CP = PVFBx.r - PVFNC.EAN.CP
+         ALx.EAN.CP = PVFBx.r - PVFNC.EAN.CP,
+
+         Bx.ret = Bx[age == r.full]
          
   ) 
 
@@ -256,7 +258,7 @@ liab.retiree %<>% as.data.frame  %>% # filter(start.year == -41, ea == 21, age.r
   # WARNING: There will be a problem if actives entering after r.min can get vested, when PVFB is only amortized up to age r.min   
 
 liab.active %<>% 
-  mutate(gx.v = ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
+  mutate(gx.v = 0,  #ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
          Bx.v  = gx.v * Bx,
  
          TCx.v   = ifelse(ea < r.full, Bx.v * qxt.a * lead(px_r.full_m) * v^(r.full - age) * ax[age == r.full], 0), # term cost of vested termination benefits. We assume term rates are 0 after r.full. 
@@ -330,7 +332,7 @@ NCx.method   <- paste0("NCx.", actuarial_method)
 ALx.v.method <- paste0("ALx.", actuarial_method, ".v")
 NCx.v.method <- paste0("NCx.", actuarial_method, ".v")
 
-var.names <- c("sx", ALx.method, NCx.method, ALx.v.method, NCx.v.method, "PVFBx.r")
+var.names <- c("sx", ALx.method, NCx.method, ALx.v.method, NCx.v.method, "PVFBx.r", "PVFBx.v", "Bx.ret")
 liab.active %<>% 
   filter(year %in% 1:nyear) %>%
   select(year, ea, age, one_of(var.names)) %>%

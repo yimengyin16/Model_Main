@@ -152,15 +152,25 @@ source("Model_Sim.R")
 options(digits = 4, scipen = 6)
 
 # select variables to be displayed in the kable function. See below for a list of all avaiable variables and explanations.
-var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
-                 "AL.act_PR", "AL.ret_PR","AL.term_PR", "AL.Ben_PR",
-                 "NC.act_PR", "NC.term_PR", "MA_PR", 
+var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL", "PVFB.act",
+                 "AL.act_PR", "AL.ret_PR", "AL.Ben_PR",
+                 "NC.act_PR",
                  #"AL_PR", "NC_PR", "SC_PR", "C_PR", "ERC_PR", 
                  # "PR", "PR.growth", 
                  # "ExF",   
                  # "UAAL",  "EUAAL", "LG",    "NC",    "SC",    
                  #"ADC", "EEC", "ERC",  
-                 "C", "B", "B.v", "B.v_B", "B_PR"    
+                 "C", "B",
+                 "AL_PVFB", 
+                 "NC_PVFB",
+                 "PR_PVFB",
+                 "NC_growth",
+                 "AL_growth",
+                 "PR_growth",
+                 "PV_growth",
+                 "B_growth"
+                 
+                 
                  # "I.r" ,   "I.e"
                  # "i",    "i.r"
                  #, "dERC_PR"
@@ -168,8 +178,21 @@ var.display <- c("year",  "AL",    "AA",   "FR", "NC",    "SC", "UAAL",
                  # "C_ADC"
 )
 
-r1 <- penSim_results %>% mutate(B.v_B = B.v / B * 100) %>% filter(sim == 2, year %in% 1:105) %>% select(one_of(var.display))
+r1 <- penSim_results %>% mutate(B.v_B = B.v / B * 100,
+                                AL_PVFB = AL.act / PVFB.act,
+                                NC_PVFB = NC.act / PVFB.act,
+                                PR_PVFB = PR / PVFB.act,
+                                NC_growth = NC/lag(NC) - 1,
+                                AL_growth = AL/lag(AL) - 1,
+                                PR_growth = PR/lag(PR) - 1,
+                                PV_growth = PVFB.act/lag(PVFB.act) - 1,
+                                B_growth  = B / lag(B) - 1) %>% 
+  
+  
+filter(sim == -1, year %in% 90:105) %>% select(one_of(var.display))
 kable(r1, digits = 3)
+
+
 
 
 
@@ -235,9 +258,150 @@ if(!file.exists(folder_run)) dir.create(folder_run)
 # filename_outputs <- paste0("Outputs_",  paramlist$runname, "_" , format(Sys.Date(), "%m-%d-%Y"), ".RData")
 filename_outputs <- paste0("Outputs_",  paramlist$runname, ".RData")
 
- save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
+# save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
 gc()
+
+
+
+
+#*********************************************************************************************************
+# Examining steady state ####
+#*********************************************************************************************************
+
+# 1. Active members
+
+left_join(
+pop$active %>% 
+  filter(year  ==  99, ea ==20, age <=60) %>% rename(number.a1 = number.a), 
+
+pop$active %>% 
+  filter(year  ==  100, ea ==20, age <=60) %>% rename(number.a2 = number.a),
+by = c("ea", "age")
+) %>% 
+select(year.x, year.y,everything()) %>% 
+mutate(diff = number.a2 / number.a1 - 1)
+
+
+# 2. Retirees 
+
+df_ret <- pop$retired %>% 
+  group_by(year, age) %>% 
+  summarize(number.r = sum(number.r))
+
+left_join(
+  df_ret %>% 
+    filter(year  ==  99, age >60) %>% rename(number.r1 = number.r), 
+  
+  df_ret %>% 
+    filter(year  ==  100, age >60) %>% rename(number.r2 = number.r),
+  by = c("age")
+) %>% 
+  ungroup %>% 
+  select(year.x, year.y,everything()) %>% 
+  mutate(diff = number.r2 / number.r1 - 1) %>% as.data.frame()
+
+# The demographics have become quite stable after 100 years. Annual changes in any cell generally smaller than 0.01%
+# Year 100 value should be ok to be used as a steady state.
+
+
+
+# 3. Verify the stability of NC/PVB, AL/PVB, PR/PVB, and growth of liability
+
+df_actives <- left_join(pop$active, liab$active) # %>% left_join(new_retirees)
+df_actives[-(1:3)] <- colwise(na2zero)(df_actives[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
+
+
+df_actives %>% head
+
+df_actives %<>% 
+  mutate(NC_PR  = NCx / sx,
+         AL_PR  = ALx / sx,
+         PVB_PR = PVFBx.r / sx)
+
+df_actives %>% 
+  filter(ea == 20, age == 55)
+
+
+
+
+#*********************************************************************************************************
+# Saving steady state ####
+#*********************************************************************************************************
+
+# actives
+df_actives <- left_join(pop$active, liab$active) # %>% left_join(new_retirees)
+df_actives[-(1:3)] <- colwise(na2zero)(df_actives[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
+
+
+ss_actives  <- 
+  df_actives %>% 
+  select(-ALx.v, -PVFBx.v, -NCx.v) %>% 
+  filter(year == 100, age < 60) %>% 
+  mutate(NC_PVB = NCx / PVFBx.r,
+         AL_PVB = ALx / PVFBx.r) %>% 
+  arrange(ea, age)
+ss_actives %>% head
+
+# retirees
+
+df_retiree <- 
+merge(
+data.table(liab$retiree, key = "ea,age,year,year.retire"),
+data.table(pop$retired,  key = "ea,age,year,year.retire"),
+by = c("ea", "age","year", "year.retire"), all.x = TRUE) %>% 
+  as.data.frame()
+
+ss_retirees <- 
+  df_retiree %>% 
+  ungroup() %>% 
+  filter(year == 100, age >= 60, number.r != 0) %>% 
+  arrange(age, ea)
+
+
+ss_retirees %>% group_by(age) %>% 
+  summarize(number.ret = sum(number.r),
+            B.r      = sum(number.r * B.r),
+            AL.r     = sum(number.r * ALx.r)) %>% 
+  as.data.frame
+
+save(ss_decrement = decrement,
+     ss_actives,
+     ss_retirees,
+     file = "SteadyState/SteadyState2.RData")
+
+decrement %>% head
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

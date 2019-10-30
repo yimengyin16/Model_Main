@@ -242,6 +242,11 @@ get_initPop <- function (.actives          = tailored_demoData$actives,
   assign_parmsList(.Global_paramlist, envir = environment())
   assign_parmsList(.paramlist,        envir = environment()) 
 
+  # For steady state analysis
+  
+  .actives  %<>% mutate(nactives =  ifelse(age > r.max, 0, nactives)) 
+  .retirees %<>% mutate(nretirees = ifelse(age < r.max, 0, nretirees)) 
+  
     
   init_actives <- .actives %>% select(ea, age, nactives)
   init_actives <- expand.grid(ea = range_ea, age = range_age) %>% left_join(init_actives) %>% 

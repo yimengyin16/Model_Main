@@ -2,6 +2,39 @@
 ## 8/2017
 
 
+
+#*********************************************************************************************************
+#                                               Notes   ####
+#*********************************************************************************************************
+
+# This branch generate steady state demographics, liabilities, anc costs of the prototypical pension plan
+
+
+# Important modifications:
+  # Single Retirement age: change in Model_Decrements.R, and r.max = 60
+  # Retirement eligibility: age 60, no requirement for yos (yos.r = 0)
+  # initial population: age of actives < 60, age of retirees > 60. change in Model_Import_Plan. 
+  # Service Retirement benefit only: no deferred benefits, no disability benefits. Change in Model_IndivLab.R 
+  # No improvements in mortality: check Model_Decrements.R
+
+  # need to save year 1 benefit payment for actives: Bx.r 
+
+
+# Outputs
+
+# 1. Detailed demographic dynamics of 150 years. 
+# 2. AL, PVB, NC, salary for each age-yos cell of actives (check stability of AL/PVB, NC/PVB, salary/PVB, check payroll growth)
+# 3. AL (PVB) for each age cell of retirees (check stability) 
+  
+
+
+
+
+
+
+
+
+
 #*********************************************************************************************************
 #                                               Preamble ####
 #*********************************************************************************************************
@@ -81,8 +114,8 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 #*********************************************************************************************************
 
 
-folder_run <- "IO_M2.1_new" 
-# folder_run <- "IO_M1_new"
+# folder_run <- "IO_M2.1_new" 
+folder_run <- "IO_M1_new"
 # folder_run <- "IO_M2.1history_new" 
  
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")

@@ -35,6 +35,11 @@ get_AggLiab <- function(  .liab   = liab,
                      NCx.v.tot = NCx.v * number.a,
                      NCx.av.tot = NCx.a.tot + NCx.v.tot,
                      
+                     PVFBx.a.tot   = PVFBx.r * number.a,  # New retirees should be included when calculating liabilities
+                     PVFBx.v.tot   = PVFBx.v * number.a,
+                     PVFBx.av.tot  = PVFBx.a.tot + PVFBx.v.tot,
+                     
+                     
                      PR.tot  = sx * number.a,
                      
                      runname = runname)
@@ -49,6 +54,11 @@ active.agg <- .liab$active %>%
                         NCx.a.sum = sum(NCx.a.tot, na.rm = TRUE),
                         NCx.v.sum = sum(NCx.v.tot, na.rm = TRUE),
                         NCx.av.sum   = sum(NCx.av.tot, na.rm = TRUE),
+                        
+                        PVFBx.a.sum  = sum(PVFBx.a.tot, na.rm = TRUE),
+                        PVFBx.v.sum  = sum(PVFBx.v.tot, na.rm = TRUE),
+                        PVFBx.av.sum = sum(PVFBx.av.tot, na.rm = TRUE), 
+                        
                         
                         PR.sum    = sum(PR.tot,  na.rm = TRUE),
                         

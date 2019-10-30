@@ -132,6 +132,10 @@ run_sim <- function(      .i.r = i.r,
   
   .AggLiab$active[, "ALx.v.sum"]
   
+  penSim0$PVFB.r   <- .AggLiab$active[, "PVFBx.a.sum"]
+  penSim0$PVFB.v   <- .AggLiab$active[, "PVFBx.v.sum"]
+  penSim0$PVFB.act <- .AggLiab$active[, "PVFBx.a.sum"] + .AggLiab$active[, "PVFBx.v.sum"]
+   
   # NC(j)
   penSim0$NC.act  <- .AggLiab$active[, "NCx.a.sum"]
   penSim0$NC.term <- .AggLiab$active[, "NCx.v.sum"] 

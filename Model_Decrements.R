@@ -45,8 +45,8 @@ get_decrements <- function(.paramlist = paramlist,
   
   
 # Run the section below when developing new features.  
-#     .paramlist = paramlist
-#     .Global_paramlist = Global_paramlist
+    # .paramlist = paramlist
+    # .Global_paramlist = Global_paramlist
  
 # Assign parameters to the local function call.
 assign_parmsList(.Global_paramlist, envir = environment())
@@ -61,7 +61,7 @@ assign_parmsList(.paramlist,        envir = environment())
 mort <- mortality %>% filter(tablename == tablename_mortality) %>% #mutate(qxm.r = qxm * 1) %>% 
                       select(age, qxm, qxm.r)
  
-
+mort
 ## Termination (Separation) rates (from plan data)
  # Consistency check: max yos <= r.full - min.ea
  # Problem: auto detecting term table by only yos and by yos and age. 
@@ -75,10 +75,15 @@ term <- termrates %>% filter(planname == tablename_termination) %>% select(-plan
 ret <- retrates %>% filter(planname == tablename_retirement) %>% select(-planname)
 ret
 
+# For steady state analysis
+ret %<>% mutate(qxr = ifelse(age <60, qxr, 1)) 
+ret
+
 
 ## Disability rates and mortality rates for disabled. (From Winklevoss data)
 disb <- disb # disability
 dbl  <- dbl  # mortality for disabled
+
 
 
 
@@ -107,7 +112,10 @@ decrement <- expand.grid(age = range_age, ea = range_ea) %>%
 ## Imposing restrictions 
 decrement %<>% mutate(
   # 1. Coerce termination rates to 0 when eligible for early retirement or reaching than r.full(when we assume terms start to receive benefits). 
-   qxt = ifelse((age >= r.min & (age - ea) >= r.yos) | age >= r.full, 0, qxt),
+  
+  # adapted for steady state analysis
+   qxt = ifelse(age >=r.max, 0, qxt),
+  #qxt = ifelse((age >= r.min & (age - ea) >= r.yos) | age >= r.full, 0, qxt),
   #qxt = ifelse(age >= r.min | age >= r.full, 0, qxt),
   
   # qxt = ifelse( age >= r.full, 0, qxt),
@@ -122,7 +130,7 @@ decrement %<>% mutate(
                 )
 ) 
 
-
+r.yos
 
 #*************************************************************************************************************
 # Motifying decrement talbes, mainly for development purposes.
@@ -145,10 +153,13 @@ decrement %<>% mutate(
  # which means all active members who survive all other risks at (r.max - 1) will enter the status "retired" for sure at age r.max (and collect the benefit regardless 
  # whether they will die at r.max)      
 
+# adapted for steady state analysis
+
 decrement %<>% group_by(ea) %>%  
-  mutate(qxr = ifelse(age == r.max - 1,
-                        1 - qxt - qxm - qxd, 
-                        lead(qxr)*(1 - qxt - qxm - qxd)))
+  mutate(qxr = ifelse(age >= r.max - 1,
+                        1 - qxt - qxm - qxd,
+                        0))
+                        # lead(qxr)*(1 - qxt - qxm - qxd)))
 
 
 ## define decrements for status and calculte survival probabilities. 
