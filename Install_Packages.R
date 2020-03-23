@@ -31,3 +31,5 @@ install.packages("xlsx")
 
 #devtools::install_github("donboyd5/pdata")
 #devtools::install_github("donboyd5/ptools")
+devtools::install_github("donboyd5/pp.prototypes")
+devtools::install_github("donboyd5/decrements")

@@ -9,8 +9,8 @@ get_geoReturn <- function(x) prod(1 + x)^(1/length(x)) - 1
 load("IO_penSimMacro/penSimInputs_returns.RData")
 
 penSimInputs_returns %<>% 
-  mutate(return60_40 = 0.6*stockreturn + 0.4*bondreturn,
-         return70_30 = 0.7*stockreturn + 0.3*bondreturn)
+  mutate(return60_40 = 0.6*stockreturn_nom + 0.4*bondreturn_nom,
+         return70_30 = 0.7*stockreturn_nom + 0.3*bondreturn_nom)
 
 
 penSimInputs_returns$return70_30 %>% mean # 6.8%, approx geoMean is 6.1%, very close to forward looking assumption of SOA Blue Ribbon 
