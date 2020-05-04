@@ -1,13 +1,19 @@
 ## Run control file for pension simulation model
-## 8/2017
+## 2020/03/23
 
 
 
-#*********************************************************************************************************
-#                                               Notes   ####
-#*********************************************************************************************************
+#*******************************************************************************
+#                                Notes   ####
+#*******************************************************************************
 
-# This branch generate steady state demographics, liabilities, anc costs of the prototypical pension plan
+#' This branch generate demographics, liabilities, and costs of the prototypical pension plan for the analysis
+#'   of risk sharing policy
+#' 
+#' This is an extension of the branch "steadyState" which only produces the demographics
+#'   at the steady state. 
+#'
+#‘ Eventually, this branch will be integrated into the project "PenSim_riskSharing" to make it a standalong program. 
 
 
 # Important modifications:
@@ -19,7 +25,6 @@
 
   # need to save year 1 benefit payment for actives: Bx.r 
 
-
 # Outputs
 
 # 1. Detailed demographic dynamics of 150 years. 
@@ -27,10 +32,9 @@
 # 3. AL (PVB) for each age cell of retirees (check stability) 
   
 
-
-
-
-
+# Run control file used:
+#  - IO_M1_new RunControl_M1_new.xlsx
+#  - run name: A1F075_O15D
 
 
 
@@ -90,7 +94,7 @@ devMode <- FALSE # Enter development mode if true. Parameters and initial popula
 #actives
 #retrates %<>% mutate(qxr = ifelse(age == 65, 1, 0)) 
 
-
+retirees
 
 
 #*********************************************************************************************************
@@ -115,8 +119,11 @@ retrates %<>% mutate(qxr = qxr * 0.7)
 
 
 # folder_run <- "IO_M2.1_new" 
-folder_run <- "IO_M1_new"
+# folder_run <- "IO_M1_new"
 # folder_run <- "IO_M2.1history_new" 
+
+folder_run <- "Inputs_riskSharing"
+
  
 filename_RunControl <- dir(folder_run, pattern = "^RunControl")
 
@@ -150,7 +157,9 @@ runlist
 for (runName in runlist){
 
 suppressWarnings(rm(paramlist, Global_paramlist))
-  
+
+cat(runName, "\n")
+    
 ## Extract plan parameters 
 paramlist    <- get_parmsList(plan_params, runName)
 paramlist$plan_returns <- plan_returns %>% filter(runname == runName)
@@ -158,17 +167,23 @@ if(paramlist$exCon) paramlist$plan_contributions <- trans_cont(plan_contribution
                     paramlist$plan_contributions <- list(0) 
 
 
+
 ## Extract global parameters and coerce the number of simulation to 1 when using deterministic investment reuturns.
 Global_paramlist <- Global_params %>% as.list
-if ((paramlist$return_type == "simple" & paramlist$ir.sd == 0) |
-    (paramlist$return_type == "internal" &  all(paramlist$plan_returns$ir.sd == 0))|
-    (paramlist$return_type == "external")){
 
-  Global_paramlist$nsim <- 1
+if(paramlist$nyear.override) Global_paramlist$nyear <- paramlist$nyear.override
+if(paramlist$nsim.override)  Global_paramlist$nsim  <- paramlist$nsim.override
+  
+
+# For DB component with benefit factor halved
+load("Data/2015-10-07/retirees.rda") 
+if(runName == "riskShaing_demographics_bf.5_100y"){
+  retirees %<>% mutate(benefit = 0.5 * benefit) 
 }
 
+
 ## Run the model
-# source("Model_Master.R", echo = TRUE)
+source("Model_Master.R", echo = TRUE)
 }
 
 

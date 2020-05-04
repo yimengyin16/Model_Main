@@ -194,7 +194,7 @@ liab.retiree %<>% as.data.frame  %>% # filter(start.year == -41, ea == 21, age.r
     
   ) %>% ungroup %>% 
   # select(start.year, year, ea, age, year.retire, age.retire,  B.r, ALx.r)# , ax, Bx, COLA.scale, gx.r)
-  select(year, ea, age, year.retire,  B.r, ALx.r)
+  select(year, ea, age, year.retire,  B.r, ALx.r, ax.r)
 
 
 
@@ -332,7 +332,7 @@ NCx.method   <- paste0("NCx.", actuarial_method)
 ALx.v.method <- paste0("ALx.", actuarial_method, ".v")
 NCx.v.method <- paste0("NCx.", actuarial_method, ".v")
 
-var.names <- c("sx", ALx.method, NCx.method, ALx.v.method, NCx.v.method, "PVFBx.r", "PVFBx.v", "Bx.ret")
+var.names <- c("sx", ALx.method, NCx.method, ALx.v.method, NCx.v.method, "PVFBx.r", "PVFBx.v", "Bx.ret", "ax.r")
 liab.active %<>% 
   filter(year %in% 1:nyear) %>%
   select(year, ea, age, one_of(var.names)) %>%

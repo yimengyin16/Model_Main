@@ -261,131 +261,165 @@ filename_outputs <- paste0("Outputs_",  paramlist$runname, ".RData")
 # save(outputs_list, file = paste0(folder_run,"/", filename_outputs))
 
 gc()
+outputs_list$results
+
+outputs_list$results
+
+# #*********************************************************************************************************
+# # Examining steady state ####
+# #*********************************************************************************************************
+# 
+# # 1. Active members
+# 
+# left_join(
+# pop$active %>% 
+#   filter(year  ==  99, ea ==20, age <=60) %>% rename(number.a1 = number.a), 
+# 
+# pop$active %>% 
+#   filter(year  ==  100, ea ==20, age <=60) %>% rename(number.a2 = number.a),
+# by = c("ea", "age")
+# ) %>% 
+# select(year.x, year.y,everything()) %>% 
+# mutate(diff = number.a2 / number.a1 - 1)
+# 
+# 
+# # 2. Retirees 
+# 
+# df_ret <- pop$retired %>% 
+#   group_by(year, age) %>% 
+#   summarize(number.r = sum(number.r))
+# 
+# left_join(
+#   df_ret %>% 
+#     filter(year  ==  99, age >60) %>% rename(number.r1 = number.r), 
+#   
+#   df_ret %>% 
+#     filter(year  ==  100, age >60) %>% rename(number.r2 = number.r),
+#   by = c("age")
+# ) %>% 
+#   ungroup %>% 
+#   select(year.x, year.y,everything()) %>% 
+#   mutate(diff = number.r2 / number.r1 - 1) %>% as.data.frame()
+# 
+# # The demographics have become quite stable after 100 years. Annual changes in any cell generally smaller than 0.01%
+# # Year 100 value should be ok to be used as a steady state.
+# 
+# 
+# 
+# # 3. Verify the stability of NC/PVB, AL/PVB, PR/PVB, and growth of liability
+# 
+# df_actives <- left_join(pop$active, liab$active) # %>% left_join(new_retirees)
+# df_actives[-(1:3)] <- colwise(na2zero)(df_actives[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
+# 
+# 
+# df_actives %>% head
+# 
+# df_actives %<>% 
+#   mutate(NC_PR  = NCx / sx,
+#          AL_PR  = ALx / sx,
+#          PVB_PR = PVFBx.r / sx)
+# 
+# df_actives %>% 
+#   filter(ea == 20, age == 55)
+# 
+# 
+# 
+# 
+# #*********************************************************************************************************
+# # Saving steady state ####
+# #*********************************************************************************************************
+# 
+# # actives
+# df_actives <- left_join(pop$active, liab$active) # %>% left_join(new_retirees)
+# df_actives[-(1:3)] <- colwise(na2zero)(df_actives[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
+# 
+# 
+# ss_actives  <- 
+#   df_actives %>% 
+#   select(-ALx.v, -PVFBx.v, -NCx.v) %>% 
+#   filter(year == 100, age < 60) %>% 
+#   mutate(NC_PVB = NCx / PVFBx.r,
+#          AL_PVB = ALx / PVFBx.r) %>% 
+#   arrange(ea, age)
+# ss_actives %>% head
+# 
+# # retirees
+# 
+# df_retiree <- 
+# merge(
+# data.table(liab$retiree, key = "ea,age,year,year.retire"),
+# data.table(pop$retired,  key = "ea,age,year,year.retire"),
+# by = c("ea", "age","year", "year.retire"), all.x = TRUE) %>% 
+#   as.data.frame()
+# 
+# ss_retirees <- 
+#   df_retiree %>% 
+#   ungroup() %>% 
+#   filter(year == 100, age >= 60, number.r != 0) %>% 
+#   arrange(age, ea)
+# 
+# 
+# ss_retirees %>% group_by(age) %>% 
+#   summarize(number.ret = sum(number.r),
+#             B.r      = sum(number.r * B.r),
+#             AL.r     = sum(number.r * ALx.r)) %>% 
+#   as.data.frame
+# 
+# save(ss_decrement = decrement,
+#      ss_actives,
+#      ss_retirees,
+#      file = "SteadyState/SteadyState2.RData")
+# 
+# 
 
 
 
-
-#*********************************************************************************************************
-# Examining steady state ####
-#*********************************************************************************************************
-
-# 1. Active members
-
-left_join(
-pop$active %>% 
-  filter(year  ==  99, ea ==20, age <=60) %>% rename(number.a1 = number.a), 
-
-pop$active %>% 
-  filter(year  ==  100, ea ==20, age <=60) %>% rename(number.a2 = number.a),
-by = c("ea", "age")
-) %>% 
-select(year.x, year.y,everything()) %>% 
-mutate(diff = number.a2 / number.a1 - 1)
+#*******************************************************************************
+# Saving steady state ####
+#*******************************************************************************
 
 
-# 2. Retirees 
-
-df_ret <- pop$retired %>% 
-  group_by(year, age) %>% 
-  summarize(number.r = sum(number.r))
-
-left_join(
-  df_ret %>% 
-    filter(year  ==  99, age >60) %>% rename(number.r1 = number.r), 
-  
-  df_ret %>% 
-    filter(year  ==  100, age >60) %>% rename(number.r2 = number.r),
-  by = c("age")
-) %>% 
-  ungroup %>% 
-  select(year.x, year.y,everything()) %>% 
-  mutate(diff = number.r2 / number.r1 - 1) %>% as.data.frame()
-
-# The demographics have become quite stable after 100 years. Annual changes in any cell generally smaller than 0.01%
-# Year 100 value should be ok to be used as a steady state.
-
-
-
-# 3. Verify the stability of NC/PVB, AL/PVB, PR/PVB, and growth of liability
-
-df_actives <- left_join(pop$active, liab$active) # %>% left_join(new_retirees)
-df_actives[-(1:3)] <- colwise(na2zero)(df_actives[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
-
+# actives
+df_actives <- left_join(pop$active, liab$active, by = c("year", "ea", "age")) 
+df_actives[-(1:3)] <- colwise(na2zero)(df_actives[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs.
+df_actives %<>%
+  select(-ALx.v, -PVFBx.v, -NCx.v) %>%
+  filter(age < 60) %>%
+  # mutate(NC_PVB = NCx / PVFBx.r,
+  #        AL_PVB = ALx / PVFBx.r) %>%
+  arrange(year, ea, age) %>% 
+  ungroup() %>% 
+  as_tibble()
 
 df_actives %>% head
 
-df_actives %<>% 
-  mutate(NC_PR  = NCx / sx,
-         AL_PR  = ALx / sx,
-         PVB_PR = PVFBx.r / sx)
-
-df_actives %>% 
-  filter(ea == 20, age == 55)
-
-
-
-
-#*********************************************************************************************************
-# Saving steady state ####
-#*********************************************************************************************************
-
-# actives
-df_actives <- left_join(pop$active, liab$active) # %>% left_join(new_retirees)
-df_actives[-(1:3)] <- colwise(na2zero)(df_actives[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs. 
-
-
-ss_actives  <- 
-  df_actives %>% 
-  select(-ALx.v, -PVFBx.v, -NCx.v) %>% 
-  filter(year == 100, age < 60) %>% 
-  mutate(NC_PVB = NCx / PVFBx.r,
-         AL_PVB = ALx / PVFBx.r) %>% 
-  arrange(ea, age)
-ss_actives %>% head
 
 # retirees
 
-df_retiree <- 
-merge(
-data.table(liab$retiree, key = "ea,age,year,year.retire"),
-data.table(pop$retired,  key = "ea,age,year,year.retire"),
-by = c("ea", "age","year", "year.retire"), all.x = TRUE) %>% 
-  as.data.frame()
+df_retirees <-
+   merge( # Faster than left_join
+     data.table(liab$retiree, key = "ea,age,year,year.retire"),
+     data.table(pop$retired,  key = "ea,age,year,year.retire"),
+     by = c("ea", "age","year", "year.retire"), all.x = TRUE) %>%
+     as_tibble()
 
-ss_retirees <- 
-  df_retiree %>% 
-  ungroup() %>% 
-  filter(year == 100, age >= 60, number.r != 0) %>% 
+df_retirees <-
+  df_retirees %>%
+  ungroup() %>%
+  filter(age >= 60) %>%
   arrange(age, ea)
 
 
-ss_retirees %>% group_by(age) %>% 
-  summarize(number.ret = sum(number.r),
-            B.r      = sum(number.r * B.r),
-            AL.r     = sum(number.r * ALx.r)) %>% 
-  as.data.frame
-
-save(ss_decrement = decrement,
-     ss_actives,
-     ss_retirees,
-     file = "SteadyState/SteadyState2.RData")
-
-decrement %>% head
+save(decrement,
+     df_actives,
+     df_retirees,
+     file = paste0("Inputs_riskSharing/", runName, ".RData"))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+save(decrement,
+     df_actives,
+     df_retirees,
+     file = paste0("C:/Git/PenSim_riskSharing/Inputs/", runName, ".RData"))
 
 
 
