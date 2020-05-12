@@ -382,7 +382,9 @@ outputs_list$results
 df_actives <- left_join(pop$active, liab$active, by = c("year", "ea", "age")) 
 df_actives[-(1:3)] <- colwise(na2zero)(df_actives[-(1:3)]) # replace NAs with 0, so summation involing missing values will not produce NAs.
 df_actives %<>%
-  select(-ALx.v, -PVFBx.v, -NCx.v) %>%
+  #select(ALx.v, PVFBx.v, NCx.v) %>%
+  rename(ALx.r = ALx,
+         NCx.r = NCx) %>% 
   filter(age < 60) %>%
   # mutate(NC_PVB = NCx / PVFBx.r,
   #        AL_PVB = ALx / PVFBx.r) %>%
@@ -394,7 +396,6 @@ df_actives %>% head
 
 
 # retirees
-
 df_retirees <-
    merge( # Faster than left_join
      data.table(liab$retiree, key = "ea,age,year,year.retire"),
@@ -408,25 +409,52 @@ df_retirees <-
   filter(age >= 60) %>%
   arrange(age, ea)
 
+df_retirees
 
-# save(decrement,
-#      df_actives,
-#      df_retirees,
-#      file = paste0("Inputs_riskSharing/", runName, ".RData"))
-# 
-# 
-# save(decrement,
-#      df_actives,
-#      df_retirees,
-#      file = paste0("C:/Git/PenSim_riskSharing/Inputs/", runName, ".RData"))
-# 
+# terminated
 
-
-outputs_list$results %>% 
-  select(runname, sim, year, NC_PR,NC.term_PR, AL.act, AL.term, AL.ret, AL.Ben, B, B.v, PR, PVFB.act, PVFB.v) %>% 
-  mutate(B.v_share = B.v / B,
-         PVFB.v_share = PVFB.v / PVFB.act) %>% 
+df_terms <-
+  merge( # Faster than left_join
+    data.table(liab$term, key = "ea,age,year,year.term"),
+    data.table(pop$term,  key = "ea,age,year,year.term"),
+    by = c("ea", "age","year", "year.term"), all.x = TRUE) %>%
   as_tibble()
+
+df_terms <-
+  df_terms %>%
+  ungroup() %>%
+  filter(age >= 20) %>%
+  arrange(age, ea)
+
+df_terms
+
+
+
+
+liab$term
+pop$term
+
+
+save(decrement,
+     df_actives,
+     df_retirees,
+     df_terms,
+     file = paste0("Inputs_riskSharing/", runName, ".RData"))
+
+
+save(decrement,
+     df_actives,
+     df_retirees,
+     df_terms,
+     file = paste0("C:/Git/PenSim_riskSharing/Inputs/", runName, ".RData"))
+
+
+# 
+outputs_list$results %>%
+  select(runname, sim, year, NC_PR,NC.term_PR, FR_MA, AL.act, AL.term, AL.ret, AL.Ben, B, B.v, PR, PVFB.act, PVFB.v) %>%
+  mutate(B.v_share = B.v / B,
+         PVFB.v_share = PVFB.v / PVFB.act,
+         AL_termed = AL.Ben -  AL.ret) 
 
 
 

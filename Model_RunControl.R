@@ -67,6 +67,10 @@ library(xlsx)
 library(pp.prototypes)
 library(decrements)               # mortality and termination for now
 
+options(dplyr.print_min = 100) # default is 10
+options(dplyr.print_max = 100) # default is 20
+
+
 
 # Initial actives and retirees 
   # Load data for new prototypes before they are in the pp.prototypes package
@@ -101,13 +105,34 @@ retirees
 #                      ## Calibration of decrements  ####
 #*********************************************************************************************************
 
+# Term rates based on four plans
+
+termrates <- 
+  bind_rows(
+    termrates,
+    termrates %>% 
+      filter(planname != "term.average") %>% 
+      group_by(yos) %>% 
+      summarise(qxt = mean(qxt)) %>% 
+      mutate(planname = "term.average2")
+  )
+
+
+
 # Calibrate term rates, mortality rates and retirement rates to approximately match workforce flows of AZ-PERS
 # in 2013.  
 
-termrates %<>% mutate(qxt = 1.2 * qxt)
 
-mortality %<>% mutate(qxm = 0.6 * qxm) %>% 
-               mutate(qxm.r = qxm)
+termrates %<>% mutate(qxt = 1 * qxt)
+
+mortality %<>% mutate(qxm = 1 * qxm) %>% 
+  mutate(qxm.r = qxm)
+
+
+# termrates %<>% mutate(qxt = 0.7 * qxt)
+# 
+# mortality %<>% mutate(qxm = 0.85 * qxm) %>% 
+#                mutate(qxm.r = qxm)
 
 retrates %<>% mutate(qxr = qxr * 0.7) 
 
@@ -183,7 +208,7 @@ if(runName == "riskShaing_demographics_bf.5_100y"){
 
 
 ## Run the model
-source("Model_Master.R", echo = TRUE)
+source("Model_Master(2).R", echo = TRUE)
 }
 
 

@@ -258,7 +258,9 @@ liab.retiree %<>% as.data.frame  %>% # filter(start.year == -41, ea == 21, age.r
   # WARNING: There will be a problem if actives entering after r.min can get vested, when PVFB is only amortized up to age r.min   
 
 liab.active %<>% 
-  mutate(gx.v = 0,  #ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
+  mutate(#gx.v = 0,  #ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
+         # gx.v = ifelse(yos >= v.yos, 1, 0), # actives become vested after reaching v.yos years of yos
+         gx.v = ifelse(yos >= v.yos, 1, 0.5), # actives become vested after reaching v.yos years of yos
          Bx.v  = gx.v * Bx,
  
          TCx.v   = ifelse(ea < r.full, Bx.v * qxt.a * lead(px_r.full_m) * v^(r.full - age) * ax[age == r.full], 0), # term cost of vested termination benefits. We assume term rates are 0 after r.full. 
